@@ -1,0 +1,3 @@
+[DEFAULT]
+sum of forces and moments = 15.0
+
