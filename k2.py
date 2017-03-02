@@ -11,6 +11,18 @@ import numpy
 import math
 
 
+F_diff = 0.2  # Differansestrekk [kN]
+
+
+def beregn_torsjonsarm(mast, i):
+    """Finner avstand fra flens til senter mast i høyde FH."""
+
+    if not mast.type == "bjelke":
+        return mast.topp + (i.h - i.fh) * mast.stign
+
+    return mast.b / 2
+
+
 def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
     """Beregner birag til Vz [kN], My [kNm] og dz [mm] fra
     fixpunktmast."""
@@ -268,6 +280,7 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
     FH = i.fh
     E = mast.E
     # Initierer Vz, My, T og dz_retur = 0 av hensyn til Python
+    V_y = F_diff
     V_z = 0
     M_y = 0
     T = 0
@@ -277,7 +290,11 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
         # Tilleggskraft da mast bytter side av sporet.
         V_z = s_retur * ((a_T + a_T_dot + 2 * c) / a)
         M_y = V_z * Hr
-        T = s_retur * c
+        T += s_retur * c
+
+    # Differansestrekk
+    if i.retur_ledn:
+        T += F_diff * (c + beregn_torsjonsarm(mast, i) / 2)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
     if mast.type == "B" or mast.type == "H":
@@ -298,6 +315,7 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
         dz_forbi = (V_z / (2 * E * Iy)) * ((Hr * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
+    R[6][1] = V_y
     R[6][3] = V_z
     R[6][0] = M_y
     R[6][5] = T
