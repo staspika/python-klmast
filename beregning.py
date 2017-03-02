@@ -111,7 +111,7 @@ def beregn(ini):
 
         """Sammenligner alle mulige kombinasjoner av lastfaktorer
         for hver enkelt grensetilstand og lagrer resultat av hver enkelt
-        sammenligning som en kandidat for dimensjonerende tilfelle.
+        sammenligning som en kandidat for dimensjonerende tilfelle
         """
         for grensetilstand in grensetilstander:
             kandidater = []
