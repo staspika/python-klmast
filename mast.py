@@ -76,6 +76,19 @@ class Mast(object):
                     self.d = 160
                 elif self.navn == "B6":
                     self.d = 200
+        else:
+            if self.navn == "HE200B":
+                self.b = 200
+            elif self.navn == "HE220B":
+                self.b = 220
+            elif self.navn == "HE240B":
+                self.b = 240
+            elif self.navn == "HE260B":
+                self.b = 260
+            elif self.navn == "HE280B":
+                self.b = 280
+            elif self.navn == "HE260M":
+                self.b = 290
 
     def __repr__(self):
         """Funksjon for enkel utskrift av attributer via print()"""
@@ -140,9 +153,6 @@ def hent_master():
     master.extend([H3, H5, H6])
 
     # Bjelkemaster (tverrsnittsklasse 1)
-    IPE400 = Mast(navn="IPE400", type="bjelke", egenvekt=663, Asteg=8.45*10**3,
-                  Aref=0.18, Iy=2.31 * 10 ** 8, Iz=1.32 * 10 ** 7, Wyp=1.31 * 10 ** 6,
-                  Wzp=2.19*10**5, It=5.14*10**5, Cw=4.90*10**11, Aref_par=0.40)
     HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, Asteg=7.81*10**3,
                   Aref=0.20, Iy=5.70 * 10 ** 7, Iz=2.00 * 10 ** 7, Wyp=6.42 * 10 ** 5,
                   Wzp=3.00*10**5, It=5.95*10**5, Cw=1.71*10**11, max_hoyde=9.5)
@@ -161,12 +171,13 @@ def hent_master():
     HE260M = Mast(navn="HE260M", type="bjelke", egenvekt=1720, Asteg=2.20*10**4,
                   Aref=0.268, Iy=3.13 * 10 ** 8, Iz=2.00 * 10 ** 8, Wyp=2.52 * 10 ** 6,
                   Wzp=1.17*10**6, It=7.22*10**6, Cw=1.73*10**12, Aref_par=0.29, max_hoyde=13.0)
-    master.extend([IPE400, HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
+    master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
     return master
 
+""" TRENGER DENNE FOR Å TA INN KORREKT h FRA INI FIL!
+KONSTRUKTØR BRUKER NÅ MAX HØYDE, NOE SOM IKKE ER KORREKT
 def sett_hoyde(h):
-    """Setter mastehøyde h og beregner høydeavhengige attributer"""
     self.h = h
     if not self.type == "bjelke":
         self.b = self.topp + self.stign * self.h
@@ -182,6 +193,7 @@ def sett_hoyde(h):
                 self.d = 160
             elif self.navn == "B6":
                 self.d = 200
+"""
 
 
 def lagre_resultater(resultater):
