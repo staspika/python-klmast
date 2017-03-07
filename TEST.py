@@ -1,19 +1,20 @@
-import numpy as np
+import os
+import psutil
 
-i = 3
-A = np.zeros((5,5))
-A[2][3] = 5
-A[3][2] = 4
-A[3][3] = 3
-B = A.sum(axis=0)
-print(A)
-print()
-i = 2
-n = 5
-C = A[i:,:]
-print("Summen av kolonnene er {}".format(B))
-print("Rad {} til {} er:".format(i,n))
-print(C)
+"""Funksjoner for testing av applikasjon"""
+
+def memory_info():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss/10**6
+
+def print_memory_info():
+    print()
+    print("************************")
+    print("Minnebruk: {} MB".format(memory_info()))
+    print("************************")
+    print()
+
+
 
 
 

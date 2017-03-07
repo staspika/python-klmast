@@ -60,8 +60,37 @@ class Mast(object):
             self.A = Asteg
 
         self.max_hoyde = max_hoyde
+        self.lasttilfeller = []
 
-        self.h = max_hoyde
+    def __repr__(self):
+        """Funksjon for enkel utskrift av attributer via print()"""
+        rep = "{}\nMastetype: {}\n".format(self.navn, self.type)
+        rep += "Egenvekt: {} N/m    ".format(self.egenvekt)
+        rep += "Asteg = {:.2e} mm^2\n".format(self.Asteg)
+        rep += "Iy = {:.2e} mm^4    ".format(self.Iy)
+        rep += "Iz = {:.2e} mm^4\n".format(self.Iz)
+        rep += "Wyp = {:.2e} mm^3   ".format(self.Wyp)
+        rep += "Wzp = {:.2e} mm^3\n".format(self.Wzp)
+        rep += "It = {:.2e} mm^4    ".format(self.It)
+        rep += "Cw = {:.2e} mm^6\n".format(self.Cw)
+        rep += "Aref = {} m^2/m    ".format(self.Aref)
+        rep += "Aref_par = {} m^2/m\n".format(self.Aref_par)
+        if not self.type=="bjelke":
+            rep += "topp = {} mm    ".format(self.topp)
+            rep += "stign = {} mm/mm\n".format(self.stign)
+            rep += "d_h = {} mm    ".format(self.d_h)
+            rep += "d_b = {} mm\n".format(self.d_b)
+            if self.type=="S":
+                rep += "k_g = {}     ".format(self.k_g)
+                rep += "k_d = {}\n".format(self.k_d)
+            elif self.type=="B":
+                rep += "Iy_mast = {:.2e} mm^4     ".format(self.Iy_mast)
+                rep += "Iz_mast = {:.2e} mm^4\n".format(self.Iz_mast)
+        return rep
+
+    def sett_hoyde(self, h):
+        """Setter mastehøyde h samt hødeavhengige attributter"""
+        self.h = h
         if not self.type == "bjelke":
             self.b = self.topp + self.stign * self.h
             self.b_13 = self.topp + (2 / 3) * self.stign * self.h
@@ -90,32 +119,20 @@ class Mast(object):
             elif self.navn == "HE260M":
                 self.b = 290
 
-    def __repr__(self):
-        """Funksjon for enkel utskrift av attributer via print()"""
-        rep = "{}\nMastetype: {}\n".format(self.navn, self.type)
-        rep += "Egenvekt: {} N/m    ".format(self.egenvekt)
-        rep += "Asteg = {:.2e} mm^2\n".format(self.Asteg)
-        rep += "Iy = {:.2e} mm^4    ".format(self.Iy)
-        rep += "Iz = {:.2e} mm^4\n".format(self.Iz)
-        rep += "Wyp = {:.2e} mm^3   ".format(self.Wyp)
-        rep += "Wzp = {:.2e} mm^3\n".format(self.Wzp)
-        rep += "It = {:.2e} mm^4    ".format(self.It)
-        rep += "Cw = {:.2e} mm^6\n".format(self.Cw)
-        rep += "Aref = {} m^2/m    ".format(self.Aref)
-        rep += "Aref_par = {} m^2/m\n".format(self.Aref_par)
-        if not self.type=="bjelke":
-            rep += "topp = {} mm    ".format(self.topp)
-            rep += "stign = {} mm/mm\n".format(self.stign)
-            rep += "d_h = {} mm    ".format(self.d_h)
-            rep += "d_b = {} mm\n".format(self.d_b)
-            if self.type=="S":
-                rep += "k_g = {}     ".format(self.k_g)
-                rep += "k_d = {}\n".format(self.k_d)
-            elif self.type=="B":
-                rep += "Iy_mast = {:.2e} mm^4     ".format(self.Iy_mast)
-                rep += "Iz_mast = {:.2e} mm^4\n".format(self.Iz_mast)
-        return rep
+    def lagre_lasttilfelle(self, lasttilfelle):
+        """Lagrer og sorterer lasttilfelle for aktuell mast"""
+        self.lasttilfeller.append(lasttilfelle)
+        self.lasttilfeller.sort()
 
+    def print_lasttilfeller(self):
+        forrige_tilstand = None
+        for lasttilfelle in self.lasttilfeller:
+            tilstand = lasttilfelle.tilstand
+            if not tilstand == forrige_tilstand:
+                print()
+                print("Lasttilfelle: {}".format(lasttilfelle.tilstand))
+            print("My = {}, Dz = {}".format(lasttilfelle.sum[0],lasttilfelle.sum[8]))
+            forrige_tilstand = lasttilfelle.tilstand
 
 def hent_master():
     """Returnerer list med samtlige master"""
@@ -175,30 +192,7 @@ def hent_master():
 
     return master
 
-""" TRENGER DENNE FOR Å TA INN KORREKT h FRA INI FIL!
-KONSTRUKTØR BRUKER NÅ MAX HØYDE, NOE SOM IKKE ER KORREKT
-def sett_hoyde(h):
-    self.h = h
-    if not self.type == "bjelke":
-        self.b = self.topp + self.stign * self.h
-        self.b_13 = self.topp + (2 / 3) * self.stign * self.h
-        if self.type == "H":
-            self.d = self.b
-        elif self.type == "B":
-            if self.navn == "B2":
-                self.d = 120
-            elif self.navn == "B3":
-                self.d = 140
-            elif self.navn == "B4":
-                self.d = 160
-            elif self.navn == "B6":
-                self.d = 200
-"""
 
-
-def lagre_resultater(resultater):
-    """Lagrer resultater av utregninger for aktuell mast"""
-    self.resultater = resultater
 
 
 

@@ -11,7 +11,7 @@ til fundament som moment og skjærkraft."""
 import numpy
 
 
-def sidekraft(mast, sys, i, B1, B2, a, a_T):
+def sidekraft(sys, i, mast, a_T, a, B1, B2):
     """Beregner sidekraft [kN] og moment [kNm] ved normal ledningsføring,
     samt forskyvning [mm]. Videre beregnes vandringskraften pga.
     temperatureffekter."""
