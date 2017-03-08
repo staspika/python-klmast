@@ -11,26 +11,29 @@ til fundament som moment og skjærkraft."""
 import numpy
 
 
-def sidekraft(sys, i, mast, a_T, a, B1, B2):
+def beregn_torsjonsarm(mast, i):
+    """Finner avstand fra flens til senter mast i høyde FH."""
+
+    if not mast.type == "bjelke":
+        return mast.topp + 2 * (i.h - i.fh) * mast.stign
+
+    return mast.b
+
+
+def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
     """Beregner sidekraft [kN] og moment [kNm] ved normal ledningsføring,
     samt forskyvning [mm]. Videre beregnes vandringskraften pga.
     temperatureffekter."""
 
     # Inngangsparametre
     S = sys.kontakttraad["Strekk i ledning"]  # [kN]
+    b_mast = beregn_torsjonsarm(mast, i) / 2  # Avstand flens - C mast
     r = i.radius
     FH = i.fh
-    E = mast.E  # E-modulen for stål [N/mm^2]
-    alpha = 1.7 * 10 ** (-5)  # [1/(grader Celsius)]
-    delta_t = 45  # Temperaturdifferanse i [(grader Celsius)]
-    a_s = 2.0  # avstand fra c mast til KL [m]
-    # -------------------!!NB!!---------------------------------------#
-    #
-    #       b_ mast skal referere til avstanden fra flens til c mast
-    #               i angrepspunktet fra vandringskraften (FH)
-    #
-    # ----------------------------------------------------------------#
-    b_mast = 0.2
+    E = mast.E                  # E-modulen for stål [N/mm^2]
+    alpha = 1.7 * 10 ** (-5)    # [1/(grader Celsius)]
+    delta_t = 45                # Temperaturdifferanse i [(grader Celsius)]
+    a_s = 2.0                   # avstand fra c mast til KL [m]
 
     # Initierer Vz, Vy, Mz, My, T dz_kl, dy_kl = 0 av hensyn til Python
     V_z = 0
@@ -74,11 +77,7 @@ def sidekraft(sys, i, mast, a_T, a, B1, B2):
         Iy_steg = mast.Iy
         A_steg = mast.Asteg
         b_13 = mast.b_13
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
+        Iy_13 = mast.Iy_13
 
         dz_kl = (V_z / (2 * E * Iy_13)) * ((2 / 3) * FH ** 3)
     elif mast.type == "bjelke":
@@ -87,8 +86,8 @@ def sidekraft(sys, i, mast, a_T, a, B1, B2):
         dz_kl = (V_z / (2 * E * Iy)) * ((2 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
-    R[1][3] = V_z
     R[1][0] = M_y
+    R[1][3] = V_z
     R[1][8] = dz_kl
 
     # Ved temperaturendring vil KL vandre og utligger følge med.
