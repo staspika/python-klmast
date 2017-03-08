@@ -26,9 +26,8 @@ class System(object):
 
 def hent_system(i):
     """Returnerer navngitt system"""
+    navn = i.systemnavn
 
-
-    # Oversikt over ledninger
 
     # Bære/fixliner
     Bz_II_50_19 = {"Egenvekt": 4.37, "Diameter": 9.0,
@@ -131,38 +130,36 @@ def hent_system(i):
     else:
         utligger = utligger_s2x
 
-    # Oppretter systemobjekter
-    systemer = []
-    s20a = System(navn="20a", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
-                  fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
-                  returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                  y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
-                  fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                  jordledning=jordledning, utligger=utligger)
-    s20b = System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
-                  fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
-                  returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                  y_line=None, hengetraad=Bz_II_10_49,
-                  fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                  jordledning=jordledning, utligger=utligger)
-    s25 = System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
-                 fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
-                 returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                 y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
-                 fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                  jordledning=jordledning, utligger=utligger)
-    s35 = System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
-                 fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
-                 returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                 y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
-                 fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                  jordledning=jordledning, utligger=utligger)
 
-    # Returnerer ønsket system fra liste
-    systemer.extend([s20a, s20b, s25, s35])
-    for system in systemer:
-        if system.navn == i.systemnavn:
-            return system
+    if navn == "20a":
+        return System(navn="20a", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
+                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
+                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
+                      fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger)
+    elif navn == "20b":
+        return System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
+                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
+                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                      y_line=None, hengetraad=Bz_II_10_49,
+                      fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger)
+    elif navn == "25":
+        return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
+                     fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
+                     returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                     y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
+                     fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger)
+    elif navn == "35":
+        return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
+                     fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
+                     returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                     y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
+                     fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger)
+
 
 
 

@@ -1,5 +1,4 @@
 import numpy
-import mast
 import inndata
 import system
 import momentarm
@@ -10,10 +9,8 @@ import klima
 import lasttilfelle
 import TEST
 
-
-master = mast.hent_master()
-
 def beregn(ini):
+    import mast
 
     # R = bidrag til reaksjonskrefter og forskyvninger
     # Oppretter og beregninger ny R for hver mast i mastelista
@@ -42,8 +39,10 @@ def beregn(ini):
     # |                                     | 14 Vind (parallelt spor)
     #  -------------------------------------
 
-    # Oppretter inndataobjekt med data fra .ini-fil, setter mastehøyde
+    # Oppretter inndataobjekt med data fra .ini-fil
     i = inndata.Inndata(ini)
+    # Oppretter masteobjekt med brukerdefinert høyde
+    master = mast.hent_master(i.gittermast, i.h)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
     q_p = klima.beregn_vindkasthastighetstrykk(i.h)
@@ -55,19 +54,18 @@ def beregn(ini):
     # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
     bruddgrense = {"navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
                    "f": [0.0, 1.2], "k": [1.5]}
-    forskyvning_kl = {"navn": "bruksgrense for forskyvning av kontaktledning",
+    forskyvning_kl = {"navn": "forskyvning_kl",
                       "g": [0.0], "l": [0.0], "f": [-0.25, 0.7], "k": [1.0]}
-    forskyvning_tot = {"navn": "brukgsgrense for totale forskyvninger",
+    forskyvning_tot = {"navn": "forskyvning_tot",
                        "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
 
     grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
 
     tell = 0  # VARIABEL FOR TESTING
     for mast in master:
-        mast.sett_hoyde(i.h)
         R = numpy.zeros((15, 9))
         R += egenvekt.beregn_mast(mast, i.h)
-        R += egenvekt.beregn_ledninger(sys, i, a_T)
+        R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
         R += k1.sidekraft(sys, i, mast, a_T, a, B1, B2)
         R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a)
         R += k2.beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2)
@@ -105,7 +103,7 @@ def beregn(ini):
 
         """Sammenligner alle mulige kombinasjoner av lastfaktorer
         for hver enkelt grensetilstand og lagrer resultat av hver enkelt
-        sammenligning som en kandidat for dimensjonerende tilfelle
+        sammenligning i sitt respektive masteobjekt
         """
         for grensetilstand in grensetilstander:
             for g in grensetilstand["g"]:
@@ -114,13 +112,13 @@ def beregn(ini):
                         for f2 in grensetilstand["f"]:
                             for f3 in grensetilstand["f"]:
                                 for k in grensetilstand["k"]:
-                                    sum_last = (g * gravitasjonslast
+                                    krefter = (g * gravitasjonslast
                                                 + l * loddavspente
                                                 + f1 * fix
                                                 + f2 * fastavspente
                                                 + f3 * toppmonterte
                                                 + k * sno)
-                                    L = lasttilfelle.Lasttilfelle(sum_last,
+                                    L = lasttilfelle.Lasttilfelle(krefter,
                                         grensetilstand, g, l, f1, f2, f3, k)
                                     mast.lagre_lasttilfelle(L)
                                     """
@@ -128,9 +126,10 @@ def beregn(ini):
                                     kandidater.append(kandidat + k * vind_min)
                                     kandidater.append(kandidat + k * vind_par)
                                     """
-        if mast.navn == "H3":
+        mast.sorter_lasttilfeller()
+        if mast.navn == "HE200B":
             print()
-            print(mast.navn)
+            print(mast)
             mast.print_lasttilfeller()
 
     # Sjekker minnebruk (TEST)

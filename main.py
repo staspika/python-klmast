@@ -2,7 +2,7 @@ import beregning
 import time
 
 # Tester kjøretid
-start_time = time.time()
+start_time = time.clock()
 
 
 ###################################################################
@@ -16,6 +16,6 @@ with open("input.ini", "r") as ini:
 ###################################################################
 
 
-print("--- %s seconds ---" % (time.time() - start_time))
+print("--- %s seconds ---" % (time.clock() - start_time))
 
 

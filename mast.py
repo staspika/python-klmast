@@ -8,7 +8,7 @@ class Mast(object):
     def __init__(self, navn, type, egenvekt=0, Asteg=0, Iy=0, Iz=0, Wyp=0,
                  Wzp=0, It=0, Cw=0, topp=0, stign=0, d_h=0, d_b=0,
                  k_g=0, k_d=0, Aref=0, Aref_par=0, Iy_mast=0, Iz_mast=0,
-                 max_hoyde=0):
+                 max_hoyde=0, h=0):
         """Oppretter nytt masteobjekt"""
         self.navn = navn  # Mastens navn
         self.type = type  # Støttede mastetyper: B, S, Bjelke
@@ -60,36 +60,8 @@ class Mast(object):
             self.A = Asteg
 
         self.max_hoyde = max_hoyde
-        self.lasttilfeller = []
 
-    def __repr__(self):
-        """Funksjon for enkel utskrift av attributer via print()"""
-        rep = "{}\nMastetype: {}\n".format(self.navn, self.type)
-        rep += "Egenvekt: {} N/m    ".format(self.egenvekt)
-        rep += "Asteg = {:.2e} mm^2\n".format(self.Asteg)
-        rep += "Iy = {:.2e} mm^4    ".format(self.Iy)
-        rep += "Iz = {:.2e} mm^4\n".format(self.Iz)
-        rep += "Wyp = {:.2e} mm^3   ".format(self.Wyp)
-        rep += "Wzp = {:.2e} mm^3\n".format(self.Wzp)
-        rep += "It = {:.2e} mm^4    ".format(self.It)
-        rep += "Cw = {:.2e} mm^6\n".format(self.Cw)
-        rep += "Aref = {} m^2/m    ".format(self.Aref)
-        rep += "Aref_par = {} m^2/m\n".format(self.Aref_par)
-        if not self.type=="bjelke":
-            rep += "topp = {} mm    ".format(self.topp)
-            rep += "stign = {} mm/mm\n".format(self.stign)
-            rep += "d_h = {} mm    ".format(self.d_h)
-            rep += "d_b = {} mm\n".format(self.d_b)
-            if self.type=="S":
-                rep += "k_g = {}     ".format(self.k_g)
-                rep += "k_d = {}\n".format(self.k_d)
-            elif self.type=="B":
-                rep += "Iy_mast = {:.2e} mm^4     ".format(self.Iy_mast)
-                rep += "Iz_mast = {:.2e} mm^4\n".format(self.Iz_mast)
-        return rep
-
-    def sett_hoyde(self, h):
-        """Setter mastehøyde h samt hødeavhengige attributter"""
+        # Setter mastehøyde h samt hødeavhengige attributter
         self.h = h
         if not self.type == "bjelke":
             self.b = self.topp + self.stign * self.h
@@ -119,76 +91,134 @@ class Mast(object):
             elif self.navn == "HE260M":
                 self.b = 290
 
+        if self.type == "B":
+            Iy_13 = (self.Iy + self.Asteg * (self.b_13 / 2) ** 2) * 2
+        elif self.type == "H":
+            Iy_13 = ((self.Iy + self.Asteg * (self.b_13 / 2) ** 2) * 2) * 2
+
+        # Oppretter lister for lagring av lasttilfeller
+        self.bruddgrense = []
+        self.forskyvning_kl = []
+        self.forskyvning_tot = []
+
+    def __repr__(self):
+        """Funksjon for enkel utskrift av attributer via print()"""
+        rep = "{}\nMastetype: {}\n".format(self.navn, self.type)
+        rep += "Egenvekt: {} N/m    ".format(self.egenvekt)
+        rep += "Asteg = {:.2e} mm^2\n".format(self.Asteg)
+        rep += "Iy = {:.2e} mm^4    ".format(self.Iy)
+        rep += "Iz = {:.2e} mm^4\n".format(self.Iz)
+        rep += "Wyp = {:.2e} mm^3   ".format(self.Wyp)
+        rep += "Wzp = {:.2e} mm^3\n".format(self.Wzp)
+        rep += "It = {:.2e} mm^4    ".format(self.It)
+        rep += "Cw = {:.2e} mm^6\n".format(self.Cw)
+        rep += "Aref = {} m^2/m    ".format(self.Aref)
+        rep += "Aref_par = {} m^2/m\n".format(self.Aref_par)
+        if not self.type=="bjelke":
+            rep += "topp = {} mm    ".format(self.topp)
+            rep += "stign = {} mm/mm\n".format(self.stign)
+            rep += "d_h = {} mm    ".format(self.d_h)
+            rep += "d_b = {} mm\n".format(self.d_b)
+            if self.type=="S":
+                rep += "k_g = {}     ".format(self.k_g)
+                rep += "k_d = {}\n".format(self.k_d)
+            elif self.type=="B":
+                rep += "Iy_mast = {:.2e} mm^4     ".format(self.Iy_mast)
+                rep += "Iz_mast = {:.2e} mm^4\n".format(self.Iz_mast)
+        return rep
+
     def lagre_lasttilfelle(self, lasttilfelle):
         """Lagrer og sorterer lasttilfelle for aktuell mast"""
-        self.lasttilfeller.append(lasttilfelle)
-        self.lasttilfeller.sort()
+        if lasttilfelle.tilstand == "bruddgrense":
+            self.bruddgrense.append(lasttilfelle)
+        elif lasttilfelle.tilstand == "forskyvning_kl":
+            self.forskyvning_kl.append(lasttilfelle)
+        elif lasttilfelle.tilstand == "forskyvning_tot":
+            self.forskyvning_tot.append(lasttilfelle)
+
+
+    def sorter_lasttilfeller(self):
+        self.bruddgrense.sort()
+        self.forskyvning_kl.sort()
+        self.forskyvning_tot.sort()
 
     def print_lasttilfeller(self):
-        forrige_tilstand = None
-        for lasttilfelle in self.lasttilfeller:
-            tilstand = lasttilfelle.tilstand
-            if not tilstand == forrige_tilstand:
-                print()
-                print("Lasttilfelle: {}".format(lasttilfelle.tilstand))
-            print("My = {}, Dz = {}".format(lasttilfelle.sum[0],lasttilfelle.sum[8]))
-            forrige_tilstand = lasttilfelle.tilstand
-
-def hent_master():
-    """Returnerer list med samtlige master"""
-    master = []
+        print()
+        print("Bruddgrensetilstand:")
+        for a in self.bruddgrense:
+            print("My = {:.4g}Nm, N = {:.5g}"
+                  "N, Dz = {:.2g}mm".format(a.krefter[0], a.krefter[4], a.krefter[8]))
+        print()
+        print("Bruksgrensetilstand for forskyvning av kontakttråd:")
+        for a in self.forskyvning_kl:
+            print("My = {:.4g}Nm, N = {:.5g}"
+                  "N, Dz = {:.2g}mm".format(a.krefter[0], a.krefter[4], a.krefter[8]))
+        print()
+        print("Bruksgrensetilstand for total forskyvning:")
+        for a in self.forskyvning_tot:
+            print("My = {:.4g}Nm, N = {:.5g}"
+                  "N, Dz = {:.2g}mm".format(a.krefter[0], a.krefter[4], a.krefter[8]))
+def hent_master(gittermast, hoyde):
+    """Returnerer liste med master til beregning
+    gittermast == True returnerer B- og H-master
+    gittermast == False returnerer bjelkemaster
+    """
 
     # B-master (tverrsnittsklasse 3)
     B2 = Mast(navn="B2", type="B", egenvekt=360, Asteg=1.70*10**3, Aref=0.12,
               Iy=3.64*10**6, Iz=4.32*10**5, Wyp=7.46*10**4, It=4.15*10**4,
               topp=150, stign=14/1000, d_h=50, d_b=10,
-              Iy_mast=9.72*10**7, Iz_mast=7.28*10**6, max_hoyde=8.0)
+              Iy_mast=9.72*10**7, Iz_mast=7.28*10**6, max_hoyde=8.0, h=hoyde)
     B3 = Mast(navn="B3", type="B", egenvekt=510, Asteg=2.04*10**3, Aref=0.14,
               Iy=6.05*10**6, Iz=6.27*10**5, Wyp=1.05*10**5, It=5.68*10**4,
               topp=255, stign=23/1000, d_h=50, d_b=10,
-              Iy_mast=3.22*10**8, Iz_mast=1.21*10**7, max_hoyde=9.5)
+              Iy_mast=3.22*10**8, Iz_mast=1.21*10**7, max_hoyde=9.5, h=hoyde)
     B4 = Mast(navn="B4", type="B", egenvekt=560, Asteg=2.40*10**3, Aref=0.16,
               Iy=9.25*10**6, Iz=8.53*10**5, Wyp=1.38*10**5, It=7.39*10**4,
               topp=255, stign=23/1000, d_h=50, d_b=10,
-              Iy_mast=3.79*10**8, Iz_mast=1.85*10**7, max_hoyde=11.0)
+              Iy_mast=3.79*10**8, Iz_mast=1.85*10**7, max_hoyde=11.0, h=hoyde)
     B6 = Mast(navn="B6", type="B", egenvekt=700, Asteg=3.22*10**3, Aref=0.20,
               Iy=1.91*10**7, Iz=1.48*10**6, Wyp=2.28*10**5, It=1.19*10**5,
               topp=255, stign=23/1000, d_h=50, d_b=10,
-              Iy_mast=5.09*10**8, Iz_mast=3.82*10**7, max_hoyde=13.0)
-    master.extend([B2, B3, B4, B6])
+              Iy_mast=5.09*10**8, Iz_mast=3.82*10**7, max_hoyde=13.0, h=hoyde)
 
-    # S-master (tverrsnittsklasse 3)
-    H3 = Mast(navn="H3", type="S", egenvekt=520, Asteg=1.15*10**3, Aref=0.20,
+    # H-master (tverrsnittsklasse 3)
+    H3 = Mast(navn="H3", type="H", egenvekt=520, Asteg=1.15*10**3, Aref=0.20,
               Iy=5.89*10**5, topp=200, stign=20/1000, d_h=50, d_b=10,
-              k_g=0.85, k_d=0.55, max_hoyde=13.0)
-    H5 = Mast(navn="H5", type="S", egenvekt=620, Asteg=1.41*10**3, Aref=0.20,
+              k_g=0.85, k_d=0.55, max_hoyde=13.0, h=hoyde)
+    H5 = Mast(navn="H5", type="H", egenvekt=620, Asteg=1.41*10**3, Aref=0.20,
               Iy=5.89*10**5, topp=200, stign=20/1000, d_h=50, d_b=10,
-              k_g=0.85, k_d=0.55, max_hoyde=13.0)
-    H6 = Mast(navn="H6", type="S", egenvekt=620, Asteg=1.41*10**3, Aref=0.20,
+              k_g=0.85, k_d=0.55, max_hoyde=13.0, h=hoyde)
+    H6 = Mast(navn="H6", type="H", egenvekt=620, Asteg=1.41*10**3, Aref=0.20,
               Iy=5.89*10**5, topp=200, stign=20/1000, d_h=50, d_b=10,
-              k_g=0.85, k_d=0.55)
-    master.extend([H3, H5, H6])
+              k_g=0.85, k_d=0.55, h=hoyde)
 
     # Bjelkemaster (tverrsnittsklasse 1)
     HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, Asteg=7.81*10**3,
                   Aref=0.20, Iy=5.70 * 10 ** 7, Iz=2.00 * 10 ** 7, Wyp=6.42 * 10 ** 5,
-                  Wzp=3.00*10**5, It=5.95*10**5, Cw=1.71*10**11, max_hoyde=9.5)
+                  Wzp=3.00*10**5, It=5.95*10**5, Cw=1.71*10**11, max_hoyde=9.5, h=hoyde)
     HE220B = Mast(navn="HE220B", type="bjelke", egenvekt=715, Asteg=9.10*10**3,
                   Aref=0.22, Iy=8.09 * 10 ** 7, Iz=2.84 * 10 ** 7, Wyp=8.28 * 10 ** 5,
-                  Wzp=3.87*10**5, It=7.68*10**5, Cw=2.95*10**11, max_hoyde=11.0)
+                  Wzp=3.87*10**5, It=7.68*10**5, Cw=2.95*10**11, max_hoyde=11.0, h=hoyde)
     HE240B = Mast(navn="HE240B", type="bjelke", egenvekt=832, Asteg=1.06*10**4,
                   Aref=0.24, Iy=1.13 * 10 ** 8, Iz=3.92 * 10 ** 7, Wyp=1.05 * 10 ** 6,
-                  Wzp=4.90*10**5, It=1.03*10**6, Cw=4.87*10**11, max_hoyde=12.0)
+                  Wzp=4.90*10**5, It=1.03*10**6, Cw=4.87*10**11, max_hoyde=12.0,h=hoyde)
     HE260B = Mast(navn="HE260B", type="bjelke", egenvekt=930, Asteg=1.18*10**4,
                   Aref=0.26, Iy=1.49 * 10 ** 8, Iz=5.13 * 10 ** 7, Wyp=1.28 * 10 ** 6,
-                  Wzp=5.92*10**5, It=1.24*10**6, Cw=7.54*10**11, max_hoyde=13.0)
+                  Wzp=5.92*10**5, It=1.24*10**6, Cw=7.54*10**11, max_hoyde=13.0, h=hoyde)
     HE280B = Mast(navn="HE280B", type="bjelke", egenvekt=1030, Asteg=1.31*10**4,
                   Aref=0.28, Iy=1.93 * 10 ** 8, Iz=6.59 * 10 ** 7, Wyp=1.53 * 10 ** 6,
-                  Wzp=7.06*10**5, It=1.44*10**6, Cw=1.13*10**12, max_hoyde=13.0)
+                  Wzp=7.06*10**5, It=1.44*10**6, Cw=1.13*10**12, max_hoyde=13.0, h=hoyde)
     HE260M = Mast(navn="HE260M", type="bjelke", egenvekt=1720, Asteg=2.20*10**4,
                   Aref=0.268, Iy=3.13 * 10 ** 8, Iz=2.00 * 10 ** 8, Wyp=2.52 * 10 ** 6,
-                  Wzp=1.17*10**6, It=7.22*10**6, Cw=1.73*10**12, Aref_par=0.29, max_hoyde=13.0)
-    master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
+                  Wzp=1.17*10**6, It=7.22*10**6, Cw=1.73*10**12, Aref_par=0.29,
+                  max_hoyde=13.0, h=hoyde)
+
+    master = []
+    if gittermast:
+        master.extend([B2, B3, B4, B6, H3, H5, H6])
+    else:
+        master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
     return master
 
