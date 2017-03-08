@@ -28,10 +28,10 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
     fixpunktmast."""
 
     S = sys.fixline["Strekk i ledning"]  # [kN]
-    r = i.radius
-    E = mast.E
-    FH = i.fh
-    SH = i.sh
+    r = i.radius                         # [m]
+    E = mast.E                           # [N/mm^2]
+    FH = i.fh                            # [m]
+    SH = i.sh                            # [m]
     # Initierer dz_fixpunkt, Vz, My = 0 av hensyn til Python
     V_z = 0
     M_y = 0
@@ -75,8 +75,8 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
         dz_fixpunkt = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
-    R[2][3] = V_z
     R[2][0] = M_y
+    R[2][3] = V_z
     R[2][8] = dz_fixpunkt
 
     return R
@@ -93,8 +93,9 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     E = mast.E
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
-    # Initierer N, Vz, My,dz_fixavspenning = 0 av hensyn til Python.
+    # Initierer N, Vy, Vz, My,dz_fixavspenning = 0 av hensyn til Python.
     N = 0
+    V_y = 0
     V_z = 0
     M_y = 0
     dz_fixavspenning = 0
@@ -119,6 +120,11 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     # Dette gir et bidrag til normalkraften N [kN].
     N = (math.sqrt(2) / 2) * S
 
+    # Differansen mellom den horisontale kraftkomponenten i bardunen
+    # og strekket i KL gir Vy og Mz.
+    V_y = (1 - (math.sqrt(2) / 2)) * S
+    M_z = (FH + SH) * V_y
+
     # Forskyvning dz [mm] i høyde FH pga. V_z fra fixavspenning
     if mast.type == "B" or mast.type == "H":
         Iy_steg = mast.Iy
@@ -138,8 +144,10 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
         dz_fixavspenning = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
-    R[3][3] = V_z
     R[3][0] = M_y
+    R[3][1] = V_y
+    R[3][2] = M_z
+    R[3][3] = V_z
     R[3][4] = N
     R[3][8] = dz_fixavspenning
 
@@ -183,6 +191,11 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     # Dette gir et bidrag til normalkraften, N.
     N = (math.sqrt(2) / 2) * S
 
+    # Differansen mellom den horisontale kraftkomponenten i bardunen
+    # og strekket i KL gir Vy og Mz.
+    V_y = (1 - (math.sqrt(2) / 2)) * S
+    M_z = (FH + SH) * V_y
+
     # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
     if mast.type == "B" or mast.type == "H":
         Iy_steg = mast.Iy
@@ -202,8 +215,10 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
         dz_avspenning = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
-    R[4][3] = V_z
     R[4][0] = M_y
+    R[4][1] = V_y
+    R[4][2] = M_z
+    R[4][3] = V_z
     R[4][4] = N
     R[4][8] = dz_avspenning
 
