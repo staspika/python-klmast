@@ -10,17 +10,43 @@
 import numpy
 import math
 
-
+# Default verdien for F_diff = 0.2 kN. Denne kan justeres i ini-fila.
 F_diff = 0.2  # Differansestrekk [kN]
 
 
-def beregn_torsjonsarm(mast, i):
-    """Finner avstand fra flens til senter mast i høyde FH."""
+def beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, a, hoyde):
+    """Definerer én funksjon til å beregne V [kN] og M [kNm] for
+    tilfellet når master bytter side av sporet."""
 
-    if not mast.type == "bjelke":
-        return mast.topp + (i.h - i.fh) * mast.stign
+    # Deklarerer krefter og torsjonsmoment
+    M_z, V_z, M_y = 0, 0, 0
+    D_z = 0
+    V_y = F_diff
+    T = F_diff * c
 
-    return mast.b / 2
+    # Tilleggslast dersom mast bytter side av spor.
+    if i.master_bytter_side:
+        V_y += s
+        M_z += V_y * hoyde
+        V_z += s * ((a_T + a_T_dot + 2 * c) / a)
+        M_y += V_z * hoyde
+        # Adderer bidrag fra strekk i fastavspent ledning.
+        T += s * c
+
+        # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
+        if mast.type == "B" or mast.type == "H":
+            Iy_steg = mast.Iy
+            A_steg = mast.Asteg
+            b_13 = mast.b_13
+            Iy_13 = mast.Iy_13
+
+            D_z = (V_z / (2 * mast.E * Iy_13)) * ((hoyde * i.fh ** 2) - (1 / 3) * i.fh ** 3)
+        elif mast.type == "bjelke":
+            Iy = mast.Iy
+
+            D_z = (V_z / (2 * mast.E * Iy)) * ((hoyde * i.fh ** 2) - (1 / 3) * i.fh ** 3)
+
+    return V_y, M_z, V_z, M_y, T, D_z
 
 
 def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
@@ -32,10 +58,8 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
     E = mast.E                           # [N/mm^2]
     FH = i.fh                            # [m]
     SH = i.sh                            # [m]
-    # Initierer dz_fixpunkt, Vz, My = 0 av hensyn til Python
-    V_z = 0
-    M_y = 0
-    dz_fixpunkt = 0
+    # Deklarerer My, Vz, Dz = 0.
+    M_y, V_z, D_z = 0, 0, 0
 
     if i.fixpunktmast:
         if r <= 1200:
@@ -61,23 +85,18 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
         Iy_steg = mast.Iy
         A_steg = mast.Asteg
         b_13 = mast.b_13
-        Iy_13 = 0
+        Iy_13 = mast.Iy_13
 
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_fixpunkt = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
     elif mast.type == "bjelke":
         Iy = mast.Iy
 
-        dz_fixpunkt = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
     R[2][0] = M_y
     R[2][3] = V_z
-    R[2][8] = dz_fixpunkt
+    R[2][8] = D_z
 
     return R
 
@@ -93,12 +112,8 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     E = mast.E
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
-    # Initierer N, Vy, Vz, My,dz_fixavspenning = 0 av hensyn til Python.
-    N = 0
-    V_y = 0
-    V_z = 0
-    M_y = 0
-    dz_fixavspenning = 0
+    # Deklarerer My, Vy, Mz, Vz, Dz = 0.
+    M_y, V_y, M_z, V_z, N, D_z = 0, 0, 0, 0, 0, 0
 
     if i.fixavspenningsmast:
         if r <= 1200:
@@ -130,18 +145,13 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
         Iy_steg = mast.Iy
         A_steg = mast.Asteg
         b_13 = mast.b_13
-        Iy_13 = 0
+        Iy_13 = mast.Iy_13
 
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_fixavspenning = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
     elif mast.type == "bjelke":
         Iy = mast.Iy
 
-        dz_fixavspenning = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
     R[3][0] = M_y
@@ -149,7 +159,7 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     R[3][2] = M_z
     R[3][3] = V_z
     R[3][4] = N
-    R[3][8] = dz_fixavspenning
+    R[3][8] = D_z
 
     return R
 
@@ -165,11 +175,8 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     SH = i.sh
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
-    # Initierer N, Vz, My, dz_fixavspenning = 0 av hensyn til Python.
-    N = 0
-    V_z = 0
-    M_y = 0
-    dz_avspenning = 0
+    # Deklarerer My, Vy, Mz, Vz, N, Dz = 0.
+    M_y, V_y, M_z, V_z, N, D_z = 0, 0, 0, 0, 0, 0
 
     if i.avspenningsmast:
         if r <= 1200:
@@ -201,18 +208,13 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
         Iy_steg = mast.Iy
         A_steg = mast.Asteg
         b_13 = mast.b_13
-        Iy_13 = 0
+        Iy_13 = mast.Iy_13
 
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_avspenning = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy_13)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
     elif mast.type == "bjelke":
         Iy = mast.Iy
 
-        dz_avspenning = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
+        D_z = (V_z / (2 * E * Iy)) * (((FH + SH) * FH ** 2) - (1 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
     R[4][0] = M_y
@@ -220,70 +222,47 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     R[4][2] = M_z
     R[4][3] = V_z
     R[4][4] = N
-    R[4][8] = dz_avspenning
+    R[4][8] = D_z
 
     return R
 
 
-def sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_forbi(sys, i, a_T, a_T_dot, a):
     """Forbigangsledningen påfører masten sidekrefter [kN] (og moment)
     [kNm] pga økt avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsparametre
     s_forbi = (sys.forbigangsledning["Max tillatt spenning"] *
                sys.forbigangsledning["Tverrsnitt"]) / 1000  # [kN]
-    FH = i.fh
     Hf = i.hf  # Høyde av forbigangsledning [m].
-    E = mast.E
-    # Initierer dz_forbi, Vz, My, T = 0 av hensyn til Python.
-    V_z = 0
-    M_y = 0
-    T = 0
-    dz_forbi = 0
+    # Initierer My, Vy, Mz, Vz, N, Dz = 0.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side and i.forbigang_ledn:
-        if not i.matefjern_ledn or not i.at_ledn or not i.jord_ledn:
+    if i.forbigang_ledn:
+        # Master bytter side
+        if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
             # Forbigangsledningen henger i toppen av masten.
             c = 0.0  # ingen momentarm
-            # Tilleggskraft fra fastavspente ledninger pga. sidebytte
-            V_z = s_forbi * ((a_T + a_T_dot + 2 * c) / a)
-            M_y = V_z * Hf
+            # Krefter og forskyvn. pga. mast bytter side av sporet.
+            V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_forbi, a_T, a_T_dot, c, a, Hf)
         else:
             # Forbigangsledningen henger i bakkant av masten.
             c = 0.3  # [m]
             # Tilleggskraft da mast bytter side av sporet.
-            V_z = s_forbi * ((a_T + a_T_dot + 2 * c) / a)
-            M_y = V_z * Hf
-            T = s_forbi * c
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_forbi = (V_z / (2 * E * Iy_13)) * ((Hf * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_forbi= (V_z / (2 * E * Iy)) * ((Hf * FH ** 2) - (1 / 3) * FH ** 3)
+            V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_forbi, a_T, a_T_dot, c, a, Hf)
 
     R = numpy.zeros((15, 9))
-    R[5][3] = V_z
     R[5][0] = M_y
+    R[5][1] = V_y
+    R[5][2] = M_z
+    R[5][3] = V_z
     R[5][5] = T
-    R[5][8] = dz_forbi
+    R[5][8] = D_z
 
     return R
 
 
-def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_retur(sys, i, a_T, a_T_dot, a):
     """Returledningen påfører masten sidekrefter [kN] og moment [kNm]
     pga. økt avbøyningsvinkel når masten bytter side av sporet."""
 
@@ -292,54 +271,25 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
                sys.returledning["Tverrsnitt"]) / 1000  # [kN]
     c = 0.5    # Returledningen henger alltid i bakkant av masten [m].
     Hr = i.hr  # Høyde av returledning [m]
-    FH = i.fh
-    E = mast.E
-    # Initierer Vz, My, T og dz_retur = 0 av hensyn til Python
-    V_y = F_diff
-    V_z = 0
-    M_y = 0
-    T = 0
-    dz_retur = 0
+    # Initierer My, Vy, Mz, Vz, T, Dz = 0.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side and i.retur_ledn:
-        # Tilleggskraft da mast bytter side av sporet.
-        V_z = s_retur * ((a_T + a_T_dot + 2 * c) / a)
-        M_y = V_z * Hr
-        T += s_retur * c
-
-    # Differansestrekk
     if i.retur_ledn:
-        T += F_diff * (c + beregn_torsjonsarm(mast, i) / 2)
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_forbi = (V_z / (2 * E * Iy_13)) * ((Hr * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_forbi = (V_z / (2 * E * Iy)) * ((Hr * FH ** 2) - (1 / 3) * FH ** 3)
+        # Krefter og forskyvn. pga. mast bytter side av sporet.
+        V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_retur, a_T, a_T_dot, c, a, Hr)
 
     R = numpy.zeros((15, 9))
-    R[6][1] = V_y
-    R[6][3] = V_z
     R[6][0] = M_y
+    R[6][1] = V_y
+    R[6][2] = M_z
+    R[6][3] = V_z
     R[6][5] = T
-    R[6][8] = dz_retur
+    R[6][8] = D_z
 
     return R
 
 
-def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_fiber(sys, i, a_T, a_T_dot, a):
     """Fiberoptisk ledning påfører masten sidekrefter [kN] pga økt
     avbøyningsvinkel når masten bytter side av sporet."""
 
@@ -347,142 +297,85 @@ def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
     s_fiber = (sys.fiberoptisk["Max tillatt spenning"] *
                sys.fiberoptisk["Tverrsnitt"]) / 1000  # [kN]
     c = 0.3
-    Hfi = 5.0  # ????????? Hva skal denne  høyden være ???????????
-    FH = i.fh
-    E = mast.E
-    # Initierer Vz, My, T og dz_fiber = 0 av hensyn til Python.
-    V_z = 0
-    M_y = 0
-    T = 0
-    dz_fiber = 0
+    Hfi = i.hf  # Samme høyde som forbigangsledning i [m].
+    # Initierer My, Vy, Mz, Vz, N, Dz = 0.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side and i.fiberoptisk_ledn:
-        # Ingen fiberoptisk ledn dersom forbigangsledning er i masten.
+    if i.fiberoptisk_ledn:
+        # Ingen fiberoptisk ledn. dersom forbigangsledn. er i masten.
         if i.forbigang_ledn:
-            V_z = 0
-            M_y = 0
+            V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
         else:
-            V_z = s_fiber * ((a_T + a_T_dot + 2 * c) / a)
-            M_y = V_z * Hfi
-            T = s_fiber * c
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_fiber = (V_z / (2 * E * Iy_13)) * ((Hfi * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_fiber = (V_z / (2 * E * Iy)) * ((Hfi * FH ** 2) - (1 / 3) * FH ** 3)
+            # Krefter og forskyvn. pga. mast bytter side av sporet.
+            V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_fiber, a_T, a_T_dot, c, a, Hfi)
 
     R = numpy.zeros((15, 9))
-    R[7][3] = V_z
     R[7][0] = M_y
+    R[7][1] = V_y
+    R[7][2] = M_z
+    R[7][3] = V_z
     R[7][5] = T
-    R[7][8] = dz_fiber
+    R[7][8] = D_z
 
     return R
 
 
-def sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_matefjern(sys, i, a_T, a_T_dot, a):
     """Mate-/fjernledninger påfører masten sidekrefter [kN] pga. økt
     avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsprametre
     s_matefjern = (sys.matefjernledning["Max tillatt spenning"] *
                    sys.matefjernledning["Tverrsnitt"]) / 1000  # [kN]
-    c = 0  # Mate-/fjernledning henger alltid i toppen av masten.
+    c = 0  # Mate-/fjernledning henger ALLTID i toppen av masten.
+    n = i.matefjern_antall  # antall mate-/fjernledninger.
     Hfj = i.hfj
-    FH = i.fh
-    E = mast.E
-    # Initierer Vz, dz_matefjern = 0 av hensyn til Python
-    V_z = 0
-    dz_matefjern = 0
+    # Initierer bidrag lik null av hensyn til Python.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side and i.matefjern_ledn:
+    if i.matefjern_ledn:
         # Tilleggskraft hvis mast bytter side av sporet.
-        n = i.matefjern_antall
-        V_z = n * s_matefjern * ((a_T + a_T_dot + 2 * c) / a)
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_matefjern = (V_z / (2 * E * Iy_13)) * ((Hfj * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_matefjern = (V_z / (2 * E * Iy)) * ((Hfj * FH ** 2) - (1 / 3) * FH ** 3)
+        V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_matefjern, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
-    R[8][3] = V_z
-    R[8][8] = dz_matefjern
+    R[8][0] = M_y
+    R[8][1] = V_y
+    R[8][2] = M_z
+    R[8][3] = (n * V_z)
+    R[8][5] = T
+    R[8][8] = D_z
 
     return R
 
 
-def sidekraft_at(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_at(sys, i, a_T, a_T_dot, a):
     """AT - ledninger påfører masten sidekrefter [kN] pga. økt
     avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsprametre
     s_at = (sys.at_ledning["Max tillatt spenning"] *
             sys.at_ledning["Tverrsnitt"]) / 1000  # [kN]
-    c = 0  # AT-ledningen henger alltid i toppen [m].
+    c = 0  # AT-ledningen henger ALLTID i toppen av masten.
     Hfj = i.hfj
-    FH = i.fh
-    E = mast.E
-    # Initerer Vz, dz_at = 0 av hensyn til Python
-    V_z = 0
-    dz_at = 0
+    # Initierer bidrag lik null av hensyn til Python.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side:
+    if i.at_ledn:
         # Tilleggskraft hvis mast bytter side av sporet.
-        V_z = s_at * ((a_T + a_T_dot + 2 * c) / a)
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_at = (V_z / (2 * E * Iy_13)) * ((Hfj * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_at = (V_z / (2 * E * Iy)) * ((Hfj * FH ** 2) - (1 / 3) * FH ** 3)
+        V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_at, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
-    R[9][3] = V_z
-    R[9][8] = dz_at
+    R[7][0] = M_y
+    R[7][1] = V_y
+    R[7][2] = M_z
+    R[7][3] = V_z
+    R[7][5] = T
+    R[7][8] = D_z
 
     return R
 
 
-def sidekraft_jord(sys, i, mast, a_T, a_T_dot, a):
+def sidekraft_jord(sys, i, a_T, a_T_dot, a):
     """Jordledningen påfører masten sidekrefter [kN] (og moment)[kNm]
      pga økt avbøyningsvinkel når master bytter side av sporet."""
 
@@ -490,50 +383,25 @@ def sidekraft_jord(sys, i, mast, a_T, a_T_dot, a):
     s_jord = (sys.jordledning["Max tillatt spenning"] *
               sys.jordledning["Tverrsnitt"]) / 1000  # [kN]
     Hj = i.hj
-    FH = i.fh
-    E = mast.E
-    # Initerer Vz, My, T, dz_jord = 0 av hensyn til Python
-    V_z = 0
-    M_y = 0
-    T = 0
-    dz_jord = 0
+    # Initierer bidrag lik null av hensyn til Python.
+    V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
-    if i.master_bytter_side and i.jord_ledn:
-        if not i.matefjern_ledn or not i.at_ledn or not i.forbigang_ledn:
+    if i.jord_ledn:
+        if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
             # Jordledningen henger i toppen av masten.
             c = 0.0
-            V_z = s_jord * ((a_T + a_T_dot + 2 * c) / a)
-            M_y = 0
-            T = 0
+            V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_jord, a_T, a_T_dot, c, a, Hj)
         else:
             # Jordledningen henger i bakkant av masten.
             c = 0.3
-            V_z = s_jord * ((a_T + a_T_dot + 2 * c) / a)
-            M_y = V_z * Hj
-            T = s_jord * c
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = 0
-
-        if mast.type == "B":
-            Iy_13 = (Iy_steg + A_steg * (b_13 / 2) ** 2) * 2
-        elif mast.type == "H":
-            Iy_13 = ((Iy_steg + A_steg * (b_13 / 2) ** 2) * 2) * 2
-
-        dz_jord = (V_z / (2 * E * Iy_13)) * ((Hj * FH ** 2) - (1 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_jord = (V_z / (2 * E * Iy)) * ((Hj * FH ** 2) - (1 / 3) * FH ** 3)
+            V_y, M_z, V_z, M_y, T, D_z = beregn_fastavspent(i, s_jord, a_T, a_T_dot, c, a, Hj)
 
     R = numpy.zeros((15, 9))
-    R[10][3] = V_z
-    R[10][0] = M_y
-    R[10][5] = T
-    R[10][8] = dz_jord
+    R[7][0] = M_y
+    R[7][1] = V_y
+    R[7][2] = M_z
+    R[7][3] = V_z
+    R[7][5] = T
+    R[7][8] = D_z
 
     return R
