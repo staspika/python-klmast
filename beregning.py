@@ -61,12 +61,12 @@ def beregn(ini):
 
     grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
 
-    tell = 0  # VARIABEL FOR TESTING
+
     for mast in master:
         R = numpy.zeros((15, 9))
         R += egenvekt.beregn_mast(mast, i.h)
         R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
-        R += k1.sidekraft(sys, i, mast, a_T, a, B1, B2)
+        R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2)
         R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a)
         R += k2.beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2)
         R += k2.beregn_avspenning(sys, i, mast, a_T, a, B1, B2)

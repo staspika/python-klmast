@@ -1,23 +1,23 @@
 import numpy
 
-def beregn_deformasjon(mast, M, h, fh):
+def beregn_deformasjon(mast, M, x, fh):
     """Beregner deformasjon D_z i høyde fh som følge av
-    moment om y-aksen med angrepspunkt i høyde h.
-    Dersom fh > h interpoleres forskyvningen til høyde fh
-    ved hjelp av sinus til vinkelen theta i høyde h
-    ganget med høydedifferansen fh - h.
+    moment om y-aksen med angrepspunkt i høyde x.
+    Dersom fh > x interpoleres forskyvningen til høyde fh
+    ved hjelp av tangens til vinkelen theta i høyde x
+    ganget med høydedifferansen fh - x.
     """
-    M = M * 1000  # Konverterer til [Nmm]
-    h = h * 1000  # Konverterer til [mm]
-    fh = fh * 1000  # Konverterer til [mm]
     E = mast.E
-    I_y = mast.Iy  #BØR IMPLEMENTERE IY LIKT FOR GITTERMASTER SOM BJELKEMASTER
-    if fh > h:
-        theta = (M * h) / (E * I_y)
-        D_z = (M * h ** 2) / (2 * E * I_y) \
-              + numpy.sin(theta) * ( fh - h )
+    Iy = mast.Iy(mast.h)
+    M = M * 1000  # Konverterer til [Nmm]
+    x = x * 1000  # Konverterer til [mm]
+    fh = fh * 1000  # Konverterer til [mm]
+    if fh > x:
+        theta = (M * x) / (E * Iy)
+        D_z = (M * x ** 2) / (2 * E * Iy) \
+              + numpy.tan(theta) * (fh - x)
     else:
-        D_z = (M * fh ** 2) / (2 * E * I_y)
+        D_z = (M * fh ** 2) / (2 * E * Iy)
     return D_z
 
 def beregn_ledninger(sys, i, mast, a_T):

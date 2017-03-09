@@ -24,9 +24,9 @@ def sjekk_sh(i):
 
 
 def sjekk_e(i):
-    """Kontrollerer e: Avstanden SOK - topp fundament."""
+    """Kontrollerer e: Avstanden SOK - toppmaal fundament."""
     if i.e > 3.0 or i.e < -(i.FH - 0.6):
-        print("Ugyldig avstand til topp fundament.")
+        print("Ugyldig avstand til toppmaal fundament.")
         return False
     print("e er OK.")
     return True
@@ -62,7 +62,7 @@ def valider_ledn(i):
 
 
 def hoyde_mast(i):
-    """Høyde av KL-mast målt fra topp fundament."""
+    """Høyde av KL-mast målt fra toppmaal fundament."""
 
     # Dersom mate-/fjern, AT- eller jordledning henger i masten.
     if i.matefjern_ledn or i.at_ledn or i.jord_ledn:

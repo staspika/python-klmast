@@ -17,26 +17,20 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    import xlrd
-    import os.path
+    def yc(h,b,tw,tf):
+        teller = b**2*tf + 0.5*tw**2*(h-2*tf)
+        nevner = 2*b*tf + (h-2*tf)*tw
+        return teller/nevner
 
-    wb = xlrd.open_workbook("test.xls")
-    print(wb.sheet_names())
-    sh = wb.sheet_by_index(7)
-    with open("kilometrering.txt", "w") as my_file:
-        rows = range(117,201)
-        cols = [0, 3, 4]
-        my_file.write("kilometer = { ")
-        for row in rows:
+    print("UNP120: {}".format(yc(120, 55, 7, 9)))
+    print("UNP140: {}".format(yc(140, 60, 7, 10)))
+    print("UNP160: {}".format(yc(160, 65, 7.5, 10.5)))
+    print("UNP200: {}".format(yc(200, 75, 8.5, 11.5)))
 
-            my_file.write("\n\t\t\t")
-            for col in cols:
-                cell = sh.cell(row, col).value
-                if col == 0:
-                    my_file.write("\"{}\": ".format(cell))
-                elif col == 3:
-                    my_file.write("[{}, ".format(cell))
-                elif col == 4:
-                    my_file.write("{}], ".format(cell))
+    def yc2(b,t):
+        teller = b**2*t + (b-t)*t**2
+        nevner = b*t + (b-t)*t
+        return 0.5*teller/nevner
 
-        my_file.write(" }")
+    print("L75x75x8: {}".format(yc2(75,8)))
+    print("L75x75x10: {}".format(yc2(75, 10)))

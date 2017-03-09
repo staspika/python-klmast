@@ -35,14 +35,12 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
     delta_t = 45                # Temperaturdifferanse i [(grader Celsius)]
     a_s = 2.0                   # avstand fra c mast til KL [m]
 
-    # Initierer Vz, Vy, Mz, My, T dz_kl, dy_kl = 0 av hensyn til Python
+    # Initierer Vz, Vy, Mz, My, T = 0 av hensyn til Python
     V_z = 0
     V_y = 0
     M_z = 0
     M_y = 0
     T = 0
-    dz_kl = 0
-    dy_vandre = 0
 
     if not i.fixpunktmast and not i.fixavspenningsmast:
         if i.strekkutligger:
@@ -73,64 +71,31 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
             M_y -= - V_z * FH
 
     # Forskyvning dz [mm] pga. V_z
-    if mast.type == "B" or mast.type == "H":
-        Iy_steg = mast.Iy
-        A_steg = mast.Asteg
-        b_13 = mast.b_13
-        Iy_13 = mast.Iy_13
-
-        dz_kl = (V_z / (2 * E * Iy_13)) * ((2 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iy = mast.Iy
-
-        dz_kl = (V_z / (2 * E * Iy)) * ((2 / 3) * FH ** 3)
-
-    R = numpy.zeros((15, 9))
-    R[1][0] = M_y
-    R[1][3] = V_z
-    R[1][8] = dz_kl
+    Iy_13 = mast.Iy(mast.h*(2/3))  # Iy i tredjedelspunktet
+    dz_kl = (V_z / (2 * E * Iy_13)) * ((2 / 3) * FH ** 3)
 
     # Ved temperaturendring vil KL vandre og utligger følge med.
     # Beregner maksimal skråstilling av utligger [m]
     dl = alpha * delta_t * i.avstand_fixpunkt
 
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
-        # Ingen vandringskraft i parallellfelt (to utliggere)
-        V_y = 0
-    else:
+    if not i.siste_for_avspenning and not i.avspenningsmast\
+            and not i.linjemast_utliggere == 2:
         # Kraft parallelt spor i primærfelt (én utligger)
         V_y = V_z * (dl / a_T)  # [kN]
         M_z = V_y * FH
         T = V_y * b_mast
 
     # Forskyvning dy [mm] pga vandringskraften V_y
-    if mast.type == "B":
-        # B-mast har ulike tv.sn. egenskaper i x- og y-retning.
-        Iz_steg = mast.Iz
-        A_steg = mast.Asteg
-        d = mast.d  # Dybden av B-mast er konstant.
-
-        Iz_13 = (Iz_steg + A_steg * (d / 2) ** 2) * 2
-
-        dy_vandre = (V_y / (2 * E * Iz_13)) * ((2 / 3) * FH ** 3)
-    elif mast.type == "H":
-        # H-mast har like tv.sn. egenskaper i begge retninger.
-        Iz_steg = mast.Iy  # pga symmetri er Iz == Iy
-        A_steg = mast.Asteg
-        d_13 = mast.b_13   # pga symmetri er d_13 == b_13
-
-        Iz_13 = ((Iz_steg + A_steg * (d_13 / 2) ** 2) * 2) * 2
-
-        dy_vandre = (V_y / (2 * E * Iz_13)) * ((2 / 3) * FH ** 3)
-    elif mast.type == "bjelke":
-        Iz = mast.Iz
-
-        dy_vandre = (V_z / (2 * E * Iz)) * ((2 / 3) * FH ** 3)
+    Iz_13 = mast.Iz(mast.h*(2/3))  # Iz i tredjedelspunktet
+    dy_vandre = (V_y / (2 * E * Iz_13)) * ((2 / 3) * FH ** 3)
 
     R = numpy.zeros((15, 9))
+    R[1][0] = M_y
     R[1][1] = V_y
     R[1][2] = M_z
+    R[1][3] = V_z
     R[1][5] = T
     R[1][7] = dy_vandre
+    R[1][8] = dz_kl
 
     return R
