@@ -28,6 +28,7 @@ class Inndata(object):
         self.avspenningsmast = cfg.getboolean("Mastealternativer", "avspenningsmast")
         self.strekkutligger = cfg.getboolean("Mastealternativer", "strekkutligger")
         self.master_bytter_side = cfg.getboolean("Mastealternativer", "master_bytter_side")
+        self.avspenningsbardun = cfg.getboolean("Mastealternativer", "avspenningsbardun")
 
         # Fastavspente ledninger
         self.matefjern_ledn = cfg.getboolean("Fastavspent", "matefjern_ledn")
