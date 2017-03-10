@@ -113,10 +113,13 @@ class Mast(object):
         self.forskyvning_tot = []
 
     def bredde(self, x):
-        """Beregner tverrsnittsbredde b
-        i avstand x fra mastens toppunkt [mm]"""
+        """Beregner tverrsnittsbredde b [mm]
+        i avstand x [m] fra mastens toppunkt.
+        Stigningen multipliseres med 2 da
+        masten skråner til begge sider.
+         """
         if not self.type == "bjelke":
-            return self.toppmaal + self.stigning * x
+            return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
 
     def Iy(self, x):
@@ -140,14 +143,21 @@ class Mast(object):
         if self.type == "B":
             Iz = 2 * self.Iz_profil
         if self.type == "H":
-            z = self.bredde(x)/2 - self.noytralakse
-            Iz = 4 * (self.Iz_profil + self.A_profil * z**2)
+            y = self.bredde(x)/2 - self.noytralakse
+            Iz = 4 * (self.Iz_profil + self.A_profil * y**2)
         elif self.type == "bjelke":
             Iz = self.Iz_profil
         return Iz
 
     def __repr__(self):
-        rep = "{}\nMastetype: {}".format(self.navn, self.type)
+        Iy = self.Iy(self.h)/10**8
+        Iz = self.Iz(self.h)/10**6
+        Wy = self.Wy_el/10**3
+        Wz = self.Wz_el/10**3
+        rep = "{}\nMastetype: {}    Høyde: {}m\n".format(self.navn, self.type, self.h)
+        rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
+              "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
+        rep += "N.A: {}mm    Tv.snittsbredde: {}mm\n".format(self.noytralakse,self.bredde(self.h))
         return rep
 
     def lagre_lasttilfelle(self, lasttilfelle):
@@ -168,27 +178,13 @@ class Mast(object):
     def print_lasttilfeller(self):
         print()
         print("Bruddgrensetilstand:")
-        for a in self.bruddgrense:
-            print("My = {:.3g}kNm, N = {:.3g}"
-                  "kN, Dz = {:.3g}mm".format(a.K[0]/1000,
-                                             a.K[4]/1000,
-                                             a.K[8]))
-            print(a.kap)
+        print(self.bruddgrense[0])
         print()
         print("Bruksgrensetilstand for forskyvning av kontakttråd:")
-        for a in self.forskyvning_kl:
-            print("My = {:.3g}kNm, N = {:.3g}"
-                  "kN, Dz = {:.3g}mm".format(a.K[0] / 1000,
-                                             a.K[4] / 1000,
-                                             a.K[8]))
+        print(self.forskyvning_kl[0])
         print()
         print("Bruksgrensetilstand for total forskyvning:")
-        for a in self.forskyvning_tot:
-            print("My = {:.3g}kNm, N = {:.3g}"
-                  "kN, Dz = {:.3g}mm".format(a.K[0] / 1000,
-                                             a.K[4] / 1000,
-                                             a.K[8]))
-
+        print(self.forskyvning_tot[0])
 def hent_master(gittermast, hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning
     gittermast == True returnerer B- og H-master

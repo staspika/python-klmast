@@ -50,7 +50,7 @@ def beregn(ini):
     a = momentarm.beregn_masteavstand(sys, i, B1, B2, e, q_p)
     a_T, a_T_dot = momentarm.beregn_arm(i, B1)
 
-
+    # Definerer lastfaktorer for ulike grensetilstander
     # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
     bruddgrense = {"navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
                    "f": [0.0, 1.2], "k": [1.5]}
@@ -136,11 +136,18 @@ def beregn(ini):
                                     kandidater.append(kandidat + k * vind_par)
                                     """
         mast.sorter_lasttilfeller()
-        if mast.navn == "HE200B":
+        if mast.navn == "H6":
             print()
             print(mast)
             mast.print_lasttilfeller()
             print()
+            print("Vindkasthastighetstrykk: {:.3g} N/m^2".format(q_p))
+            print("Vindlast på mast: {:.3g} N".format(klima.vindlast_mast(mast, q_p, i.h)))
+            print("Ca. resulterende moment: {:.3g} kNm".format(klima.vindlast_mast(mast, q_p, i.h)*mast.h/2000))
+            print("Vindlast på ledninger: {:.3g} N".format(klima.vindlast_ledninger(i, sys, q_p)))
+            print("Total ledningsdiameter: {:.3g} m".format(klima.total_ledningsdiameter(i, sys)))
+            print("isogsnolast: {:.3g} N/m".format(klima.isogsno_last(i, sys)))
+
 
 
     # Sjekker minnebruk (TEST)

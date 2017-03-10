@@ -17,7 +17,7 @@ def beregn_vindkasthastighetstrykk(z):
     c_season = 1.0  # Årstidsfaktor
     c_alt = 1.0     # Nivåfaktor
     c_prob = 1.0    # Faktor dersom returperioden er mer enn 50 år
-    v_b_0 = 14      # Referansevindhastighet for aktuell kommune
+    v_b_0 = 25      # Referansevindhastighet for aktuell kommune
     kategori = 1
     # ---------------------------!!NB!!-------------------------------#
     #
@@ -66,7 +66,7 @@ def beregn_vindkasthastighetstrykk(z):
 
 
     # Vindkasthastighetstrykket
-    q_p = q_m * (1 + 2 * k_p * I_v) / 1000  # [kN/m^2]
+    q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
 
     return q_p
 
@@ -75,13 +75,13 @@ def vindlast_mast(mast, q_p, z):
     """Beregner vindlast på mast pr. meter av konstruksjonen [kN]."""
 
     cf = 2.2  # Vindkraftfaktor mast
-    q = q_p * cf * mast.Aref  # [kN/m]
-    q_R = q * z  # Kraftresultant [kN]
+    q = q_p * cf * mast.A_ref  # [N/m]
+    q_R = q * z  # Kraftresultant [N]
 
+    return q_R
 
-
-def vindlast_ledninger(i, sys, q_p):
-    """Beregner vindlast på ledninger pr. meter [kN/m]."""
+def total_ledningsdiameter(i, sys):
+    """Summerer ledningsdiametere [m] for klimalaster"""
 
     d_tot = 0  # Total ledningsdiameter for vindlast [mm]
 
@@ -121,15 +121,29 @@ def vindlast_ledninger(i, sys, q_p):
 
     d_total = d_tot / 1000  # Total ledningsdiameter i [m]
 
+    return d_total
+
+def vindlast_ledninger(i, sys, q_p):
+    """Beregner vindlast på ledninger pr. meter [N/m]."""
+
+    d_total = total_ledningsdiameter(i, sys)
+
     # Vindlast på ledninger
     cf = 1.1                # Vindkraftfaktor ledning
     A_ledn = d_total * 1    # Diameter multiplisert med 1m lengde [m^2]
 
-    q_ledn = q_p * cf * A_ledn  # [kN]
+    q_ledn = q_p * cf * A_ledn  # [N]
+
+    return q_ledn
 
 
-def isogsno_last(d_tot):
+def isogsno_last(i, sys):
     """Beregner snø og islast basert på SIEMENS System 20."""
 
-    # Snø- og islast pr. meter ledning [kN/m].
-    q_sno = (250 + 50 * d_tot) / 100
+    d_total = total_ledningsdiameter(i, sys)
+
+    # Snø- og islast pr. meter ledning [N/m].
+    q_sno = (2.5 + 0.5 * d_total)
+
+    return q_sno
+
