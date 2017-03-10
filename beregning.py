@@ -42,7 +42,7 @@ def beregn(ini):
     # Oppretter inndataobjekt med data fra .ini-fil
     i = inndata.Inndata(ini)
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(i.gittermast, i.h)
+    master = mast.hent_master(i.gittermast, i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
     q_p = klima.beregn_vindkasthastighetstrykk(i.h)
@@ -67,15 +67,24 @@ def beregn(ini):
         R += egenvekt.beregn_mast(mast, i.h)
         R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
         R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2)
-        R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2)
-        R += k2.beregn_avspenning(sys, i, mast, a_T, a, B1, B2)
-        R += k2.sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.sidekraft_retur(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.sidekraft_at(sys, i, mast, a_T, a_T_dot, a)
-        R += k2.sidekraft_jord(sys, i, mast, a_T, a_T_dot, a)
+        if i.fixpunktmast:
+            R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a)
+        if i.fixavspenningsmast:
+            R += k2.beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2)
+        if i.avspenningsmast:
+            R += k2.beregn_avspenning(sys, i, mast, a_T, a, B1, B2)
+        if i.forbigang_ledn:
+            R += k2.sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a)
+        if i.retur_ledn:
+            R += k2.sidekraft_retur(sys, i, mast, a_T, a_T_dot, a)
+        if i.fiberoptisk_ledn:
+            R += k2.sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a)
+        if i.matefjern_ledn:
+            R += k2.sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a)
+        if i.at_ledn:
+            R += k2.sidekraft_at(sys, i, mast, a_T, a_T_dot, a)
+        if i.jord_ledn:
+            R += k2.sidekraft_jord(sys, i, mast, a_T, a_T_dot, a)
 
         # Samler laster med lastfaktor g
         gravitasjonslast = R[0,:]
@@ -118,7 +127,7 @@ def beregn(ini):
                                                 + f2 * fastavspente
                                                 + f3 * toppmonterte
                                                 + k * sno)
-                                    L = lasttilfelle.Lasttilfelle(krefter,
+                                    L = lasttilfelle.Lasttilfelle(mast, krefter,
                                         grensetilstand, g, l, f1, f2, f3, k)
                                     mast.lagre_lasttilfelle(L)
                                     """
@@ -131,6 +140,8 @@ def beregn(ini):
             print()
             print(mast)
             mast.print_lasttilfeller()
+            print()
+
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()

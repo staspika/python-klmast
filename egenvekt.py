@@ -31,7 +31,7 @@ def beregn_ledninger(sys, i, mast, a_T):
     N = 0  # Normalkraft [N]
     M_y = 0  # Moment om sterk akse [Nm]
     D_z = 0  # Forskyvning normalt spor
-    # Variabel M brukes kun for mellomlagring av M_y-verdier
+    # Variabel M/M_1/M_2 brukes kun for mellomlagring av M_y-verdier
 
     # Antall utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere==2:
