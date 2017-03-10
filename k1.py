@@ -26,7 +26,7 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
     temperatureffekter."""
 
     # Inngangsparametre
-    S = sys.kontakttraad["Strekk i ledning"]  # [kN]
+    S = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
     b_mast = beregn_torsjonsarm(mast, i) / 2  # Avstand flens - C mast
     r = i.radius
     FH = i.fh
@@ -46,30 +46,30 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
 
     if not i.fixpunktmast and not i.fixavspenningsmast:
         if i.strekkutligger:
-            # Strekkraft virker i positiv z-retning
+            # Strekkraft virker i positiv z-retning [N]
             V_z += S * ((a / r) + 2 * ((B2 - B1) / a))
 
-            # Tilleggskraft dersom siste seksjonsmast før avspenning.
+            # Tilleggskraft hvis siste seksjonsmast før avspenning [N]
             # Neste mast på den andre siden av sporet.
             if i.siste_for_avspenning and i.master_bytter_side:
                 V_z += S * (a_T / a)
                 # Neste mast på samme side av sporet.
             elif i.siste_for_avspenning and not i.master_bytter_side:
                 V_z -= S * (a_T / a)
-            # Momentet gir strekk på baksiden av mast ift. spor.
+            # Momentet gir strekk på baksiden av mast ift. spor. [Nm]
             M_y += V_z * FH
         else:
-            # Trykkraft virker i negativ z-retning
+            # Trykkraft virker i negativ z-retning [N]
             V_z -= - S * ((a / r) + 2 * ((B2 - B1) / a))
 
-            # Tilleggskraft dersom siste seksjonsmast før avspenning.
+            # Tilleggskraft hvis siste seksjonsmast før avspenning [N]
             # Neste mast på den andre siden av sporet.
             if i.siste_for_avspenning and i.master_bytter_side:
                 V_z += S * (a_T_dot / a)
                 # Neste mast på den samme siden av sporet.
             elif i.siste_for_avspenning and not i.master_bytter_side:
                 V_z -= S * (a_T_dot / a)
-            # Momentet gir strekk på sporsiden av masten.
+            # Momentet gir strekk på sporsiden av masten [Nm]
             M_y -= - V_z * FH
 
     # Forskyvning dz [mm] pga. V_z
@@ -98,8 +98,8 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
         # Ingen vandringskraft i parallellfelt (to utliggere)
         V_y = 0
     else:
-        # Kraft parallelt spor i primærfelt (én utligger)
-        V_y = V_z * (dl / a_T)  # [kN]
+        # Kraft parallelt spor i primærfelt (én utligger) [N]
+        V_y = V_z * (dl / a_T)
         M_z = V_y * FH
         T = V_y * b_mast
 

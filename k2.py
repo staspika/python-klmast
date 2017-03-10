@@ -53,11 +53,11 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
     """Beregner birag til Vz [kN], My [kNm] og dz [mm] fra
     fixpunktmast."""
 
-    S = sys.fixline["Strekk i ledning"]  # [kN]
-    r = i.radius                         # [m]
-    E = mast.E                           # [N/mm^2]
-    FH = i.fh                            # [m]
-    SH = i.sh                            # [m]
+    S = 1000 * sys.fixline["Strekk i ledning"]  # [N]
+    r = i.radius                                # [m]
+    E = mast.E                                  # [N/mm^2]
+    FH = i.fh                                   # [m]
+    SH = i.sh                                   # [m]
     # Deklarerer My, Vz, Dz = 0.
     M_y, V_z, D_z = 0, 0, 0
 
@@ -65,7 +65,9 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
         if r <= 1200:
             # (-) i første ledd for strekkutligger (ytterkurve).
             if i.strekkutligger:
+                # Skjærkraften Vz beregnes i [N]
                 V_z = S * (-(a / r) + 2 * (a_T / a))
+                # Momentet My beregnes i [Nm]
                 M_y = V_z * (FH + SH)
             # (+) i første ledd for trykkutligger (innerkurve).
             else:
@@ -105,11 +107,11 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     """Beregner bidrag til Vz [kN], My [kNm] og dz [mm] fra
     fixavspenningsmast."""
 
-    S = sys.fixline["Strekk i ledning"]  # [kN]
-    r = i.radius
-    FH = i.fh
-    SH = i.sh
-    E = mast.E
+    S = 1000 * sys.fixline["Strekk i ledning"]  # [N]
+    r = i.radius                                # [m]
+    FH = i.fh                                   # [m]
+    SH = i.sh                                   # [m]
+    E = mast.E                                  # [N / (mm^2)]
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
     # Deklarerer My, Vy, Mz, Vz, Dz = 0.
@@ -119,11 +121,11 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
         if r <= 1200:
             # Programmet bruker da (+) for strekkutligger (ytterkurve).
             if i.strekkutligger:
-                # Sidekraft fra avspenningsbardun.
+                # Sidekraft fra avspenningsbardun [N].
                 V_z = S * (0.5 * (a / r) + (z / a))
                 M_y = V_z * FH
             else:
-                # Sidekraft fra avspenningsbardun.
+                # Sidekraft fra avspenningsbardun [N].
                 V_z = S * (- 0.5 * (a / r) + (z / a))
                 M_y = V_z * FH
         elif r > 1200:
@@ -132,7 +134,7 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
             M_y = V_z * FH
 
     # Fixavspenningsbardun står normalt på utligger med 45 grader.
-    # Dette gir et bidrag til normalkraften N [kN].
+    # Dette gir et bidrag til normalkraften N [N].
     N = (math.sqrt(2) / 2) * S
 
     # Differansen mellom den horisontale kraftkomponenten i bardunen
@@ -168,11 +170,11 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     """Beregner bidrag til Vz [kN], My [kNm] og dz [mm] fra
     avspenningsmast."""
 
-    S = sys.kontakttraad["Strekk i ledning"]  # [kN]
-    r = i.radius
-    E = mast.E
-    FH = i.fh
-    SH = i.sh
+    S = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
+    r = i.radius                                     # [m]
+    FH = i.fh                                        # [m]
+    SH = i.sh                                        # [m]
+    E = mast.E                                       # [N / (mm^2)]
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
     # Deklarerer My, Vy, Mz, Vz, N, Dz = 0.
@@ -182,7 +184,7 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
         if r <= 1200:
             # Programmet bruker da (+) for strekkutligger (ytterkurve).
             if i.strekkutligger:
-                # Sidekraft fra avspenningsbardun.
+                # Sidekraft fra avspenningsbardun [N].
                 V_z = S * (0.5 * (a / r) + (z / a))
                 M_y = V_z * FH
             else:
@@ -195,7 +197,7 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
             M_y = V_z * (FH + SH)
 
     # Avspenningsbardun står normalt på utligger med 45 grader.
-    # Dette gir et bidrag til normalkraften, N.
+    # Dette gir et bidrag til normalkraften, N i [N].
     N = (math.sqrt(2) / 2) * S
 
     # Differansen mellom den horisontale kraftkomponenten i bardunen
@@ -233,8 +235,8 @@ def sidekraft_forbi(sys, i, a_T, a_T_dot, a):
 
     # Inngangsparametre
     s_forbi = (sys.forbigangsledning["Max tillatt spenning"] *
-               sys.forbigangsledning["Tverrsnitt"]) / 1000  # [kN]
-    Hf = i.hf  # Høyde av forbigangsledning [m].
+               sys.forbigangsledning["Tverrsnitt"])  # [N]
+    Hf = i.hf                                        # Høyde_forbi [m]
     # Initierer My, Vy, Mz, Vz, N, Dz = 0.
     V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
 
@@ -268,7 +270,7 @@ def sidekraft_retur(sys, i, a_T, a_T_dot, a):
 
     # Inngangsparametre
     s_retur = (sys.returledning["Max tillatt spenning"] *
-               sys.returledning["Tverrsnitt"]) / 1000  # [kN]
+               sys.returledning["Tverrsnitt"])  # [N]
     c = 0.5    # Returledningen henger alltid i bakkant av masten [m].
     Hr = i.hr  # Høyde av returledning [m]
     # Initierer My, Vy, Mz, Vz, T, Dz = 0.
@@ -295,7 +297,7 @@ def sidekraft_fiber(sys, i, a_T, a_T_dot, a):
 
     # Inngangsparametre
     s_fiber = (sys.fiberoptisk["Max tillatt spenning"] *
-               sys.fiberoptisk["Tverrsnitt"]) / 1000  # [kN]
+               sys.fiberoptisk["Tverrsnitt"])  # [N]
     c = 0.3
     Hfi = i.hf  # Samme høyde som forbigangsledning i [m].
     # Initierer My, Vy, Mz, Vz, N, Dz = 0.
@@ -326,7 +328,7 @@ def sidekraft_matefjern(sys, i, a_T, a_T_dot, a):
 
     # Inngangsprametre
     s_matefjern = (sys.matefjernledning["Max tillatt spenning"] *
-                   sys.matefjernledning["Tverrsnitt"]) / 1000  # [kN]
+                   sys.matefjernledning["Tverrsnitt"])  # [N]
     c = 0  # Mate-/fjernledning henger ALLTID i toppen av masten.
     n = i.matefjern_antall  # antall mate-/fjernledninger.
     Hfj = i.hfj
@@ -354,7 +356,7 @@ def sidekraft_at(sys, i, a_T, a_T_dot, a):
 
     # Inngangsprametre
     s_at = (sys.at_ledning["Max tillatt spenning"] *
-            sys.at_ledning["Tverrsnitt"]) / 1000  # [kN]
+            sys.at_ledning["Tverrsnitt"])  # [N]
     c = 0  # AT-ledningen henger ALLTID i toppen av masten.
     Hfj = i.hfj
     # Initierer bidrag lik null av hensyn til Python.
@@ -381,7 +383,7 @@ def sidekraft_jord(sys, i, a_T, a_T_dot, a):
 
     # Inngangsparametre
     s_jord = (sys.jordledning["Max tillatt spenning"] *
-              sys.jordledning["Tverrsnitt"]) / 1000  # [kN]
+              sys.jordledning["Tverrsnitt"])  # [N]
     Hj = i.hj
     # Initierer bidrag lik null av hensyn til Python.
     V_y, M_z, V_z, M_y, T, D_z = 0, 0, 0, 0, 0, 0
