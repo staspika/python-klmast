@@ -11,29 +11,19 @@ til fundament som moment og skjærkraft."""
 import numpy
 
 
-def beregn_torsjonsarm(mast, i):
-    """Finner avstand fra flens til senter mast i høyde FH."""
-
-    if not mast.type == "bjelke":
-        return mast.topp + 2 * (i.h - i.fh) * mast.stign
-
-    return mast.b
-
-
 def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
     """Beregner sidekraft [kN] og moment [kNm] ved normal ledningsføring,
     samt forskyvning [mm]. Videre beregnes vandringskraften pga.
     temperatureffekter."""
 
     # Inngangsparametre
-    S = sys.kontakttraad["Strekk i ledning"]  # [kN]
-    b_mast = beregn_torsjonsarm(mast, i) / 2  # Avstand flens - C mast
-    r = i.radius
-    FH = i.fh
-    E = mast.E                  # E-modulen for stål [N/mm^2]
-    alpha = 1.7 * 10 ** (-5)    # [1/(grader Celsius)]
-    delta_t = 45                # Temperaturdifferanse i [(grader Celsius)]
-    a_s = 2.0                   # avstand fra c mast til KL [m]
+    S = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
+    b_mast = mast.bredde(i.h - i.fh) / 1000          # [m]
+    r = i.radius                                     # [m]
+    FH = i.fh                                        # [m]
+    E = mast.E                                       # [N/(mm^2)]
+    alpha = 1.7 * 10 ** (-5)                         # [1/(grader C)]
+    delta_t = 45                                     # [(grader C)]
 
     # Initierer Vz, Vy, Mz, My, T = 0 av hensyn til Python
     V_z = 0
@@ -44,7 +34,7 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
 
     if not i.fixpunktmast and not i.fixavspenningsmast:
         if i.strekkutligger:
-            # Strekkraft virker i positiv z-retning
+            # Strekkraft virker i positiv z-retning [N]
             V_z += S * ((a / r) + 2 * ((B2 - B1) / a))
 
             # Tilleggskraft dersom siste seksjonsmast før avspenning.
@@ -54,20 +44,20 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
                 # Neste mast på samme side av sporet.
             elif i.siste_for_avspenning and not i.master_bytter_side:
                 V_z -= S * (a_T / a)
-            # Momentet gir strekk på baksiden av mast ift. spor.
+            # Momentet gir strekk på baksiden av mast ift. spor [Nm]
             M_y += V_z * FH
         else:
-            # Trykkraft virker i negativ z-retning
+            # Trykkraft virker i negativ z-retning [N]
             V_z -= - S * ((a / r) + 2 * ((B2 - B1) / a))
 
-            # Tilleggskraft dersom siste seksjonsmast før avspenning.
+            # Tilleggskraft dersom siste seksjonsmast før avspenning [N].
             # Neste mast på den andre siden av sporet.
             if i.siste_for_avspenning and i.master_bytter_side:
                 V_z += S * (a_T_dot / a)
                 # Neste mast på den samme siden av sporet.
             elif i.siste_for_avspenning and not i.master_bytter_side:
                 V_z -= S * (a_T_dot / a)
-            # Momentet gir strekk på sporsiden av masten.
+            # Momentet gir strekk på sporsiden av masten [Nm].
             M_y -= - V_z * FH
 
     # Forskyvning dz [mm] pga. V_z
@@ -81,9 +71,9 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
     if not i.siste_for_avspenning and not i.avspenningsmast\
             and not i.linjemast_utliggere == 2:
         # Kraft parallelt spor i primærfelt (én utligger)
-        V_y = V_z * (dl / a_T)  # [kN]
-        M_z = V_y * FH
-        T = V_y * b_mast
+        V_y = V_z * (dl / a_T)      # [N]
+        M_z = V_y * FH              # [Nm]
+        T = V_y * b_mast   # [Nm]
 
     # Forskyvning dy [mm] pga vandringskraften V_y
     Iz_13 = mast.Iz(mast.h*(2/3))  # Iz i tredjedelspunktet
