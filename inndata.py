@@ -65,4 +65,5 @@ class Inndata(object):
         self.s235 = cfg.getboolean("Div", "s235")
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
+        self.ec3 = cfg.getboolean("Div", "ec3")
 

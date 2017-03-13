@@ -6,14 +6,14 @@ import egenvekt
 import k1
 import k2
 import klima
-import lasttilfelle
+import tilstand
 import TEST
 
 def beregn(ini):
     import mast
 
     # R = bidrag til reaksjonskrefter og forskyvninger
-    # Oppretter og beregninger ny R for hver mast i mastelista
+    # R opprettes og beregnes for hver mast i mastelista
 
     #
     #                   R
@@ -50,7 +50,7 @@ def beregn(ini):
     a = momentarm.beregn_masteavstand(sys, i, B1, B2, e, q_p)
     a_T, a_T_dot = momentarm.beregn_arm(i, B1)
 
-    # Definerer lastfaktorer for ulike grensetilstander
+    # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
     # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
     bruddgrense = {"navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
                    "f": [0.0, 1.2], "k": [1.5]}
@@ -86,60 +86,83 @@ def beregn(ini):
         if i.jord_ledn:
             R += k2.sidekraft_jord(sys, i, mast, a_T, a_T_dot, a)
 
-        # Samler laster med lastfaktor g
-        gravitasjonslast = R[0,:]
+        if i.ec3:
+            # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-        # Samler laster med lastfaktor l
-        loddavspente = R[1,:]
+            # Samler laster med lastfaktor g
+            gravitasjonslast = R[0][:]
 
-        # Samler laster med lastfaktor f (f1)
-        fix = R[2:4,:]
-        fix = numpy.sum(fix, axis=0)
+            # Samler laster med lastfaktor l
+            loddavspente = R[1][:]
 
-        # Samler laster med lastfaktor f (f2)
-        fastavspente = R[4:8,:]
-        fastavspente = numpy.sum(fastavspente, axis=0)
+            # Samler laster med lastfaktor f (f1)
+            fix = R[2:4][:]
+            fix = numpy.sum(fix, axis=0)
 
-        # Samler laster med lastfaktor f (f3)
-        toppmonterte = R[8:11,:]
-        toppmonterte = numpy.sum(toppmonterte, axis=0)
+            # Samler laster med lastfaktor f (f2)
+            fastavspente = R[4:8][:]
+            fastavspente = numpy.sum(fastavspente, axis=0)
 
-        # Faktor k brukes for beregning av klimalaster
-        sno = R[11,:]
-        vind_max = R[12,:]  # Vind fra mast, mot spor
-        vind_min = R[13,:]  # Vind fra spor, mot mast
-        vind_par = R[14,:]  # Vind parallelt sor
+            # Samler laster med lastfaktor f (f3)
+            toppmonterte = R[8:11][:]
+            toppmonterte = numpy.sum(toppmonterte, axis=0)
 
-        """Sammenligner alle mulige kombinasjoner av lastfaktorer
-        for hver enkelt grensetilstand og lagrer resultat av hver enkelt
-        sammenligning i sitt respektive masteobjekt
-        """
-        for grensetilstand in grensetilstander:
-            for g in grensetilstand["g"]:
-                for l in grensetilstand["l"]:
-                    for f1 in grensetilstand["f"]:
-                        for f2 in grensetilstand["f"]:
-                            for f3 in grensetilstand["f"]:
-                                for k in grensetilstand["k"]:
-                                    krefter = (g * gravitasjonslast
-                                                + l * loddavspente
-                                                + f1 * fix
-                                                + f2 * fastavspente
-                                                + f3 * toppmonterte
-                                                + k * sno)
-                                    L = lasttilfelle.Lasttilfelle(mast, krefter,
-                                        grensetilstand, g, l, f1, f2, f3, k)
-                                    mast.lagre_lasttilfelle(L)
-                                    """
-                                    kandidater.append(kandidat + k * vind_max)
-                                    kandidater.append(kandidat + k * vind_min)
-                                    kandidater.append(kandidat + k * vind_par)
-                                    """
-        mast.sorter_lasttilfeller()
-        if mast.navn == "H6":
+            # Faktor k brukes for beregning av klimalaster
+            sno = R[11][:]
+            vind_max = R[12][:]  # Vind fra mast, mot spor
+            vind_min = R[13][:]  # Vind fra spor, mot mast
+            vind_par = R[14][:]  # Vind parallelt sor
+
+            """Sammenligner alle mulige kombinasjoner av lastfaktorer
+            for hver enkelt grensetilstand og lagrer resultat av hver enkelt
+            sammenligning i sitt respektive masteobjekt
+            """
+            for grensetilstand in grensetilstander:
+                for g in grensetilstand["g"]:
+                    for l in grensetilstand["l"]:
+                        for f1 in grensetilstand["f"]:
+                            for f2 in grensetilstand["f"]:
+                                for f3 in grensetilstand["f"]:
+                                    for k in grensetilstand["k"]:
+                                        K = (g * gravitasjonslast
+                                            + l * loddavspente
+                                            + f1 * fix
+                                            + f2 * fastavspente
+                                            + f3 * toppmonterte
+                                            + k * sno)
+                                        t = tilstand.Tilstand(mast, e, K,
+                                                              grensetilstand,
+                                                              g, l, f1, f2,
+                                                              f3, k)
+                                        mast.lagre_tilstand(t)
+                                        """
+                                        kandidater.append(kandidat + k * vind_max)
+                                        kandidater.append(kandidat + k * vind_min)
+                                        kandidater.append(kandidat + k * vind_par)
+                                        """
+        else:
+            # Beregninger med lasttilfeller fra bransjestandard EN 50119
+
+            GK = 1.2
+            QCK = 1.5
+
+            # Permanente laster (lastfaktor GK)
+            permanente = R[0:11][:]
+            permanente = numpy.sum(permanente, axis=0)
+
+            # Variable laster (lastfaktor QCK)
+            variable = R[11:][:]
+            variable = numpy.sum(variable, axis=0)
+
+            for grensetilstand in grensetilstander:
+                K = GK * permanente + QCK * variable
+                t = tilstand.Tilstand(mast, e, K, grensetilstand)
+                mast.lagre_tilstand(t)
+
+        if mast.navn == "H6" or mast.navn == "HE200B":
             print()
             print(mast)
-            mast.print_lasttilfeller()
+            mast.print_tilstander()
             print()
             print("Vindkasthastighetstrykk: {:.3g} N/m^2".format(q_p))
             print("Vindlast på mast: {:.3g} N".format(klima.vindlast_mast(mast, q_p, i.h)))

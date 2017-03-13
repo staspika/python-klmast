@@ -12,7 +12,7 @@ class Mast(object):
                  s235=False, materialkoeff=1.05):
         """Oppretter nytt masteobjekt"""
         self.navn = navn  # Mastens navn
-        self.type = type  # Støttede mastetyper: B, S, Bjelke
+        self.type = type  # Støttede mastetyper: B, H, bjelke
         self.egenvekt = egenvekt  # Egenvekt [N/m]
         self.A_profil = A_profil  # Profilets areal [mm]
 
@@ -107,10 +107,10 @@ class Mast(object):
         self.Wy_el = self.Iy(h) / (self.bredde(h) / 2)
         self.Wz_el = self.Iz(h) / (self.d / 2)
 
-        # Oppretter lister for lagring av lasttilfeller
-        self.bruddgrense = []
-        self.forskyvning_kl = []
-        self.forskyvning_tot = []
+        # Variabler for å holde dimensjonerende last/forskvningstilfeller
+        self.bruddgrense = None
+        self.forskyvning_kl = None
+        self.forskyvning_tot = None
 
     def bredde(self, x):
         """Beregner tverrsnittsbredde b [mm]
@@ -157,34 +157,56 @@ class Mast(object):
         rep = "{}\nMastetype: {}    Høyde: {}m\n".format(self.navn, self.type, self.h)
         rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
               "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
-        rep += "N.A: {}mm    Tv.snittsbredde: {}mm\n".format(self.noytralakse,self.bredde(self.h))
+        rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
         return rep
 
-    def lagre_lasttilfelle(self, lasttilfelle):
-        """Lagrer og sorterer lasttilfelle for aktuell mast"""
-        if lasttilfelle.tilstand == "bruddgrense":
-            self.bruddgrense.append(lasttilfelle)
-        elif lasttilfelle.tilstand == "forskyvning_kl":
-            self.forskyvning_kl.append(lasttilfelle)
-        elif lasttilfelle.tilstand == "forskyvning_tot":
-            self.forskyvning_tot.append(lasttilfelle)
+    def sammenlign_tilstander(self, t1, t2):
+        """Sjekker om t1 er dimensjonerende framfor t2.
+        Dersom t2 ikke har fått noen verdi enda, returneres True
+        slik at t1 blir satt som dimensjonerende tilfelle.
+        """
+        if t2 == None:
+            return True
+        elif t1.utnyttelsesgrad > t2.utnyttelsesgrad:
+            return True
+        elif t1.utnyttelsesgrad == t2.utnyttelsesgrad:
+            if t1.navn == "bruddgrense":
+                # Sammenligner My
+                if t1.K[0] > t2.K[0]:
+                    return True
+                elif t1.K[0] == t2.K[0]:
+                    # Sammenligner N
+                    if t1.K[4] > t2.K[4]:
+                        return True
+            else:
+                # Sammenligner torsjonsvinkel phi
+                if t1.K[6] > t2.K[6]:
+                    return True
+        return False
 
+    def lagre_tilstand(self, tilstand):
+        """Lagrer tilstand dersom dimensjonerende tilfelle"""
+        if tilstand.navn == "bruddgrense":
+            if self.sammenlign_tilstander(tilstand, self.bruddgrense):
+                self.bruddgrense = tilstand
+        elif tilstand.navn == "forskyvning_kl":
+            if self.sammenlign_tilstander(tilstand, self.forskyvning_kl):
+                self.forskyvning_kl = tilstand
+        elif tilstand.navn == "forskyvning_tot":
+            if self.sammenlign_tilstander(tilstand, self.forskyvning_tot):
+                self.forskyvning_tot = tilstand
 
-    def sorter_lasttilfeller(self):
-        self.bruddgrense.sort()
-        self.forskyvning_kl.sort()
-        self.forskyvning_tot.sort()
-
-    def print_lasttilfeller(self):
+    def print_tilstander(self):
         print()
         print("Bruddgrensetilstand:")
-        print(self.bruddgrense[0])
+        print(self.bruddgrense)
         print()
         print("Bruksgrensetilstand for forskyvning av kontakttråd:")
-        print(self.forskyvning_kl[0])
+        print(self.forskyvning_kl)
         print()
         print("Bruksgrensetilstand for total forskyvning:")
-        print(self.forskyvning_tot[0])
+        print(self.forskyvning_tot)
+
 def hent_master(gittermast, hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning
     gittermast == True returnerer B- og H-master

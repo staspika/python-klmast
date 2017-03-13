@@ -10,17 +10,18 @@
 import numpy
 import math
 
-# Default verdien for F_diff = 0.2 kN. Denne kan justeres i ini-fila.
-F_diff = 0.2  # Differansestrekk [kN]
+
 
 
 def beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, a, hoyde):
-    """Definerer én funksjon til å beregne V [kN] og M [kNm]
+    """Definerer én funksjon til å beregne V [N] og M [Nm]
     for å beregne reaksjonskrefter fra differansestrekk og
     tilleggslast når master bytter side av sporet.
     Tar hensyn til ugunstig retning på differansestrekk
     ved sidebytte.
     """
+
+    F_diff = i.differansestrekk * 1000  # Differansestrekk [N]
 
     # Deklarerer krefter og torsjonsmoment
     M_y, M_z, V_z, D_z = 0, 0, 0, 0
@@ -44,7 +45,7 @@ def beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, a, hoyde):
 
 
 def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
-    """Beregner birag til Vz [kN], My [kNm]
+    """Beregner birag til Vz [N], My [Nm]
     og dz [mm] fra fixpunktmast.
     """
 
@@ -87,7 +88,7 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a):
 
 
 def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
-    """Beregner bidrag til Vz [kN], My [kNm] og dz [mm] fra
+    """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
     fixavspenningsmast."""
 
     S = 1000 * sys.fixline["Strekk i ledning"]  # [N]
@@ -115,8 +116,8 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
         V_z += S * (0.5 * (a / r) + (z / a))
         M_y += V_z * FH
 
-    V_y += S
-    M_z += -S * (FH + SH)
+    V_y += - S
+    M_z += S * (FH + SH)
 
     if i.avspenningsbardun:
         # Fixavspenningsbardun står normalt på utligger med 45 grader.
@@ -125,8 +126,8 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
 
         # Differansen mellom den horisontale kraftkomponenten i bardunen
         # og strekket i KL gir Vy og Mz.
-        V_y += - (math.sqrt(2) / 2) * S
-        M_z += S * (math.sqrt(2) / 2) * (FH + SH)
+        V_y += (math.sqrt(2) / 2) * S
+        M_z += - S * (math.sqrt(2) / 2) * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra fixavspenning
     Iy_13 = mast.Iy(mast.h * (2 / 3))  # Iy i tredjedelspunktet
@@ -144,7 +145,7 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
 
 
 def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
-    """Beregner bidrag til Vz [kN], My [kNm] og dz [mm] fra
+    """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
     avspenningsmast."""
 
     S = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
@@ -172,8 +173,8 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
         V_z = S * (0.5 * (a / r) + (z / a))
         M_y = V_z * (FH + SH)
 
-    V_y += S
-    M_z += -S * (FH + SH)
+    V_y += - S
+    M_z += S * (FH + SH)
 
     if i.avspenningsbardun:
         # Fixavspenningsbardun står normalt på utligger med 45 grader.
@@ -182,8 +183,8 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
 
         # Differansen mellom den horisontale kraftkomponenten i bardunen
         # og strekket i KL gir Vy og Mz.
-        V_y += - (math.sqrt(2) / 2) * S
-        M_z += S * (math.sqrt(2) / 2) * (FH + SH)
+        V_y += (math.sqrt(2) / 2) * S
+        M_z += - S * (math.sqrt(2) / 2) * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
     Iy_13 = mast.Iy(mast.h * (2 / 3))  # Iy i tredjedelspunktet
@@ -201,8 +202,8 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
 
 
 def sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a):
-    """Forbigangsledningen påfører masten sidekrefter [kN] (og moment)
-    [kNm] pga økt avbøyningsvinkel når master bytter side av sporet."""
+    """Forbigangsledningen påfører masten sidekrefter [N] (og moment)
+    [Nm] pga økt avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsparametre
     s_forbi = (sys.forbigangsledning["Max tillatt spenning"] *
@@ -235,7 +236,7 @@ def sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a):
 
 
 def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
-    """Returledningen påfører masten sidekrefter [kN] og moment [kNm]
+    """Returledninger påfører masten sidekrefter [N] og moment [Nm]
     pga. økt avbøyningsvinkel når masten bytter side av sporet."""
 
     # Inngangsparametre
@@ -248,18 +249,19 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
     M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_retur, a_T, a_T_dot, c, a, Hr)
 
     R = numpy.zeros((15, 9))
-    R[6][0] = M_y
-    R[6][1] = V_y
-    R[6][2] = M_z
-    R[6][3] = V_z
-    R[6][5] = T
-    R[6][8] = D_z
+    # 2 returledninger
+    R[6][0] = 2 * M_y
+    R[6][1] = 2 * V_y
+    R[6][2] = 2 * M_z
+    R[6][3] = 2 * V_z
+    R[6][5] = 2 * T
+    R[6][8] = 2 * D_z
 
     return R
 
 
 def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
-    """Fiberoptisk ledning påfører masten sidekrefter [kN] pga økt
+    """Fiberoptisk ledning påfører masten sidekrefter [N] pga økt
     avbøyningsvinkel når masten bytter side av sporet."""
 
     # Inngangsparametre
@@ -289,7 +291,7 @@ def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
 
 
 def sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a):
-    """Mate-/fjernledninger påfører masten sidekrefter [kN] pga. økt
+    """Mate-/fjernledninger påfører masten sidekrefter [N] pga. økt
     avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsprametre
@@ -303,18 +305,19 @@ def sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a):
     M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_matefjern, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
-    R[8][0] = M_y
-    R[8][1] = V_y
-    R[8][2] = M_z
-    R[8][3] = (n * V_z)
-    R[8][5] = T
-    R[8][8] = D_z
+    # n returledninger
+    R[8][0] = n * M_y
+    R[8][1] = n * V_y
+    R[8][2] = n * M_z
+    R[8][3] = n * V_z
+    R[8][5] = n * T
+    R[8][8] = n * D_z
 
     return R
 
 
 def sidekraft_at(sys, i, mast, a_T, a_T_dot, a):
-    """AT - ledninger påfører masten sidekrefter [kN] pga. økt
+    """AT-ledninger påfører masten sidekrefter [kN] pga. økt
     avbøyningsvinkel når master bytter side av sporet."""
 
     # Inngangsprametre
@@ -327,12 +330,13 @@ def sidekraft_at(sys, i, mast, a_T, a_T_dot, a):
     M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_at, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
-    R[7][0] = M_y
-    R[7][1] = V_y
-    R[7][2] = M_z
-    R[7][3] = V_z
-    R[7][5] = T
-    R[7][8] = D_z
+    # 2 AT-ledninger
+    R[7][0] = 2 * M_y
+    R[7][1] = 2 * V_y
+    R[7][2] = 2 * M_z
+    R[7][3] = 2 * V_z
+    R[7][5] = 2 * T
+    R[7][8] = 2 * D_z
 
     return R
 

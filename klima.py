@@ -9,6 +9,7 @@ kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
 terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 
 
+
 def beregn_vindkasthastighetstrykk(z):
     """Beregner dimensjonerende vindkasthastighetstrykk [kN/m^2]."""
 
