@@ -9,9 +9,9 @@ kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
 terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 
 
-
-def beregn_vindkasthastighetstrykk(z):
-    """Beregner dimensjonerende vindkasthastighetstrykk [kN/m^2]."""
+def beregn_vindkasthastighetstrykk_EC(z):
+    """Beregner dimensjonerende vindkasthastighetstrykk [kN/m^2]
+    med bruk av Eurokode 1 (EC1)."""
 
     # Inngangsparametre
     c_dir = 1.0     # Retningsfaktor
@@ -148,3 +148,89 @@ def isogsno_last(i, sys):
 
     return q_sno
 
+# ====================================================================#
+#                                                                     #
+#               Herfra brukes EN standarder.                          #
+#                                                                     #
+# ====================================================================#
+
+def beregn_vindtrykk_EN():
+    """Denne funksjonen beregner vindtrykket {EN 50 119}."""
+
+    #Inngangsparametre for 10m over bakkenivå
+    z = 10              # [m] høyde over bakken
+    rho = 1.255         # [kg / m^3]
+    G_q = 2.05          # [1] Gust-respons faktor
+    G_t = 1.0           # [1] Terrengfaktor av typen åpent
+    v_10 = 24           # [m / s] 10-min middelvindhastighet
+    # Ruhetsparameteren for ulike terrengkategorier [1]
+    alpha = [0.12, 0.16, 0.20, 0.28]
+
+    # Vindhastigheten i høyden z over bakkenivå etter EN 50 125-2.
+    v_z = v_10 * (z/10) ** alpha[3]
+
+    # Dynamisk vindtrykk [N / m^2]
+    q_z = 0.5 * rho * G_t * G_t * v_z ** 2
+
+    return q_z
+
+
+def vindlast_KL(sys, a):
+    """Denne funksjonen beregner vindkraft på KL {EN 50 119}."""
+
+    # Inngangsparametre
+    phi = 0             # [grader] Vindens innfallsvinkel normalt spor
+    G_C = 0.75          # [1] Responsfaktor
+    C_C = 1.0           # [1] Drag-faktor
+    d = sys.kontakttraad["Diameter"] / 1000  # [m]
+    q_z = beregn_vindtrykk_EN()              # [N / m^2]
+
+    # Vindlast på KL [N]
+    Q_WC = q_z * G_C * C_C * d * a * (math.cos(phi) ** 2)
+
+    return Q_WC
+
+
+def vindlast_isolator():
+    """Denne funksjonen beregner vindkraften på isolatorer
+    {EN 50 119}."""
+
+    # Inngangsparametre
+    G_ins = 1.05            # [1] Resonansfaktor for isolator
+    C_ins = 1.20            # [1] Dragfaktor for isolator
+    # ---------------------------!!NB!!-------------------------------#
+    #                                                                 #
+    #  Hva er projiserte arealet av en isolator, vind blåser || spor? #
+    #                                                                 #
+    # ----------------------------------------------------------------#
+    A_ins = 1               # [m^2] Arealet av isolator
+    q_z = beregn_vindtrykk_EN()
+
+    # Vindkraften på en isolator [N]
+    Q_ins = q_z * G_ins * C_ins * A_ins
+
+    return Q_ins
+
+
+def vindlast_normalt_spor(mast):
+    """Denne funksjonen beregner resultantkraften på masten pga vind når
+     vinden blåser normalt på sporet {EN 50 119}."""
+
+    # Inngangsparametre
+    G_str = 1.0         # [1] Resonansfaktor for stål
+    C_str = 0           # [1] Drag faktor for mast
+    A_str = mast.A_ref  # [m^2]
+    q_z = beregn_vindtrykk_EN()  #[N / m^2]
+
+    if mast.type == "bjelkemast":
+        C_str = 1.4
+    elif mast.type == "B-mast":
+        C_str = 2.0
+    elif mast.type == "H-mast":
+        # Hva blir denne ???????????????????????????????????????
+        C_str = 0
+
+    # Vindkraft på mast, vind normalt spor [N]
+    Q_str = q_z * G_str * C_str * A_str
+
+    return Q_str

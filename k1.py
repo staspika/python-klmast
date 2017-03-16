@@ -70,10 +70,13 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2):
 
     if not i.siste_for_avspenning and not i.avspenningsmast\
             and not i.linjemast_utliggere == 2:
-        # Kraft parallelt spor i primærfelt (én utligger)
-        V_y = V_z * (dl / a_T)      # [N]
-        M_z = V_y * FH              # [Nm]
-        T = V_y * b_mast   # [Nm]
+        # Vandringskraft parallelt spor i primærfelt (én utligger)
+        if i.strekkutligger:
+            V_y = V_z * (dl / a_T)      # [N]
+        else:
+            V_y = V_z * (dl / a_T_dot)  # [N]
+        M_z = V_y * FH                  # [Nm]
+        T = V_y * b_mast                # [Nm]
 
     # Forskyvning dy [mm] pga vandringskraften V_y
     Iz_13 = mast.Iz(mast.h*(2/3))  # Iz i tredjedelspunktet
