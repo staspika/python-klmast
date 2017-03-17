@@ -174,6 +174,23 @@ def beregn_vindtrykk_EN():
     return q_z
 
 
+def beregn_vindforskyvning_mast(mast, i):
+    """Denne funksjonen beregner forskyvning Dz av masten på grunn av
+    vindlast på masten, vinkelrett på sporet."""
+
+    # Inngangsparametre
+    E = mast.E                              # [N/mm^2] E-modul, stål
+    FH = i.fh * 1000                        # [mm] Høyde, KL
+    H = i.h * 1000                          # [mm] Høyde, mast
+    Iy_13 = mast.Iy(mast.h * (2 / 3))       # [mm^4] Iy i 1/3-punktet
+    q_z = beregn_vindtrykk_EN() / 1000 ** 2 # [N / mm^2]
+
+    # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
+    D_z = ((q_z * FH ** 2) / (24 * E * Iy_13)) * (6 * H ** 2 - 4 * H * (FH ** 3) + FH ** 2)
+
+    return D_z
+
+
 def vindlast_ledninger_EN(sys, i, a):
     """Denne funksjonen beregner vindkraft på KL {EN 50 119}. Denne
     gjelder kun for vindretning fra mast vinkelrett mot spor."""
@@ -250,10 +267,10 @@ def vindlast_ledninger_EN(sys, i, a):
 
 
 def vindlast_mast_normalt_spor(mast, i):
-    """Denne funksjonen beregner resultantkraften på masten pga. vind
-     når vinden blåser normalt på sporet {EN 50 119}. Vinkelen (phi)
-     bestemmer hvorvidt viden blåser fra mast mot spor (0 rad) eller
-     fra spor mot mast ((pi) rad)."""
+    """Denne funksjonen beregner resultantkraften på masten og
+    deformasjon pga. vind når vinden blåser normalt på sporet
+    {EN 50 119}. Vinkelen (phi) bestemmer hvorvidt viden blåser fra
+    mast mot spor (0 rad) eller fra spor mot mast ((pi) rad)."""
 
     # Antar konservativt en rektangulær vindlastfordeling på masten.
 
@@ -263,7 +280,7 @@ def vindlast_mast_normalt_spor(mast, i):
     phi = 0                      # [rad] Vindens innfallsvinkel
     A_str = mast.A_ref           # [m^2] Mastens referanseareal
     q_z = beregn_vindtrykk_EN()  # [N / m^2]
-    V_z, M_y = 0, 0              # [N], [Nm]
+    V_z, M_y, D_z = 0, 0, 0      # [N], [Nm], [mm]
 
     if mast.type == "bjelkemast":
         C_str = 1.4
@@ -281,11 +298,15 @@ def vindlast_mast_normalt_spor(mast, i):
         V_z = q_z * G_lat * (1.0 + 0.2 * (math.sin(2 * phi) ** 2)) * C_lat * A_str
         M_y = V_z * (H / 2)
 
+    # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
+    D_z = beregn_vindforskyvning_mast(mast, i)
+
     R = numpy.zeros((15, 9))
     # Her plasseres resultatene i rad #12, siden (phi) = 0.
     # Det betyr at vinden blåser fra mast mot spor.
     R[12][0] = M_y
     R[12][3] = V_z
+    R[12][8] = D_z
 
 
 def vindlast_mast_parallelt_spor(mast, i):
