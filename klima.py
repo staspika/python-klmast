@@ -48,7 +48,7 @@ def beregn_vindkasthastighetstrykk_EC(z):
 
     # Stedets vindhastighetstrykk [N/m^2]
     rho = 1.25                  # [kg/m^3] Luftens densitet
-    q_m = 0.5 * rho * (v_m)**2  # [(m / s)^2]
+    q_m = 0.5 * rho * (v_m)**2  # [N / m^2]
 
     # Turbulensintensiteten
     k_l = 1.0  # Turbulensintensiteten, anbefalt verdi er 1.0
@@ -68,14 +68,13 @@ def beregn_vindkasthastighetstrykk_EC(z):
     return q_p
 
 
-def vindlast_mast(mast, q_p, z):
+def vindlast_mast(mast, q_p):
     """Beregner vindlast på mast pr. meter av konstruksjonen [kN]."""
 
     cf = 2.2                   # [1] Vindkraftfaktor mast
     q = q_p * cf * mast.A_ref  # [N / m]
-    q_R = q * z                # [N] Kraftresultant
 
-    return q_R
+    return q
 
 
 def total_ledningsdiameter(i, sys):

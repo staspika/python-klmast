@@ -45,9 +45,8 @@ def beregn(ini):
     master = mast.hent_master(i.gittermast, i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
-    q_p = klima.beregn_vindkasthastighetstrykk(i.h)
+    q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
     B1, B2, e = momentarm.beregn_sikksakk(sys, i)
-    a = momentarm.beregn_masteavstand(sys, i, B1, B2, e, q_p)
     a_T, a_T_dot = momentarm.beregn_arm(i, B1)
 
     # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
@@ -63,6 +62,8 @@ def beregn(ini):
 
 
     for mast in master:
+        q = klima.vindlast_mast(mast, q_p)
+        a = momentarm.beregn_masteavstand(sys, i, B1, B2, q)
         R = numpy.zeros((15, 9))
         R += egenvekt.beregn_mast(mast, i.h)
         R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
@@ -165,11 +166,11 @@ def beregn(ini):
             mast.print_tilstander()
             print()
             print("Vindkasthastighetstrykk: {:.3g} N/m^2".format(q_p))
-            print("Vindlast på mast: {:.3g} N".format(klima.vindlast_mast(mast, q_p, i.h)))
-            print("Ca. resulterende moment: {:.3g} kNm".format(klima.vindlast_mast(mast, q_p, i.h)*mast.h/2000))
+            print("Vindlast på mast: {:.3g} N".format(klima.vindlast_mast(mast, q_p)))
             print("Vindlast på ledninger: {:.3g} N".format(klima.vindlast_ledninger(i, sys, q_p)))
             print("Total ledningsdiameter: {:.3g} m".format(klima.total_ledningsdiameter(i, sys)))
             print("isogsnolast: {:.3g} N/m".format(klima.isogsno_last(i, sys)))
+            print("masteavstand: {:.3g} m".format(a))
 
 
 

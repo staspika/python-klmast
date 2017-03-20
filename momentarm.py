@@ -85,20 +85,19 @@ def beregn_sikksakk(sys, i):
     return B1, B2, e
 
 
-def beregn_masteavstand(sys, i, B1, B2, q_p):
+def beregn_masteavstand(sys, i, B1, B2, q):
     """Beregning av tillatt masteavstand, a, mht utblåsning av KL."""
 
     e_per = 0.63                                        # [m]
     r = i.radius                                        # [m]
     s_kl = sys.kontakttraad["Strekk i ledning"] * 1000  # [N]
-    q_p = q_p * 1000                                    # [N/m]
 
     # KL blåser UT fra kurven
-    a1 = math.sqrt(((2 * s_kl) / (q_p - (s_kl / r))) * ((2 * e_per - B1 - B2)
+    a1 = math.sqrt(((2 * s_kl) / (q - (s_kl / r))) * ((2 * e_per - B1 - B2)
                    + math.sqrt((2 * e_per - B1 - B2) ** 2 - (B1 - B2) ** 2)))
 
     # KL blåser INN i kurven
-    a2 = math.sqrt(((2 * s_kl) / (q_p + (s_kl / r))) * ((2 * e_per + B1 + B2)
+    a2 = math.sqrt(((2 * s_kl) / (q + (s_kl / r))) * ((2 * e_per + B1 + B2)
                    + math.sqrt((2 * e_per + B1 + B2) ** 2 - (B1 - B2) ** 2)))
 
     a = min(a1, a2)
