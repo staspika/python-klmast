@@ -174,21 +174,38 @@ def beregn_vindtrykk_EN():
     return q_z
 
 
-def beregn_vindforskyvning_mast(mast, i):
+def beregn_vindforskyvning_Dz(mast, i):
     """Denne funksjonen beregner forskyvning Dz av masten på grunn av
     vindlast på masten, vinkelrett på sporet."""
 
     # Inngangsparametre
-    E = mast.E                              # [N/mm^2] E-modul, stål
-    FH = i.fh * 1000                        # [mm] Høyde, KL
-    H = i.h * 1000                          # [mm] Høyde, mast
-    Iy_13 = mast.Iy(mast.h * (2 / 3))       # [mm^4] Iy i 1/3-punktet
-    q_z = beregn_vindtrykk_EN() / 1000 ** 2 # [N / mm^2]
+    E = mast.E                               # [N/mm^2] E-modul, stål
+    FH = i.fh * 1000                         # [mm] Høyde, KL
+    H = i.h * 1000                           # [mm] Høyde, mast
+    Iy_13 = mast.Iy(mast.h * (2 / 3))        # [mm^4] Iy i 1/3-punktet
+    q_z = beregn_vindtrykk_EN() / 1000 ** 2  # [N / mm^2]
 
     # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
     D_z = ((q_z * FH ** 2) / (24 * E * Iy_13)) * (6 * H ** 2 - 4 * H * (FH ** 3) + FH ** 2)
 
     return D_z
+
+
+def beregn_vindforskyvning_Dy(mast, i):
+    """Denne funksjonen beregner forskyvning Dz av masten på grunn av
+    vindlast på masten, vinkelrett på sporet."""
+
+    # Inngangsparametre
+    E = mast.E                               # [N/mm^2] E-modul, stål
+    FH = i.fh * 1000                         # [mm] Høyde, KL
+    H = i.h * 1000                           # [mm] Høyde, mast
+    Iz_13 = mast.Iz(mast.h * (2 / 3))        # [mm^4] Iy i 1/3-punktet
+    q_z = beregn_vindtrykk_EN() / 1000 ** 2  # [N / mm^2]
+
+    # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
+    D_y = ((q_z * FH ** 2) / (24 * E * Iz_13)) * (6 * H ** 2 - 4 * H * (FH ** 3) + FH ** 2)
+
+    return D_y
 
 
 def vindlast_ledninger_EN(sys, i, a):
@@ -206,8 +223,7 @@ def vindlast_ledninger_EN(sys, i, a):
     G_C = 0.75                   # [1] Responsfaktor
     C_C = 1.0                    # [1] Drag-faktor
     q_z = beregn_vindtrykk_EN()  # [N / m^2]
-    V_z = 0                      # [N] Skjærkraft pga. vindlast
-    M_y = 0                      # [Nm] Moment pga. vindlast
+    V_z, M_y = 0, 0              # [N] skjær og [Nm] moment pga. vind
 
     if i.at_ledn:
         # Alltid 2 AT-ledninger
@@ -257,7 +273,16 @@ def vindlast_ledninger_EN(sys, i, a):
     V_z += q_z * G_C * C_C * d_bl * a * (math.cos(phi) ** 2)   # [N]
     M_y += V_z * (FH + (SH / 2))                               # [Nm]
 
-    # Bidrag fra hengetråder ??????????????????????????????????????????
+    # Vindlast på hengetråd.
+    # Det regnes med 8m hengetråd for et mastefelt på 60m.
+    d_heng = sys.hengetraad["Diameter"] / 1000                  # [m]
+    V_z += q_z * G_C * C_C * d_heng * 8 * (math.cos(phi) ** 2)  # [N]
+    M_y += V_z * (FH + SH / 2)                                  # [Nm]
+
+    # Vindlast på Y-line
+    d_yline = sys.y_line["Diameter"] / 1000                      # [m]
+    V_z += q_z * G_C * C_C * d_yline * 8 * (math.cos(phi) ** 2)  # [N]
+    M_y += V_z * (FH + SH / 2)                                   # [Nm]
 
     R = numpy.zeros((15, 9))
     R[12][0] = M_y
@@ -299,7 +324,7 @@ def vindlast_mast_normalt_spor(mast, i):
         M_y = V_z * (H / 2)
 
     # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
-    D_z = beregn_vindforskyvning_mast(mast, i)
+    D_z = beregn_vindforskyvning_Dz(mast, i)
 
     R = numpy.zeros((15, 9))
     # Her plasseres resultatene i rad #12, siden (phi) = 0.
@@ -343,15 +368,19 @@ def vindlast_mast_parallelt_spor(mast, i):
     A_ins = 1     # [m^2] Arealet av isolator??????????????????????????
     q_z = beregn_vindtrykk_EN()
 
-    # Vindkraften på en isolator [N]
-    V_y_ins = q_z * G_ins * C_ins * A_ins
+    # Vindkraften på en isolator [N]. Det er to isolatorer på utligger.
+    V_y_ins = 2 * q_z * G_ins * C_ins * A_ins
 
     # Det er en isolator i høyde FH og en i høyde (FH + SH).
     # Dette gir følgende momentbidrag [Nm]
     M_z_ins = V_y_ins * FH + V_y_ins * (FH + SH)  # ???????????????????
 
+    # Foeskyvning pga. vindlast parallelt sporet.
+    D_y = beregn_vindforskyvning_Dy(mast, i)
+
     R = numpy.zeros((15, 9))
     R[14][1] = V_y + V_y_ins
     R[14][2] = M_z + M_z_ins  # ??????????????? M_z_ins ???????????????
+    R[14][7] = D_y
 
     return R
