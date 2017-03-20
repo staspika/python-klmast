@@ -77,7 +77,7 @@ def vindlast_mast(mast, q_p):
     return q
 
 
-def total_ledningsdiameter(i, sys):
+def total_ledningsdiameter(i, sys, vindlast):
     """Summerer ledningsdiametere [m] for klimalaster"""
 
     d_tot = 0  # [mm] Total ledningsdiameter for vindlast
@@ -112,7 +112,8 @@ def total_ledningsdiameter(i, sys):
     for utligger in range(utliggere):
         d_tot += sys.baereline["Diameter"]
         d_tot += sys.kontakttraad["Diameter"]
-        d_tot += sys.hengetraad["Diameter"]
+        if vindlast:
+            d_tot += sys.hengetraad["Diameter"]
         if not sys.navn == "20b":  # 20B mangler Y-line
             d_tot += sys.y_line["Diameter"]
 
@@ -125,7 +126,7 @@ def vindlast_ledninger(i, sys, q_p):
     """Beregner vindlast på ledninger pr. meter [N/m]."""
 
     # Inngangsparametre
-    d_total = total_ledningsdiameter(i, sys)
+    d_total = total_ledningsdiameter(i, sys, True)
     cf = 1.1                # [1] Vindkraftfaktor ledning
     A_ledn = d_total * 1    # [m^2] Diameter multiplisert med 1m lengde
 
@@ -138,7 +139,7 @@ def vindlast_ledninger(i, sys, q_p):
 def isogsno_last(i, sys):
     """Beregner snø og islast basert på SIEMENS System 20."""
 
-    d_total = total_ledningsdiameter(i, sys)
+    d_total = total_ledningsdiameter(i, sys, False)
 
     # Snø- og islast pr. meter ledning [N/m].
     q_sno = (2.5 + 0.5 * d_total)
@@ -207,7 +208,7 @@ def beregn_vindforskyvning_Dy(mast, i):
     return D_y
 
 
-def vindlast_ledninger_EN(sys, mast, i, a):
+def vindlast_ledninger_EN(sys, mast, i, a, vind_mot_spor):
     """Denne funksjonen beregner vindkraft på KL {EN 50 119}. Denne
     gjelder kun for vindretning fra mast vinkelrett mot spor."""
 
@@ -297,14 +298,19 @@ def vindlast_ledninger_EN(sys, mast, i, a):
     D_z = (V_z / (2 * E * Iy_13)) * (H * FH ** 2 - (1/3) * FH ** 2)
 
     R = numpy.zeros((15, 9))
-    R[12][0] = M_y
-    R[12][3] = V_z
-    R[12][8] = D_z
+    if vind_mot_spor:
+        R[12][0] = M_y
+        R[12][3] = V_z
+        R[12][8] = D_z
+    else:
+        R[13][0] = - M_y
+        R[13][3] = - V_z
+        R[13][8] = - D_z
 
     return R
 
 
-def vindlast_mast_normalt_spor(mast, i):
+def vindlast_mast_normalt_spor(mast, i, vind_mot_spor):
     """Denne funksjonen beregner resultantkraften på masten og
     deformasjon pga. vind når vinden blåser normalt på sporet
     {EN 50 119}. Vinkelen (phi) bestemmer hvorvidt viden blåser fra
@@ -342,9 +348,16 @@ def vindlast_mast_normalt_spor(mast, i):
     R = numpy.zeros((15, 9))
     # Her plasseres resultatene i rad #12, siden (phi) = 0.
     # Det betyr at vinden blåser fra mast mot spor.
-    R[12][0] = M_y
-    R[12][3] = V_z
-    R[12][8] = D_z
+    if vind_mot_spor:
+        R[12][0] = M_y
+        R[12][3] = V_z
+        R[12][8] = D_z
+    else:
+        R[13][0] = - M_y
+        R[13][3] = - V_z
+        R[13][8] = - D_z
+
+    return R
 
 
 def vindlast_mast_parallelt_spor(mast, i):

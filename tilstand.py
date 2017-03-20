@@ -5,7 +5,7 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, e, K, grensetilstand,
+    def __init__(self, mast, K, grensetilstand,
                  g=0, l=0, f1=0, f2=0, f3=0, k=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
@@ -16,14 +16,14 @@ class Tilstand(object):
         self.navn = grensetilstand["navn"]
         if self.navn == "bruddgrense":
             self.faktorer = [g, l, f1, f2, f3, k]
-            self.N_kap = abs(K[4]*mast.materialkoeff/(mast.fy*mast.A))
+            self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
             # Ganger med 1000 for å få momenter i [Nmm]
-            self.My_kap = abs(1000*K[0] * mast.materialkoeff / (mast.fy*mast.Wy_el))
-            self.Mz_kap = abs(1000*K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
-            self.utnyttelsesgrad = self.N_kap + self.My_kap + self.Mz_kap
+            self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
+            self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
+            self.utnyttelsesgrad = self.beregn_utnyttelsesgrad(mast, K)
         else:
-            e = e * 1000  # Max tillatt utblåsning av kontaktledning i [mm]
-            self.utnyttelsesgrad = K[8]/e
+            # Max tillatt utblåsning av kontaktledning i [mm]
+            self.utnyttelsesgrad = K[8]/630
 
     def __repr__(self):
         if self.navn == "bruddgrense":
@@ -40,6 +40,39 @@ class Tilstand(object):
                   "Dz = {:.3g}mm\n".format(phi, self.K[7], self.K[8])
             rep += "Utnyttelsesgrad: {:.3g}%".format(self.utnyttelsesgrad * 100)
         return rep
+
+    def beregn_utnyttelsesgrad(self, mast, K):
+        """Beregner dimensjonerende utnyttelsesgrad u i bruddgrensetilstand"""
+
+        # Standard kapasitetssjekk ihht. EC3 og bransjestandard
+        u = self.N_kap + self.My_kap + self.Mz_kap
+
+        if mast.navn == "H":
+            # SJEKK RELEVANT KAPASITET FOR H-mast
+            knekk = "........"
+            if knekk > u:
+                u = knekk
+            pass
+        elif mast.navn == "B":
+            # SJEKK RELEVANT KAPASITET FOR B-mast
+            pass
+        elif mast.navn == "bjelke":
+            # SJEKK RELEVANT KAPASITET FOR bjelke-mast
+            pass
+
+        return u
+
+
+    def beregn_vipping(self):
+        pass
+
+
+
+
+
+
+
+
 
 
 

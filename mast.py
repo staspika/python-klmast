@@ -117,7 +117,7 @@ class Mast(object):
         i avstand x [m] fra mastens toppunkt.
         Stigningen multipliseres med 2 da
         masten skråner til begge sider.
-         """
+        """
         if not self.type == "bjelke":
             return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
@@ -172,15 +172,15 @@ class Mast(object):
         elif t1.utnyttelsesgrad == t2.utnyttelsesgrad:
             if t1.navn == "bruddgrense":
                 # Sammenligner My
-                if t1.K[0] > t2.K[0]:
+                if abs(t1.K[0]) > abs(t2.K[0]):
                     return True
-                elif t1.K[0] == t2.K[0]:
+                elif abs(t1.K[0]) == abs(t2.K[0]):
                     # Sammenligner N
-                    if t1.K[4] > t2.K[4]:
+                    if abs(t1.K[4]) > abs(t2.K[4]):
                         return True
             else:
                 # Sammenligner torsjonsvinkel phi
-                if t1.K[6] > t2.K[6]:
+                if abs(t1.K[6]) > abs(t2.K[6]):
                     return True
         return False
 

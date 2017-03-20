@@ -30,12 +30,14 @@ def beregn_ledninger(sys, i, mast, a_T):
     # Initierer variabler for kraft/momentsummasjon
     N = 0  # Normalkraft [N]
     M_y = 0  # Moment om sterk akse [Nm]
+    M_z = 0  # Moment om svak akse [Nm]
     D_z = 0  # Forskyvning normalt spor
     # Variabel M/M_1/M_2 brukes kun for mellomlagring av M_y-verdier
 
     # Antall utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere==2:
         utliggere = 2
+        N += 220  # Vekt av travers
     else:
         utliggere = 1
 
@@ -143,22 +145,28 @@ def beregn_ledninger(sys, i, mast, a_T):
             M_y += M
             D_z += beregn_deformasjon(mast, M, i.hj, fh)
 
+    # Vekt av avspenningslodd
+    if i.avspenningsmast or i.fixavspenningsmast:
+        # 10kN strekk i KL, 3:1 kraftforhold på trinse
+        N += 10000/3
+        M_z += (10000/3)*0.5
+
 
     # Fyller inn matrise med kraftbidrag
     R = numpy.zeros((15, 9))
-    R[0][4] = N  # Kraftbidrag i [N]
-    R[0][0] = M_y  # Momentbidrag i [Nm]
-    R[0][8] = D_z  # FOrskyvningsbidrag i [mm]
+    R[0][0] = M_y
+    R[0][2] = M_z
+    R[0][4] = N
+    R[0][8] = D_z
     return R
 
 
 
-def beregn_mast(mast, h):
-    N = 0
-    N += mast.egenvekt * h  # Egenlast mast
-    # Fyller inn matrise med kraftbidrag
+def beregn_mast(mast):
+    N = mast.egenvekt * mast.h  # Egenlast mast
+
     R = numpy.zeros((15, 9))
-    R[0][4] = N  # Kraftbidrag i [N]
+    R[0][4] = N
     return R
 
 

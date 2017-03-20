@@ -1,7 +1,7 @@
 import numpy
 import inndata
 import system
-import momentarm
+import geometri
 import egenvekt
 import k1
 import k2
@@ -46,8 +46,8 @@ def beregn(ini):
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
     q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
-    B1, B2, e = momentarm.beregn_sikksakk(sys, i)
-    a_T, a_T_dot = momentarm.beregn_arm(i, B1)
+    B1, B2, UE = geometri.beregn_sikksakk(sys, i)
+    a_T, a_T_dot = geometri.beregn_arm(i, B1)
 
     # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
     # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
@@ -63,9 +63,9 @@ def beregn(ini):
 
     for mast in master:
         q = klima.vindlast_mast(mast, q_p)
-        a = momentarm.beregn_masteavstand(sys, i, B1, B2, q)
+        a = geometri.beregn_masteavstand(sys, i, B1, B2, q)
         R = numpy.zeros((15, 9))
-        R += egenvekt.beregn_mast(mast, i.h)
+        R += egenvekt.beregn_mast(mast)
         R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
         R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2)
         if i.fixpunktmast:
@@ -131,7 +131,7 @@ def beregn(ini):
                                             + f2 * fastavspente
                                             + f3 * toppmonterte
                                             + k * sno)
-                                        t = tilstand.Tilstand(mast, e, K,
+                                        t = tilstand.Tilstand(mast, UE, K,
                                                               grensetilstand,
                                                               g, l, f1, f2,
                                                               f3, k)
@@ -157,7 +157,7 @@ def beregn(ini):
 
             for grensetilstand in grensetilstander:
                 K = GK * permanente + QCK * variable
-                t = tilstand.Tilstand(mast, e, K, grensetilstand)
+                t = tilstand.Tilstand(mast, K, grensetilstand)
                 mast.lagre_tilstand(t)
 
         if mast.navn == "H6" or mast.navn == "HE200B":
