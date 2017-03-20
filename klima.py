@@ -373,7 +373,7 @@ def vindlast_mast_parallelt_spor(mast, i):
 
     # Det er en isolator i høyde FH og en i høyde (FH + SH).
     # Dette gir følgende momentbidrag [Nm]
-    M_z_ins = V_y_ins * FH + V_y_ins * (FH + SH)  # ???????????????????
+    M_z_ins = V_y_ins * FH + V_y_ins * (FH + SH)  # ?????????????????
 
     # Foeskyvning pga. vindlast parallelt sporet.
     D_y = beregn_vindforskyvning_Dy(mast, i)
