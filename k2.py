@@ -13,7 +13,7 @@ import math
 
 
 
-def beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, a, hoyde):
+def _beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, a, hoyde):
     """Definerer én funksjon til å beregne V [N] og M [Nm]
     for å beregne reaksjonskrefter fra differansestrekk og
     tilleggslast når master bytter side av sporet.
@@ -217,12 +217,12 @@ def sidekraft_forbi(sys, i, mast, a_T, a_T_dot, a):
         # Forbigangsledningen henger i toppen av masten.
         c = 0.0  # ingen momentarm
         # Krefter og forskyvn. pga. mast bytter side av sporet.
-        M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, a, Hf)
+        M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, a, Hf)
     else:
         # Forbigangsledningen henger i bakkant av masten.
         c = 0.3  # [m]
         # Tilleggskraft da mast bytter side av sporet.
-        M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, a, Hf)
+        M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, a, Hf)
 
     R = numpy.zeros((15, 9))
     R[5][0] = M_y
@@ -246,7 +246,7 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
     Hr = i.hr  # Høyde av returledning [m]
 
     # Krefter og forskyvn. pga. mast bytter side av sporet.
-    M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_retur, a_T, a_T_dot, c, a, Hr)
+    M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_retur, a_T, a_T_dot, c, a, Hr)
 
     R = numpy.zeros((15, 9))
     # 2 returledninger
@@ -277,7 +277,7 @@ def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
         M_y, V_y, M_z, V_z, T, D_z = 0, 0, 0, 0, 0, 0
     else:
         # Krefter og forskyvn. pga. mast bytter side av sporet.
-        M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_fiber, a_T, a_T_dot, c, a, Hfi)
+        M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_fiber, a_T, a_T_dot, c, a, Hfi)
 
     R = numpy.zeros((15, 9))
     R[7][0] = M_y
@@ -302,7 +302,7 @@ def sidekraft_matefjern(sys, i, mast, a_T, a_T_dot, a):
     Hfj = i.hfj
 
     # Tilleggskraft hvis mast bytter side av sporet.
-    M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_matefjern, a_T, a_T_dot, c, a, Hfj)
+    M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_matefjern, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
     # n returledninger
@@ -327,7 +327,7 @@ def sidekraft_at(sys, i, mast, a_T, a_T_dot, a):
     Hfj = i.hfj
 
     # Tilleggskraft hvis mast bytter side av sporet.
-    M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_at, a_T, a_T_dot, c, a, Hfj)
+    M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_at, a_T, a_T_dot, c, a, Hfj)
 
     R = numpy.zeros((15, 9))
     # 2 AT-ledninger
@@ -355,11 +355,11 @@ def sidekraft_jord(sys, i, mast, a_T, a_T_dot, a):
     if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
         # Jordledningen henger i toppen av masten.
         c = 0.0
-        M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
+        M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
     else:
         # Jordledningen henger i bakkant av masten.
         c = 0.3
-        M_y, V_y, M_z, V_z, T, D_z = beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
+        M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
 
     R = numpy.zeros((15, 9))
     R[7][0] = M_y
