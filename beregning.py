@@ -131,7 +131,7 @@ def beregn(ini):
                                             + f2 * fastavspente
                                             + f3 * toppmonterte
                                             + k * sno)
-                                        t = tilstand.Tilstand(mast, UE, K,
+                                        t = tilstand.Tilstand(mast, K,
                                                               grensetilstand,
                                                               g, l, f1, f2,
                                                               f3, k)
@@ -168,7 +168,6 @@ def beregn(ini):
             print("Vindkasthastighetstrykk: {:.3g} N/m^2".format(q_p))
             print("Vindlast på mast: {:.3g} N".format(klima.vindlast_mast(mast, q_p)))
             print("Vindlast på ledninger: {:.3g} N".format(klima.vindlast_ledninger(i, sys, q_p)))
-            print("Total ledningsdiameter: {:.3g} m".format(klima.total_ledningsdiameter(i, sys)))
             print("isogsnolast: {:.3g} N/m".format(klima.isogsno_last(i, sys)))
             print("masteavstand: {:.3g} m".format(a))
 
