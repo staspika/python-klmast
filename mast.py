@@ -46,10 +46,13 @@ class Mast(object):
         self.k_g = k_g  # Knekklengdefaktor gurt
         self.k_d = k_d  # Knekklengdefaktordiagonal
 
-        # Unntak for mast H6 (?????????????????????????)
-        if type == "H6":
-            self.d_treghetsmoment = 9.44*10**4
-            self.d_areal = 691
+        # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
+        if navn == "H6":
+            self.d_A = 691
+            self.d_I = 9.44*10**4
+        else:
+            self.d_A = d_b * d_h
+            self.d_I = d_b * d_h**3 / 12
 
         # Beregner totalt tverrsnittsareal A [mm^2]
         if type == "B":
@@ -112,6 +115,17 @@ class Mast(object):
         self.forskyvning_kl = None
         self.forskyvning_tot = None
 
+    def __repr__(self):
+        Iy = self.Iy(self.h)/10**8
+        Iz = self.Iz(self.h)/10**6
+        Wy = self.Wy_el/10**3
+        Wz = self.Wz_el/10**3
+        rep = "{}\nMastetype: {}    Høyde: {}m\n".format(self.navn, self.type, self.h)
+        rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
+              "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
+        rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
+        return rep
+
     def bredde(self, x):
         """Beregner tverrsnittsbredde b [mm]
         i avstand x [m] fra mastens toppunkt.
@@ -149,18 +163,7 @@ class Mast(object):
             Iz = self.Iz_profil
         return Iz
 
-    def __repr__(self):
-        Iy = self.Iy(self.h)/10**8
-        Iz = self.Iz(self.h)/10**6
-        Wy = self.Wy_el/10**3
-        Wz = self.Wz_el/10**3
-        rep = "{}\nMastetype: {}    Høyde: {}m\n".format(self.navn, self.type, self.h)
-        rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
-              "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
-        rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
-        return rep
-
-    def sammenlign_tilstander(self, t1, t2):
+    def _sammenlign_tilstander(self, t1, t2):
         """Sjekker om t1 er dimensjonerende framfor t2.
         Dersom t2 ikke har fått noen verdi enda, returneres True
         slik at t1 blir satt som dimensjonerende tilfelle.
@@ -179,21 +182,21 @@ class Mast(object):
                     if abs(t1.K[4]) > abs(t2.K[4]):
                         return True
             else:
-                # Sammenligner torsjonsvinkel phi
-                if abs(t1.K[6]) > abs(t2.K[6]):
+                # Sammenligner forskyvning D_y
+                if abs(t1.K[7]) > abs(t2.K[7]):
                     return True
         return False
 
     def lagre_tilstand(self, tilstand):
         """Lagrer tilstand dersom dimensjonerende tilfelle"""
         if tilstand.navn == "bruddgrense":
-            if self.sammenlign_tilstander(tilstand, self.bruddgrense):
+            if self._sammenlign_tilstander(tilstand, self.bruddgrense):
                 self.bruddgrense = tilstand
         elif tilstand.navn == "forskyvning_kl":
-            if self.sammenlign_tilstander(tilstand, self.forskyvning_kl):
+            if self._sammenlign_tilstander(tilstand, self.forskyvning_kl):
                 self.forskyvning_kl = tilstand
         elif tilstand.navn == "forskyvning_tot":
-            if self.sammenlign_tilstander(tilstand, self.forskyvning_tot):
+            if self._sammenlign_tilstander(tilstand, self.forskyvning_tot):
                 self.forskyvning_tot = tilstand
 
     def print_tilstander(self):
@@ -224,11 +227,11 @@ def hent_master(gittermast, hoyde, s235, materialkoeff):
               s235=s235, materialkoeff=materialkoeff)
     B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3, A_ref=0.16,
               Iy_profil=9.25 * 10 ** 6, Iz_profil=8.53 * 10 ** 5, Wyp=1.38 * 10 ** 5, It=7.39 * 10 ** 4,
-              noytralakse=20.05, toppmaal=255, stigning=23 / 1000, d_h=50, d_b=10, h_max=11.0, h=hoyde,
+              noytralakse=20.05, toppmaal=255, stigning=23 / 1000, d_h=60, d_b=10, h_max=11.0, h=hoyde,
               s235=s235, materialkoeff=materialkoeff)
     B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3, A_ref=0.20,
               Iy_profil=1.91 * 10 ** 7, Iz_profil=1.48 * 10 ** 6, Wyp=2.28 * 10 ** 5, It=1.19 * 10 ** 5,
-              noytralakse=22.01, toppmaal=255, stigning=23 / 1000, d_h=50, d_b=10, h_max=13.0, h=hoyde,
+              noytralakse=22.01, toppmaal=255, stigning=23 / 1000, d_h=100, d_b=12, h_max=13.0, h=hoyde,
               s235=s235, materialkoeff=materialkoeff)
 
     # H-master (tverrsnittsklasse 3)
@@ -239,7 +242,7 @@ def hent_master(gittermast, hoyde, s235, materialkoeff):
               Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10,
               k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
     H6 = Mast(navn="H6", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3, A_ref=0.20,
-              Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10,
+              Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000,
               k_g=0.85, k_d=0.55, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     # Bjelkemaster (tverrsnittsklasse 1)
