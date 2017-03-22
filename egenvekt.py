@@ -53,28 +53,28 @@ def beregn_ledninger(sys, i, mast, a_T):
         h_utligger = fh + (i.sh/2)
 
         # Utliggere
-        N += sys.utligger["Egenvekt"] * sms
+        N_kl += sys.utligger["Egenvekt"] * sms
         M = sys.utligger["Egenvekt"] * sys.utligger["Momentarm"] * sms ** 2
-        M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        M_y_kl += M
+        D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
         # Bæreline
-        N += sys.baereline["Egenvekt"] * masteavstand
+        N_kl += sys.baereline["Egenvekt"] * masteavstand
         M = sys.baereline["Egenvekt"] * masteavstand * a_T
-        M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        M_y_kl += M
+        D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
         # Hengetråd
-        N += sys.hengetraad["Egenvekt"] * masteavstand
+        N_kl += sys.hengetraad["Egenvekt"] * masteavstand
         M = sys.hengetraad["Egenvekt"] * masteavstand * a_T
-        M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        M_y_kl += M
+        D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
         # Kontakttråd
-        N += sys.kontakttraad["Egenvekt"] * masteavstand
+        N_kl += sys.kontakttraad["Egenvekt"] * masteavstand
         M = sys.kontakttraad["Egenvekt"] * masteavstand * a_T
-        M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        M_y_kl += M
+        D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
         # Y-line
         if not sys.y_line == None:  # Sjekker at systemet har Y-line
@@ -84,10 +84,10 @@ def beregn_ledninger(sys, i, mast, a_T):
                 L = 14
             elif sys.navn == "25" and i.radius >= 1200:
                 L = 18
-            N += sys.y_line["Egenvekt"] * L
+            N_kl += sys.y_line["Egenvekt"] * L
             M = sys.y_line["Egenvekt"] * L * a_T
-            M_y += M
-            D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+            M_y_kl += M
+            D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
     # Fixline
     if i.fixpunktmast or i.fixavspenningsmast:
@@ -146,21 +146,32 @@ def beregn_ledninger(sys, i, mast, a_T):
             M_y += M
             D_z += _beregn_deformasjon(mast, M, i.hj, fh)
 
+    N_avsp = 0
     # Vekt av avspenningslodd
-    if i.avspenningsmast or i.fixavspenningsmast:
+    if i.fixavspenningsmast or i.avspenningsmast:
         utvekslingsforhold = 3
         if sys.navn == "35":
             utvekslingsforhold = 2
-        N += 2 * sys.kontakttraad["Strekk i ledning"] / utvekslingsforhold
+        # Strekk i kontakttraad + bæreline, omregnet til [N]
+        N_avsp = 2 * 1000 * sys.kontakttraad["Strekk i ledning"] / utvekslingsforhold
 
 
 
     # Fyller inn matrise med kraftbidrag
     R = numpy.zeros((15, 9))
+    # HER MÅ DET SORTERES IHHT BIDRAG I KL FUND / bidrag.txt !
     R[0][0] = M_y
     R[0][2] = M_z
     R[0][4] = N
     R[0][8] = D_z
+    R[1][0] = M_y_kl
+    R[1][4] = N_kl
+    R[1][8] = D_z_kl
+
+    if i.fixavspenningsmast:
+        R[3][4] = N
+    elif i.avspenningsmast:
+        R[4][4] = N
     return R
 
 

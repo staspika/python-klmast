@@ -122,12 +122,12 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
     if i.avspenningsbardun:
         # Fixavspenningsbardun står normalt på utligger med 45 grader.
         # Dette gir et bidrag til normalkraften N [N].
-        N += (math.sqrt(2) / 2) * S
+        N += S
 
         # Differansen mellom den horisontale kraftkomponenten i bardunen
         # og strekket i KL gir Vy og Mz.
-        V_y += (math.sqrt(2) / 2) * S
-        M_z += - S * (math.sqrt(2) / 2) * (FH + SH)
+        V_y += S
+        M_z += - S * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra fixavspenning
     Iy_13 = mast.Iy(mast.h * (2 / 3))  # Iy i tredjedelspunktet
@@ -148,7 +148,8 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
     avspenningsmast."""
 
-    S = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
+    S = 1000 * (sys.kontakttraad["Strekk i ledning"]
+                + sys.baereline["Strekk i ledning"])   # [N]
     r = i.radius
     E = mast.E
     FH = i.fh
@@ -177,14 +178,14 @@ def beregn_avspenning(sys, i, mast, a_T, a, B1, B2):
     M_z += S * (FH + SH)
 
     if i.avspenningsbardun:
-        # Fixavspenningsbardun står normalt på utligger med 45 grader.
+        # Fixavspenningsbarduner står normalt på utligger med 45 grader.
         # Dette gir et bidrag til normalkraften N [N].
-        N += (math.sqrt(2) / 2) * S
+        N += S
 
         # Differansen mellom den horisontale kraftkomponenten i bardunen
         # og strekket i KL gir Vy og Mz.
-        V_y += (math.sqrt(2) / 2) * S
-        M_z += - S * (math.sqrt(2) / 2) * (FH + SH)
+        V_y += S
+        M_z += - S * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
     Iy_13 = mast.Iy(mast.h * (2 / 3))  # Iy i tredjedelspunktet

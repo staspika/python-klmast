@@ -24,7 +24,7 @@ def beregn(ini):
     #   My  Vy  Mz  Vz  N   T   phi  Dy  Dz
     #  _____________________________________
     # |                                     | 0  Egenvekt (mast, utligger, ledninger)
-    # |                                     | 1  Kontaktledning (strekk i loddavspente)
+    # |                                     | 1  Kontaktledning
     # |                                     | 2  Fixpunkt
     # |                                     | 3  Fixavspenning
     # |                                     | 4  Avspenning
@@ -101,7 +101,7 @@ def beregn(ini):
         if i.ec3:
             # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-            R += klima.isogsno_last(i, mast, sys, a_T)
+            #R += klima.isogsno_last(i, mast, sys, a_T)
             R += klima.vindlast_mast(i, mast, q_p)
             R += klima.vindlast_ledninger(i, mast, sys, q_p)
 
@@ -199,7 +199,7 @@ def beregn(ini):
                 mast.lagre_tilstand(t2)
                 mast.lagre_tilstand(t3)
 
-        if mast.navn == "H3" or mast.navn == "HE200B":
+        if mast.navn == "H3" or mast.navn == "HE260B":
             print()
             print(mast)
             metode = "EC3"
@@ -215,7 +215,7 @@ def beregn(ini):
             print("Iy_13: {}".format(mast.Iy(mast.h * (2/3))))
             print("Iz_13: {}".format(mast.Iz(mast.h * (2 / 3))))
 
-            UR = mast.bruddgrense.My_kap + mast.bruddgrense.Mz_kap + mast.bruddgrense.N_kap
+            UR = mast.bruddgrense.utnyttelsesgrad
             values = [UR, mast.bruddgrense.My_kap,
                        mast.bruddgrense.Mz_kap, mast.bruddgrense.N_kap]
             #barplot(values)
@@ -223,6 +223,8 @@ def beregn(ini):
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
+
+    return i, master
 
 
 
