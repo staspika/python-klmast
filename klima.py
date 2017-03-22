@@ -20,7 +20,7 @@ def beregn_vindkasthastighetstrykk_EC(z):
     c_season = 1.0  # [1] Årstidsfaktor
     c_alt = 1.0     # [1] Nivåfaktor
     c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
-    v_b_0 = 25      # [m/s] Referansevindhastighet for aktuell kommune
+    v_b_0 = 10      # [m/s] Referansevindhastighet for aktuell kommune
     kategori = 1
     # ---------------------------!!NB!!-------------------------------#
     #
@@ -406,17 +406,38 @@ def _beregn_vindtrykk_NEK():
     return q_z
 
 
+def _beregn_deformasjon(mast, M, x, fh):
+    """Beregner deformasjon D_z i høyde fh som følge av
+    moment om y-aksen med angrepspunkt i høyde x.
+    Dersom fh > x interpoleres forskyvningen til høyde fh
+    ved hjelp av tangens til vinkelen theta i høyde x
+    ganget med høydedifferansen fh - x.
+    """
+    E = mast.E
+    Iy = mast.Iy(mast.h)
+    M = M * 1000  # Konverterer til [Nmm]
+    x = x * 1000  # Konverterer til [mm]
+    fh = fh * 1000  # Konverterer til [mm]
+    if fh > x:
+        theta = (M * x) / (E * Iy)
+        D_z = (M * x ** 2) / (2 * E * Iy) \
+              + numpy.tan(theta) * (fh - x)
+    else:
+        D_z = (M * fh ** 2) / (2 * E * Iy)
+    return D_z
+
+
 def _beregn_vindforskyvning_Dz(mast, i, EC3, q_p=0):
     """Denne funksjonen beregner forskyvning Dz av masten på grunn av
     vindlast på masten, normalt sporet.
     """
 
     # Inngangsparametre
-    E = mast.E                                # [N/mm^2] E-modul, stål
-    FH = i.fh * 1000                          # [mm] Høyde, KL
-    H = i.h * 1000                            # [mm] Høyde, mast
-    Iy_13 = mast.Iy(mast.h * (2 / 3))         # [mm^4] Iy i 1/3-punktet
-    q_z = _beregn_vindtrykk_NEK() / 1000   # [N / mm^2]
+    E = mast.E                            # [N/mm^2] E-modul, stål
+    FH = i.fh * 1000                      # [mm] Høyde, KL
+    H = i.h * 1000                        # [mm] Høyde, mast
+    Iy_13 = mast.Iy(mast.h * (2 / 3))     # [mm^4] Iy i 1/3-punktet
+    q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
 
     if EC3:
         q_z = q_mast(mast, q_p) / 1000
@@ -433,11 +454,11 @@ def _beregn_vindforskyvning_Dy(mast, i, EC3, q_p=0):
     """
 
     # Inngangsparametre
-    E = mast.E                                # [N/mm^2] E-modul, stål
-    FH = i.fh * 1000                          # [mm] Høyde, KL
-    H = i.h * 1000                            # [mm] Høyde, mast
-    Iz_13 = mast.Iz(mast.h * (2 / 3))         # [mm^4] Iz i 1/3-punktet
-    q_z = _beregn_vindtrykk_NEK() / 1000   # [N / mm^2]
+    E = mast.E                            # [N/mm^2] E-modul, stål
+    FH = i.fh * 1000                      # [mm] Høyde, KL
+    H = i.h * 1000                        # [mm] Høyde, mast
+    Iz_13 = mast.Iz(mast.h * (2 / 3))     # [mm^4] Iz i 1/3-punktet
+    q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
 
     if EC3:
         q_z = q_mast(mast, q_p) / 1000
@@ -658,5 +679,115 @@ def vindlast_mast_parallelt_spor_NEK(mast, i):
     R[14][2] = M_z + M_z_ins
     R[14][5] = T
     R[14][7] = D_y
+
+    return R
+
+
+def snolast_ledninger_NEK(mast, sys, i, a_T):
+    """Beregner snølast på ledninger etter tips fra Svein Fikke"""
+
+    # ISO 12494, Tabell 5: Snølast på ledning
+    # Navn: [RX], Vekt: [kg/m], L_10: [mm], D_10: [mm], L_30: [mm], D_30: [mm]
+    R1 = {"Navn": "R1", "Vekt": 0.5, "L_10": 54, "D_10": 22, "L_30": 34, "D_30": 35}
+    R2 = {"Navn": "R2", "Vekt": 0.9, "L_10": 78, "D_10": 28, "L_30": 54, "D_30": 40}
+    R3 = {"Navn": "R3", "Vekt": 1.6, "L_10": 109, "D_10": 36, "L_30": 82, "D_30": 47}
+    R4 = {"Navn": "R4", "Vekt": 2.8, "L_10": 150, "D_10": 46, "L_30": 120, "D_30": 56}
+    R5 = {"Navn": "R5", "Vekt": 5.0, "L_10": 207, "D_10": 60, "L_30": 174, "D_30": 70}
+
+    g = 9.81            # [m / s^2]
+    a = i.masteavstand  # [m]
+    r = i.radius        # [m]
+    sms = i.sms         # [m]
+    FH = i.fh
+
+    # Representativ snølast på én ledning [N / m]
+    q_sno = R3["Vekt"] * g
+
+    # Snølastens bidrag til [R]
+    N, M_y, D_z = 0, 0, 0
+
+    h_utligger = FH + (i.sh / 2)
+
+    # Utliggere
+    N += q_sno * sms
+    M = q_sno * (sms / 2) * a_T
+    M_y += M
+    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+
+    # Bæreline
+    N += q_sno * a
+    M = q_sno * a * a_T
+    M_y += M
+    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+
+    # Kontakttråd
+    N += q_sno * a
+    M = q_sno * a * a_T
+    M_y += M
+    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+
+    # AT-ledninger (2 stk.)
+    if i.at_ledn:
+        N += 2 * q_sno * a                                      # [N]
+
+    # Mate-/fjernledning (n stk.)
+    if i.matefjern_ledn:
+        N += i.matefjern_antall * q_sno * a                     # [N]
+
+    # Jordledning (1 stk.)
+    if i.jord_ledn:
+        N += q_sno * a                                          # [N]
+        if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
+            arm = -0.3
+            M = q_sno * a * arm
+            M_y += M
+            D_z += _beregn_deformasjon(mast, M, i.hj, FH)
+
+    # Returledning (2 stk.)
+    if i.retur_ledn:
+        N += 2 * q_sno * a
+        arm = -0.5
+        M = 2 * q_sno * a * arm
+        M_y += M
+        D_z += _beregn_deformasjon(mast, M, i.hr, FH)
+
+    # Forbigangsledning (1 stk.)
+    if i.forbigang_ledn:
+        N += q_sno * a
+        if i.matefjern_ledn or i.at_ledn or i.jord_ledn:
+            # Eksentrisitet, forbigangsledning henger i bakkant av mast
+            arm = -0.3
+            M = q_sno * a * arm
+            M_y += M
+            D_z += _beregn_deformasjon(mast, M, i.hf, FH)
+
+    # Fiberoptisk ledning (1 stk.)
+    if i.fiberoptisk_ledn:
+        N += q_sno * a
+
+    # Y-line
+    if not sys.y_line == None:
+        L = 0  # Lengde av Y-line; systemavhengig
+        if (sys.navn == "20a" or sys.navn == "35") and r >= 800:
+            L = 14
+        elif sys.navn == "25" and r >= 1200:
+            L = 18
+        N += q_sno * L
+        M = q_sno * L * a_T
+        M_y += M
+
+    # Fixline
+    if i.fixpunktmast or i.fixavspenningsmast:
+        N += q_sno * (a / 2)
+        if i.fixpunktmast:
+            N += q_sno * (a / 2)
+            M = q_sno * a * a_T
+            M_y += M
+            D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+
+    R = numpy.zeros((15, 9))
+    R[11][0] = M_y
+    R[11][4] = N
+    R[11][8] = D_z
 
     return R
