@@ -12,6 +12,7 @@ class Tilstand(object):
          K[:][0:6] = reaksjonskrefter ved fundament
          K[:][6:] = torsjonsvinkel/forskyvning av kontakttråd
          """
+        self.R = R
         self.K = K
         self.navn = grensetilstand["Navn"]
         # Vindretning #1 = fra mast mot spor
@@ -27,7 +28,7 @@ class Tilstand(object):
             self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K, R)
         else:
             # Max tillatt utblåsning av kontaktledning i [mm]
-            self.utnyttelsesgrad = K[8]/630
+            self.utnyttelsesgrad = K[8]/63
 
     def __repr__(self):
         if self.navn == "bruddgrense":
@@ -89,7 +90,7 @@ class Tilstand(object):
         M_cr = A * M_cr_vind + B * M_cr_punkt
 
         # EC3, 6.3.2.3: Reduksjonsfaktor for vipping
-        lam_LT = math.sqrt(M_y_Rk / M_cr)
+        lam_LT = math.sqrt(abs(M_y_Rk / M_cr))
         beta = 0.75
         lam_0 = 0.40
         phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0 ** 2) + beta * lam_LT ** 2)
@@ -100,7 +101,7 @@ class Tilstand(object):
 
         return M_y_Rd
 
-    def _utnyttelsesgrad(self, mast, vindretning, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk):
+    def _utnyttelsesgrad(self, mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk):
         """Beregner interaksjonsfaktorer k_ij for staver."""
 
         # EC3, Tabell B.3: Ekvivalente momentfaktorer
@@ -137,7 +138,7 @@ class Tilstand(object):
         # EC3, 6.3.3, kapasitet om y-aksen, lign (6.61):
         UR = UR_Ny + k_yy * ((M_y_Ed * gamma) / M_y_Rk) + k_yz * ((M_z_Ed * gamma) / M_z_Rk)
 
-        if vindretning == 3:
+        if self.vindretning == 3:
             # Vinden blåser parallelt sporet
             # EC3, 6.3.3, kapasitet om z-aksen, lign (6.62):
             UR = UR_Nz + k_zy * ((M_y_Ed * gamma) / M_y_Rk) + k_zz * ((M_z_Ed * gamma) / M_z_Rk)
@@ -163,18 +164,18 @@ class Tilstand(object):
             # Trykkraft [N] i mest påkjente diagonal er den største av:
             N_Ed_d = max(math.sqrt(2) / 2 * K[1], math.sqrt(2) / 2 * K[3])
             N_Rk_d = mast.d_A * mast.fy  # [N] Aksialkraftkap diagonal
-            L_d = 0.55 * 683             # [mm] Lengde diagonal
-            I_d = mast.I_d               # [mm^4] diagonal
+            L_d = mast.k_d * 683         # [mm] Lengde diagonal
+            d_I = mast.d_I               # [mm^4] diagonal
             alpha_d = 0.49               # [1] Imperfeksjonsfaktor
 
-            UR_d, X, lam_knekk = self._trykkapasitet(mast, I_d, L_d, N_Ed_d, N_Rk_d, alpha_d)
+            UR_d, X, lam_knekk = self._trykkapasitet(mast, d_I, L_d, N_Ed_d, N_Rk_d, alpha_d)
 
             # GURT (Vinkelprofil)
             # Trykkraft i GURT (vinkelprofil) [N]:
             b = mast.bredde(mast.h - 1)
             N_Ed_g = 0.5 * ((K[0] / b) + (K[2] / b) + K[1] + K[3]) + K[4] / 4
             N_Rk_g = mast.A_profil * mast.fy    # [N]Aksialkraftkapasitet
-            L_g = 0.85 * mast.h * 1000          # [mm] Mastehøyde
+            L_g = mast.k_g * mast.h * 1000      # [mm] Mastehøyde
             I_g = mast.Iy_profil                # [mm^4] 2. arealmoment
             alpha_g = 0.34                      # [1] Imperfeksjonsfaktor
 
@@ -191,7 +192,7 @@ class Tilstand(object):
             # Aksialkraftkapasitet
             N_Rk_mast = 4 * mast.A_profil * mast.fy
             L_cr_mast = 0.85 * mast.h
-            I_y = 4 * (mast.Iy_profil + mast.A_profil * (b_g / 2) ** 2)
+            I_y = mast.Iy(mast.h)
             alpha_mast = 0.34
 
             UR_Ny, X, lam_knekk_y = self._trykkapasitet(mast, I_y, L_cr_mast, N_Ed, N_Rk_mast, alpha_mast)
@@ -250,8 +251,8 @@ class Tilstand(object):
             M_z_Rk = 2 * mast.Wyp * mast.fy   # ??????? W_yp ??????????
             N_Rk = 2 * A_B * mast.fy
 
-            """(1) Vind fra mast mot spor eller (2) fra spor mot mast"""
-            if vindretning == 1 or 2:
+            # (1) Vind fra mast mot spor eller (2) fra spor mot mast
+            if self.vindretning == 1 or 2:
                 # Ekvivalent lengde, Le1
                 L_e1 = ((R[0][0] * (i.fh + i.sh / 2)) + (R[1][0] * i.fh) + (R[2][0] * (i.fh + i.sh))
                         + (R[3][0] * (i.fh + i.sh)) + (R[4][0] * (i.fh + i.sh / 2)) + (R[5][0] * i.hf)
@@ -278,47 +279,47 @@ class Tilstand(object):
                 UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha_z)
 
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_B = self._utnyttelsesgrad(mast, vindretning, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
+                UR_y_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
                                                M_z_Ed, M_z_Rk)
                 if UR_y_B > u:
                     u = UR_y_B
 
                 return u
 
-            """(3) Vind parallelt spor"""
-            elif vindretning == 3:
-            # Ekvivalent lengde, Le3
-            L_e3 = ((R[0][2] * (i.fh + i.sh / 2)) + (R[1][2] * i.fh) + (R[2][2] * (i.fh + i.sh))
-                    + (R[3][2] * (i.fh + i.sh)) + (R[4][2] * (i.fh + i.sh / 2)) + (R[5][2] * i.hf) + (R[6][2] * i.hr)
-                    + (R[7][2] * i.fh) + (R[8][2] * i.hfj) + (R[9][2] * i.hfj) + (R[10][2] * i.hj)
-                    + (R[11][2] * (i.fh + i.sh)) + (R[14][2] * (2 / 3) * mast.h)) / K[2]
+            # (3) Vind parallelt spor
+            elif self.vindretning == 3:
+                # Ekvivalent lengde, Le3
+                L_e3 = ((R[0][2] * (i.fh + i.sh / 2)) + (R[1][2] * i.fh) + (R[2][2] * (i.fh + i.sh))
+                        + (R[3][2] * (i.fh + i.sh)) + (R[4][2] * (i.fh + i.sh / 2)) + (R[5][2] * i.hf) + (R[6][2] * i.hr)
+                        + (R[7][2] * i.fh) + (R[8][2] * i.hfj) + (R[9][2] * i.hfj) + (R[10][2] * i.hj)
+                        + (R[11][2] * (i.fh + i.sh)) + (R[14][2] * (2 / 3) * mast.h)) / K[2]
 
-            # Andel av vippemoment fra jevnt fordelt last.
-            A3 = abs(R[14][2] / K[2])
-            B3 = 1 - A3
+                # Andel av vippemoment fra jevnt fordelt last.
+                A3 = abs(R[14][2] / K[2])
+                B3 = 1 - A3
 
-            # Redusert momentkapasitet om y-aksen pga. vipping.
-            # Må det brukes "inverse" tv.sn. egenskaper ???????????????
-            # W_y_pl gjelder for bare én kanalprofil
-            M_y_Rk = self._beregn_vipping(mast, L_e3, C_w, I_T, I_z_B, A3, B3, M_y_Rk, alpha_LT, W_y_pl)
+                # Redusert momentkapasitet om y-aksen pga. vipping.
+                # Må det brukes "inverse" tv.sn. egenskaper ???????????????
+                # W_y_pl gjelder for bare én kanalprofil
+                M_y_Rk = self._beregn_vipping(mast, L_e3, C_w, I_T, I_z_B, A3, B3, M_y_Rk, alpha_LT, W_y_pl)
 
-            # Knekklengde
-            L_cr = 2 * L_e3
-            if i.avspenningsmast or i.fixavspenningsmast:
-                L_cr = L_e3
+                # Knekklengde
+                L_cr = 2 * L_e3
+                if i.avspenningsmast or i.fixavspenningsmast:
+                    L_cr = L_e3
 
-            # Aksialkraftkapasitet om sterk akse (y-aksen)
-            UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y_B, L_cr, N_Ed, N_Rk, alpha_y)
+                # Aksialkraftkapasitet om sterk akse (y-aksen)
+                UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y_B, L_cr, N_Ed, N_Rk, alpha_y)
 
-            # Aksialkraftkapasitet om svak akse (z-aksen)
-            UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha_z)
+                # Aksialkraftkapasitet om svak akse (z-aksen)
+                UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha_z)
 
-            # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
-            UR_z_B = self._utnyttelsesgrad(mast, vindretning, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
-                                                    M_z_Ed, M_z_Rk)
+                # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
+                UR_z_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
+                                                        M_z_Ed, M_z_Rk)
 
-            if UR_z_B > u:
-                u = UR_z_B
+                if UR_z_B > u:
+                    u = UR_z_B
 
         elif mast.type == "bjelke":
             """GLOBAL mastekontroll av bjelkemast"""
@@ -342,8 +343,8 @@ class Tilstand(object):
             M_z_Rk = mast.Wzp * mast.fy      # [Nmm] svak akse
             N_Rk = mast.A_profil * mast.fy   # [N] trykkapasitet
 
-            """(1) Vind fra mast mot spor eller (2) fra spor mot mast"""
-            if vindretning == 1 or 2:
+            # (1) Vind fra mast mot spor eller (2) fra spor mot mast
+            if self.vindretning == 1 or 2:
                 # Ekvivalent lengde, Le1
                 L_e1 = ((R[0][0] * (i.fh + i.sh / 2)) + (R[1][0] * i.fh) + (R[2][0] * (i.fh + i.sh))
                         + (R[3][0] * (i.fh + i.sh)) + (R[4][0] * (i.fh + i.sh / 2)) + (R[5][0] * i.hf) + (R[6][0] * i.hr)
@@ -369,15 +370,15 @@ class Tilstand(object):
                 UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z, L_cr, N_Ed, N_Rk, alpha_z)
 
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_bjelkemast = self._utnyttelsesgrad(mast, vindretning, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
+                UR_y_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
                                                     M_z_Ed, M_z_Rk)
                 if UR_y_bjelkemast > u:
                     u = UR_y_bjelkemast
 
                 return u
 
-            """(3) Vind parallelt spor"""
-            elif vindretning == 3:
+            # (3) Vind parallelt spor
+            elif self.vindretning == 3:
                 # Ekvivalent lengde, Le3
                 L_e3 = ((R[0][2] * (i.fh + i.sh / 2)) + (R[1][2] * i.fh) + (R[2][2] * (i.fh + i.sh))
                         + (R[3][2] * (i.fh + i.sh)) + (R[4][2] * (i.fh + i.sh / 2)) + (R[5][2] * i.hf) + (R[6][2] * i.hr)
@@ -403,10 +404,10 @@ class Tilstand(object):
                 UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z, L_cr, N_Ed, N_Rk, alpha_z)
 
                 # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
-                UR_z_bjelkemast = self._utnyttelsesgrad(mast, vindretning, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
+                UR_z_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
                                                         M_z_Ed, M_z_Rk)
 
                 if UR_z_bjelkemast > u:
                     u = UR_z_bjelkemast
 
-            return u
+        return u
