@@ -61,7 +61,6 @@ class Inndata(object):
         self.sms = cfg.getfloat("Geometri", "sms")
 
         # Diverse
-        self.gittermast = cfg.getboolean("Div", "gittermast")
         self.s235 = cfg.getboolean("Div", "s235")
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
         self.traverslengde = cfg.getfloat("Div", "traverslengde")

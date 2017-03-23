@@ -20,8 +20,8 @@ def beregn_vindkasthastighetstrykk_EC(z):
     c_season = 1.0  # [1] Årstidsfaktor
     c_alt = 1.0     # [1] Nivåfaktor
     c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
-    v_b_0 = 10      # [m/s] Referansevindhastighet for aktuell kommune
-    kategori = 1
+    v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
+    kategori = 2
     # ---------------------------!!NB!!-------------------------------#
     #
     #   Hvordan settes terrengformfaktoren c_0 riktig?
@@ -60,21 +60,18 @@ def beregn_vindkasthastighetstrykk_EC(z):
     elif z_min < z <= z_max:
         I_v = k_l / (c_0 * math.log(z / z_0))
 
+
     # Vindkasthastigheten
     # v_p = v_m * math.sqrt(1 + 2 * k_p * I_v)
 
     # Vindkasthastighetstrykket
     q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
 
+    print("\n\n")
+    print("I_v = {}     q_p = {} kN/m^2".format(I_v,q_p/1000))
+    print("\n\n")
+
     return q_p
-
-def q_mast(mast, q_p):
-    """Beregner vindlast på mast (for beregning av masteavstand)."""
-
-    cf = 2.2                            # Vindkraftfaktor mast
-    q = q_p * cf * mast.A_ref           # [N/m]
-
-    return q
 
 
 def vindlast_mast(i, mast, q_p):
@@ -87,9 +84,9 @@ def vindlast_mast(i, mast, q_p):
 
     # Vind normalt spor
     V_z = q * mast.h
-    M_y = q * mast.h ** 2 * (2 / 3)  # ANGREPSPUNKT VINDLAST????
+    M_y = q * mast.h ** 2 * (0.5)  # ANGREPSPUNKT VINDLAST????
     D_z = _beregn_vindforskyvning_Dz(mast, i, True, q_p)
-    # Vind mot mast, fra spor
+    # Vind fra mast, mot spor
     R[12][0] = M_y
     R[12][3] = V_z
     R[12][7] = D_z
@@ -100,11 +97,11 @@ def vindlast_mast(i, mast, q_p):
 
     # Vind parallelt spor
     V_y = q_par * mast.h
-    M_z = q_par * mast.h ** 2 * (2 / 3)  # ANGREPSPUNKT VINDLAST????
+    M_z = q_par * mast.h ** 2 * (0.5)  # ANGREPSPUNKT VINDLAST????
     D_y = _beregn_vindforskyvning_Dy(mast, i, True, q_p)
-    R[14][1] = V_y
+    R[14][1] = - V_y
     R[14][2] = M_z
-    R[14][7] = D_y
+    R[14][7] = - D_y
 
     return R
 
@@ -135,7 +132,7 @@ def _total_ledningsdiameter(i, sys):
     if i.fiberoptisk_ledn:
         d_tot += sys.fiberoptisk["Diameter"]
 
-    if i.fixpunktmast or i.fixavspenningsmast or i.avspenningsmast:
+    if i.fixpunktmast or i.fixavspenningsmast:
         d_tot += sys.fixline["Diameter"]
 
     # Antall utliggere
@@ -146,30 +143,33 @@ def _total_ledningsdiameter(i, sys):
     for utligger in range(utliggere):
         d_tot += sys.baereline["Diameter"]
         d_tot += sys.kontakttraad["Diameter"]
-        if not sys.navn == "20b":  # 20B mangler Y-line
-            d_tot += sys.y_line["Diameter"]
 
     d_total = d_tot / 1000  # Total ledningsdiameter i [m]
 
     return d_total
 
 
-def vindlast_ledninger(i, mast, sys, q_p):
-    """Beregner vindlast på ledninger pr. meter [N/m]."""
+def q_ledninger(i, sys, q_p):
+    """Beregner vindlast på ledninger (for beregning av masteavstand)."""
 
     # Inngangsparametre
     d_total = _total_ledningsdiameter(i, sys)  # [m]
-    cf = 1.1                # Vindkraftfaktor ledning
-    R = numpy.zeros((15, 9))
+    cf = 1.1  # Vindkraftfaktor ledning
+    d_henge, d_Y = 0, 0  # Diameter hengetraad og Y-line
 
-    # Arealbidrag fra hengetråd
-    d_henge = sys.hengetraad["Diameter"] / 1000  # [m]
+    # Arealbidrag fra hengetråd og Y-line avhenger av ant. utliggere
+    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
+        utliggere = 2
+    else:
+        utliggere = 1
+    for utligger in range(utliggere):
+        d_henge += sys.hengetraad["Diameter"] / 1000  # [m]
+        if not sys.y_line == None:  # Sjekker at systemet har Y-line
+            d_Y += sys.y_line["Diameter"] / 1000  # [m]
     # Bruker lineær interpolasjon for å finne lengde av hengetråd
     L_henge = 8 * i.masteavstand / 60
 
-    # Arealbidrag fra Y-line
-    d_Y = sys.y_line["Diameter"] / 1000  # [m]
-    L_Y = 0
+    # Lengde av Y-line
     if not sys.y_line == None:  # Sjekker at systemet har Y-line
         # L_Y = lengde Y-line
         if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
@@ -178,12 +178,21 @@ def vindlast_ledninger(i, mast, sys, q_p):
             L_Y = 18
 
     A_ref = d_total * i.masteavstand + d_henge * L_henge + d_Y * L_Y
-    V_z = q_p * cf * A_ref
-    M_y = q_p * cf * A_ref * (i.fh + i.sh)  # ANGREPSPUNKT VINDLAST????
+    q = q_p * cf * A_ref
+
+    return q
+
+
+def vindlast_ledninger(i, mast, sys, q_p):
+    """Beregner vindlast på ledninger pr. meter [N/m]."""
+
+    V_z = q_ledninger(i, sys, q_p)
+    M_y = V_z * (i.fh + 0.5 * i.sh)  # ANGREPSPUNKT VINDLAST????
 
     # Forskyvning grunnet vindlast
     D_z = _beregn_vindforskyvning_ledninger(V_z, mast, i)
 
+    R = numpy.zeros((15, 9))
     # Vind mot mast, fra spor
     R[12][0] = M_y
     R[12][3] = V_z
@@ -440,7 +449,8 @@ def _beregn_vindforskyvning_Dz(mast, i, EC3, q_p=0):
     q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
 
     if EC3:
-        q_z = q_mast(mast, q_p) / 1000
+        cf = 2.2
+        q_z = q_p * cf * mast.A_ref / 1000
 
     # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
     D_z = ((q_z * FH ** 2) / (24 * E * Iy_13)) * (6 * H ** 2 - 4 * H * FH + FH ** 2)
@@ -461,7 +471,8 @@ def _beregn_vindforskyvning_Dy(mast, i, EC3, q_p=0):
     q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
 
     if EC3:
-        q_z = q_mast(mast, q_p) / 1000
+        cf = 2.2
+        q_z = q_p * cf * mast.A_ref / 1000
 
     # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
     D_y = ((q_z * FH ** 2) / (24 * E * Iz_13)) * (6 * H ** 2 - 4 * H * FH + FH ** 2)

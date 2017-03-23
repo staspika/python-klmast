@@ -1,19 +1,59 @@
 import numpy
+import matplotlib.pyplot as plt
 
-"""Div. funksjoner for utskrift av resultater"""
+"""Div. funksjoner for sortering og utskrift av resultater"""
 
 def _tilpass(a, b):
     """Formaterer teksstrenger a, b og c med korrekt antall mellomrom
     mellom verdier for å sikre lett lesbarhet av bidrag.
     """
     abc = a
-    for spaces in range(56-len(a)):
+    for spaces in range(57-len(a)):
         abc += " "
     abc += b
     abc += "\n"
 
     return abc
 
+def sorter_resultater(master):
+    g = 0  # Index for anbefalt gittermast
+    b = 0  # Index for anbefalt bjelkemast
+    t = 0  # Teller for å loppe gjennom master
+    mast = master[t]
+    sf = 1
+    while (mast.type == "H" or mast.type == "B") \
+            and t < len(master):
+        mast = master[t]
+        if (1 - mast.bruddgrense.utnyttelsesgrad > 0) \
+            and (1 - mast.bruddgrense.utnyttelsesgrad < sf):
+            sf = 1 - mast.bruddgrense.utnyttelsesgrad
+            g = t
+        t += 1
+    sf = 1
+    while mast.type == "bjelke" and t < len(master):
+        mast = master[t]
+        if (1 - mast.bruddgrense.utnyttelsesgrad > 0) \
+                and (1 - mast.bruddgrense.utnyttelsesgrad < sf):
+            sf = 1 - mast.bruddgrense.utnyttelsesgrad
+            b = t
+        t += 1
+    return g, b
+
+def barplot(values):
+    colors = []
+    for v in values:
+        if v > 1.0:
+            colors.append("r")
+        elif v > 0.8:
+            colors.append("y")
+        else:
+            colors.append("g")
+    N = numpy.arange(4)
+    plt.bar(N, values, color=colors)
+    plt.title("Utnyttelsesgrad")
+    plt.xticks(N + 0.5, ("UR", "My", "Mz", "N"))
+    plt.yticks(numpy.arange(0, max(values) + 0.1, 0.1))
+    plt.show()
 
 def skriv_bidrag(i, mast):
     """Skriver bidrag fra dimensjonerende tilfelle for aktuell mast

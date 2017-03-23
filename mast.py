@@ -170,19 +170,23 @@ class Mast(object):
         """
         if t2 == None:
             return True
-        elif t1.utnyttelsesgrad > t2.utnyttelsesgrad:
-            return True
-        elif t1.utnyttelsesgrad == t2.utnyttelsesgrad:
-            if t1.navn == "bruddgrense":
-                # Sammenligner My
-                if abs(t1.K[0]) > abs(t2.K[0]):
+        if t1.navn == "bruddgrense":
+            if abs(t1.K[0]) > abs(t2.K[0]):
+                return True
+            elif abs(t1.K[0]) == abs(t2.K[0]):
+                # Sammenligner UR
+                if t1.utnyttelsesgrad > t2.utnyttelsesgrad:
                     return True
-                elif abs(t1.K[0]) == abs(t2.K[0]):
+                elif t1.utnyttelsesgrad == t2.utnyttelsesgrad:
                     # Sammenligner N
                     if abs(t1.K[4]) > abs(t2.K[4]):
                         return True
-            else:
-                # Sammenligner forskyvning D_y
+        else:
+            # Sammenligner forskyvning D_z
+            if abs(t1.K[8]) > abs(t2.K[8]):
+                return True
+            elif abs(t1.K[8]) == abs(t2.K[8]):
+                # Sammenligner D_y
                 if abs(t1.K[7]) > abs(t2.K[7]):
                     return True
         return False
@@ -210,11 +214,8 @@ class Mast(object):
         print("Bruksgrensetilstand for total forskyvning:")
         print(self.forskyvning_tot)
 
-def hent_master(gittermast, hoyde, s235, materialkoeff):
-    """Returnerer liste med master til beregning
-    gittermast == True returnerer B- og H-master
-    gittermast == False returnerer bjelkemaster
-    """
+def hent_master(hoyde, s235, materialkoeff):
+    """Returnerer liste med master til beregning."""
 
     # B-master (tverrsnittsklasse 3)
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,
@@ -272,10 +273,8 @@ def hent_master(gittermast, hoyde, s235, materialkoeff):
                   h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     master = []
-    if gittermast:
-        master.extend([B2, B3, B4, B6, H3, H5, H6])
-    else:
-        master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
+    master.extend([B2, B3, B4, B6, H3, H5, H6])
+    master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
     return master
 

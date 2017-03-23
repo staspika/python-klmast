@@ -1,4 +1,5 @@
 import math
+import numpy
 
 class Tilstand(object):
     """Objekt med informasjon om lasttilstand fra lastfaktoranalyse.
@@ -13,14 +14,30 @@ class Tilstand(object):
          K[:][6:] = torsjonsvinkel/forskyvning av kontakttråd
          """
         self.R = R
+
+        """ DENNE KODESNUTTEN FUNGERER IKKE. R_f skal erstatte
+        R ved utskrift av bidrag i resultater.skriv_bidrag()
+        for å ta hensyn til lastfaktorer, slik at utskrift
+        kan sammenligner med bidragslista fra Kl_fund.
+
+        # R_f = R-matrise med lastfaktorer multiplisert inn
+        self.R_f = numpy.zeros((15,9))
+        self.R_f = numpy.multiply(R[0][:], g)
+        self.R_f[1][:] = numpy.multiply(R[1][:], l)
+        self.R_f[2:4][:] = numpy.multiply(R[2:4][:], f1)
+        self.R_f[4:8][:] = numpy.multiply(R[4:8][:], f2)
+        self.R_f[8:11][:] = numpy.multiply(R[8:11][:], f3)
+        self.R_f[11:][:] = numpy.multiply(R[11:][:], k)
+        """
+
         self.K = K
         self.navn = grensetilstand["Navn"]
+        self.faktorer = {"g": g, "l": l, "f1": f1, "f2": f2, "f3": f3, "k": k}
         # Vindretning #1 = fra mast mot spor
         # Vindretning #2 = fra spor mot mast
         # Vindretning #3 = parallelt spor
         self.vindretning = vindretning
         if self.navn == "bruddgrense":
-            self.faktorer = [g, l, f1, f2, f3, k]
             self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
             # Ganger med 1000 for å få momenter i [Nmm]
             self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))

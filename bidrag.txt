@@ -1,54 +1,54 @@
-Normalkraft i bruddgrensetilstand                       N_max (kN)
+Normalkraft i bruddgrensetilstand                        N_max (kN)
 
-2 stk KL                                                0.00
-Avspenningsmast                                         26.90
-2 stk mate-/fjernledninger                              0.00
-
-1 stk jordledning                                       0.00
-1 stk forbigangsledning                                 0.00
-2 stk returledninger                                    0.00
-Mast                                                    10.50
-
-SUM                                                     68.49
+1 stk KL                                                 0.91
 
 
 
-Skjærkraft i bruddgrensetilstand                        Vz_max (kN)
-
-2 stk KL                                                0.08
-Avspenningsmast                                         6.21
-2 stk mate-/fjernledninger                              0.00
-
-1 stk jordledning                                       0.00
-1 stk forbigangsledning                                 0.00
-2 stk returledninger                                    0.00
-Mast                                                    0.00
-
-SUM                                                     0.00
 
 
 
-Moment i bruddgrensetilstand                            My_max (kNm)
+Mast                                                     7.75
 
-2 stk KL                                                0.45
-Avspenningsmast                                         35.38
-2 stk mate-/fjernledninger                              0.00
-
-1 stk jordledning                                       0.00
-1 stk forbigangsledning                                 0.00
-2 stk returledninger                                    0.00
-Mast                                                    6.84
-
-SUM                                                     17.34
+SUM                                                      0.00
 
 
 
-Torsjonsmoment i bruddgrensetilstand / ulykkestilstand  T_max (kNm)
+Skjærkraft i bruddgrensetilstand                         Vz_max (kN)
 
-Fra KL                                                  0.00
-Differansestrekk + vandringskrefter                     0.00
+1 stk KL                                                 0.04
 
-SUM                                                     0.53
+
+
+
+
+
+Mast                                                     0.00
+
+SUM                                                      0.00
+
+
+
+Moment i bruddgrensetilstand                             My_max (kNm)
+
+1 stk KL                                                 3.42
+
+
+
+
+
+
+Mast                                                     0.73
+
+SUM                                                      8.47
+
+
+
+Torsjonsmoment i bruddgrensetilstand / ulykkestilstand   T_max (kNm)
+
+Fra KL                                                   0.00
+Differansestrekk + vandringskrefter                      0.00
+
+SUM                                                      0.00
 
 
 

@@ -8,7 +8,6 @@ import k2
 import klima
 import tilstand
 import TEST
-import matplotlib.pyplot as plt
 
 def beregn(ini):
     import mast
@@ -43,7 +42,7 @@ def beregn(ini):
     # Oppretter inndataobjekt med data fra .ini-fil
     i = inndata.Inndata(ini)
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(i.gittermast, i.h, i.s235, i.materialkoeff)
+    master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
     q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
@@ -63,11 +62,12 @@ def beregn(ini):
 
 
     for mast in master:
-        q = klima.q_mast(mast, q_p)
+
+        # Bygger R-matrise
+        q = klima.q_ledninger(i, sys, q_p)
         a = geometri.beregn_masteavstand(sys, i, B1, B2, q)
         R = numpy.zeros((15, 9))
-        R += egenvekt.beregn_mast(mast)
-        R += egenvekt.beregn_ledninger(sys, i, mast, a_T)
+        R += egenvekt.beregn_egenvekt(sys, i, mast, a_T)
         R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, a, B1, B2)
         if i.fixpunktmast:
             R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot, a)
@@ -88,20 +88,10 @@ def beregn(ini):
         if i.jord_ledn:
             R += k2.sidekraft_jord(sys, i, mast, a_T, a_T_dot, a)
 
-
-        if mast.navn =="HE200B":
-            print("\n\n                R\n")
-            for row in R:
-                s = "|  "
-                for col in row:
-                    s += ("{:.3g}   ".format(col))
-                s += "|"
-                print(s)
-
         if i.ec3:
             # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-            #R += klima.isogsno_last(i, mast, sys, a_T)
+            R += klima.isogsno_last(i, mast, sys, a_T)
             R += klima.vindlast_mast(i, mast, q_p)
             R += klima.vindlast_ledninger(i, mast, sys, q_p)
 
@@ -199,50 +189,11 @@ def beregn(ini):
                 mast.lagre_tilstand(t2)
                 mast.lagre_tilstand(t3)
 
-        if mast.navn == "H3" or mast.navn == "HE260B":
-            print()
-            print(mast)
-            metode = "EC3"
-            if not i.ec3:
-                metode = "NEK"
-            print("Beregningsmetode: {}".format(metode))
-            mast.print_tilstander()
-            print()
-            print("Vindkasthastighetstrykk: {:.3g} N/m^2".format(q_p))
-            print("Vindlast på mast: {:.3g} N/m".format(klima.q_mast(mast, q_p)))
-            print("masteavstand: {:.3g} m".format(a))
-            print()
-            print("Iy_13: {}".format(mast.Iy(mast.h * (2/3))))
-            print("Iz_13: {}".format(mast.Iz(mast.h * (2 / 3))))
-
-            UR = mast.bruddgrense.utnyttelsesgrad
-            values = [UR, mast.bruddgrense.My_kap,
-                       mast.bruddgrense.Mz_kap, mast.bruddgrense.N_kap]
-            #barplot(values)
-
-
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
 
     return i, master
 
-
-
-def barplot(values):
-    colors = []
-    for v in values:
-        if v > 1.0:
-            colors.append("r")
-        elif v > 0.8:
-            colors.append("y")
-        else:
-            colors.append("g")
-    N = numpy.arange(4)
-    plt.bar(N, values, color=colors)
-    plt.title("Utnyttelsesgrad")
-    plt.xticks(N + 0.5, ("UR", "My", "Mz", "N"))
-    plt.yticks(numpy.arange(0, max(values) + 0.1, 0.1))
-    plt.show()
 
 
 

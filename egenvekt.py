@@ -20,7 +20,7 @@ def _beregn_deformasjon(mast, M, x, fh):
         D_z = (M * fh ** 2) / (2 * E * Iy)
     return D_z
 
-def beregn_ledninger(sys, i, mast, a_T):
+def beregn_egenvekt(sys, i, mast, a_T):
     """Beregner bidrag grunnet egenvekt av ledninger,
     isolatorer, utliggere og eventuell travers.
     """
@@ -29,17 +29,20 @@ def beregn_ledninger(sys, i, mast, a_T):
     sms = i.sms
     fh = i.fh
 
-    # Initierer variabler for kraft/momentsummasjon
-    N = 0  # Normalkraft [N]
-    M_y = 0  # Moment om sterk akse [Nm]
-    M_z = 0  # Moment om svak akse [Nm]
-    D_z = 0  # Forskyvning normalt spor
+    R = numpy.zeros((15, 9))
+
+    # Initierer variabler for kontaktledninger
+    N_kl = 0  # Normalkraft [N]
+    M_y_kl = 0  # Moment om sterk akse [Nm]
+    D_z_kl = 0  # Forskyvning normalt spor
     # Variabel M/M_1/M_2 brukes kun for mellomlagring av M_y-verdier
+
+    R[0][4] = mast.egenvekt * mast.h  # Egenlast mast
 
     # Antall utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere==2:
         utliggere = 2
-        N += 220  # Vekt av travers
+        R[0][4] += 220  # Vekt av travers
     else:
         utliggere = 1
 
@@ -53,10 +56,10 @@ def beregn_ledninger(sys, i, mast, a_T):
         h_utligger = fh + (i.sh/2)
 
         # Utliggere
-        N_kl += sys.utligger["Egenvekt"] * sms
+        R[0][4] += sys.utligger["Egenvekt"] * sms
         M = sys.utligger["Egenvekt"] * sys.utligger["Momentarm"] * sms ** 2
-        M_y_kl += M
-        D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
+        R[0][0] += M
+        R[0][8] += _beregn_deformasjon(mast, M, h_utligger, fh)
 
         # Bæreline
         N_kl += sys.baereline["Egenvekt"] * masteavstand
@@ -89,62 +92,63 @@ def beregn_ledninger(sys, i, mast, a_T):
             M_y_kl += M
             D_z_kl += _beregn_deformasjon(mast, M, h_utligger, fh)
 
-    # Fixline
-    if i.fixpunktmast or i.fixavspenningsmast:
-        N += sys.fixline["Egenvekt"] * masteavstand / 2
-        if i.fixpunktmast:
-            # Eksentrisitet pga. montert på utligger
-            N += sys.fixline["Egenvekt"] * masteavstand / 2
-            M = sys.fixline["Egenvekt"] * masteavstand * a_T
-            M_y += M
-            h_utligger = fh + (i.sh / 2)  # Fixline montert på utligger
-            D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+    # Fixpunktmast
+    if i.fixpunktmast:
+        R[2][4] = sys.fixline["Egenvekt"] * masteavstand
+        M = sys.fixline["Egenvekt"] * masteavstand * a_T
+        R[2][0] = M
+        h_utligger = fh + (i.sh / 2)  # Fixline montert på utligger
+        R[2][8] = _beregn_deformasjon(mast, M, h_utligger, fh)
+
+    # Fixavspenningsmast
+    if i.fixavspenningsmast:
+        R[3][4] += sys.fixline["Egenvekt"] * masteavstand / 2
 
     # Forbigangsledning
     if i.forbigang_ledn:
-        N += sys.forbigangsledning["Egenvekt"] * masteavstand
-        N += 150  # Isolator for forbigangsledning
+        R[5][4] = sys.forbigangsledning["Egenvekt"] * masteavstand
+        R[5][4] += 150  # Isolator for forbigangsledning
         if i.matefjern_ledn or i.at_ledn or i.jord_ledn:
             # Eksentrisitet pga montert på siden av mast
             arm = -0.3  # Momentarm 0.3m (retning fra spor)
             M_1 = sys.forbigangsledning["Egenvekt"] * masteavstand * arm
             M_2 = 150 * arm  # Moment fra isolator
-            M_y += M_1 + M_2
-            D_z += _beregn_deformasjon(mast, M_1 + M_2, i.hf, fh)
+            R[5][0] = M_1 + M_2
+            R[5][8] = _beregn_deformasjon(mast, M_1 + M_2, i.hf, fh)
 
 
     # Returledninger (2 stk.)
     if i.retur_ledn:
-        N += 2 * sys.returledning["Egenvekt"] * masteavstand
-        N += 2 * 100  # # Isolatorer (2 stk.) for returledninger
+        R[6][4] = 2 * sys.returledning["Egenvekt"] * masteavstand
+        R[6][4] += 2 * 100  # # Isolatorer (2 stk.) for returledninger
         arm = -0.5  # Momentarm 0.5m (retning fra spor)
         M_1 = 2 * sys.returledning["Egenvekt"] * masteavstand * arm
         M_2 = 2 * 100 * arm  # Moment fra isolator
-        M_y += M_1 + M_2
-        D_z += _beregn_deformasjon(mast, M_1 + M_2, i.hr, fh)
+        R[6][0] = M_1 + M_2
+        R[6][8] = _beregn_deformasjon(mast, M_1 + M_2, i.hr, fh)
 
     # Mate-/fjernledning (n stk.)
     if i.matefjern_ledn:
         n = i.matefjern_antall
-        N += n * sys.matefjernledning["Egenvekt"] * masteavstand
-        N += 220  # Travers/isolator for mate-/fjern
+        R[8][4] = n * sys.matefjernledning["Egenvekt"] * masteavstand
+        R[8][4] += 220  # Travers/isolator for mate-/fjern
 
     # Fiberoptisk
     if i.fiberoptisk_ledn:
-        N += sys.fiberoptisk["Egenvekt"] * masteavstand
+        R[7][4] = sys.fiberoptisk["Egenvekt"] * masteavstand
 
     # AT-ledninger (2 stk.)
     if i.at_ledn:
-        N += 2 * sys.at_ledning["Egenvekt"] * masteavstand
+        R[9][4] = 2 * sys.at_ledning["Egenvekt"] * masteavstand
 
     # Jordledning
     if i.jord_ledn:
-        N += sys.jordledning["Egenvekt"] * masteavstand
+        R[10][4] = sys.jordledning["Egenvekt"] * masteavstand
         if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
             arm = -0.3  # Momentarm 0.3m (retning fra spor)
             M = sys.jordledning["Egenvekt"] * masteavstand * arm
-            M_y += M
-            D_z += _beregn_deformasjon(mast, M, i.hj, fh)
+            R[10][0] = M
+            R[10][8] = _beregn_deformasjon(mast, M, i.hj, fh)
 
     N_avsp = 0
     # Vekt av avspenningslodd
@@ -154,34 +158,20 @@ def beregn_ledninger(sys, i, mast, a_T):
             utvekslingsforhold = 2
         # Strekk i kontakttraad + bæreline, omregnet til [N]
         N_avsp = 2 * 1000 * sys.kontakttraad["Strekk i ledning"] / utvekslingsforhold
-
+    if i.fixavspenningsmast:
+        R[3][4] = N_avsp
+    elif i.avspenningsmast:
+        R[4][4] = N_avsp
 
 
     # Fyller inn matrise med kraftbidrag
-    R = numpy.zeros((15, 9))
     # HER MÅ DET SORTERES IHHT BIDRAG I KL FUND / bidrag.txt !
-    R[0][0] = M_y
-    R[0][2] = M_z
-    R[0][4] = N
-    R[0][8] = D_z
     R[1][0] = M_y_kl
     R[1][4] = N_kl
     R[1][8] = D_z_kl
 
-    if i.fixavspenningsmast:
-        R[3][4] = N
-    elif i.avspenningsmast:
-        R[4][4] = N
     return R
 
-
-
-def beregn_mast(mast):
-    """Beregner mastens egenvekt [N] ved fundament."""
-    N = mast.egenvekt * mast.h  # Egenlast mast
-    R = numpy.zeros((15, 9))
-    R[0][4] = N
-    return R
 
 
 
