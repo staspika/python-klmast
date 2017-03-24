@@ -100,15 +100,15 @@ def beregn_fixavspenning(sys, i, mast, a_T, a, B1, B2):
         if i.strekkutligger:
             # Sidekraft fra avspenningsbardun.
             V_z += S * (0.5 * (a / r) + (z / a))
-            M_y += V_z * FH
+            M_y += V_z * (FH + SH)
         else:
             # Sidekraft fra avspenningsbardun.
             V_z += S * (- 0.5 * (a / r) + (z / a))
-            M_y += V_z * FH
+            M_y += V_z * (FH + SH)
     elif r > 1200:
         # Konservativ antagelse om (+) i begge uttrykk.
         V_z += S * (0.5 * (a / r) + (z / a))
-        M_y += V_z * FH
+        M_y += V_z * (FH + SH)
 
     V_y += - S
     M_z += S * (FH + SH)
@@ -235,8 +235,8 @@ def sidekraft_retur(sys, i, mast, a_T, a_T_dot, a):
     # Inngangsparametre
     s_retur = (sys.returledning["Max tillatt spenning"] *
                sys.returledning["Tverrsnitt"])  # [N]
-    c = 0.5    # [m] Returledningen henger alltid i bakkant av masten
-    Hr = i.hr  # [m] Høyde, returledning
+    c = -0.5    # [m] Returledningen henger alltid i bakkant av masten
+    Hr = i.hr   # [m] Høyde, returledning
 
     # Krefter og forskyvn. pga. mast bytter side av sporet.
     M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_retur, a_T, a_T_dot, c, a, Hr)
@@ -260,7 +260,7 @@ def sidekraft_fiber(sys, i, mast, a_T, a_T_dot, a):
     # Inngangsparametre
     s_fiber = (sys.fiberoptisk["Max tillatt spenning"] *
                sys.fiberoptisk["Tverrsnitt"])  # [N]
-    c = 0.3
+    c = -0.3
     Hfi = i.hf  # Samme høyde som forbigangsledning i [m].
     # Initierer My, Vy, Mz, Vz, N, Dz = 0.
     M_y, V_y, M_z, V_z, T, D_z = 0, 0, 0, 0, 0, 0
@@ -351,7 +351,7 @@ def sidekraft_jord(sys, i, mast, a_T, a_T_dot, a):
         M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
     else:
         # Jordledningen henger i bakkant av masten.
-        c = 0.3
+        c = -0.3
         M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_jord, a_T, a_T_dot, c, a, Hj)
 
     R = numpy.zeros((15, 9))

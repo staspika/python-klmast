@@ -48,3 +48,16 @@ def _beregn_deformasjon_q(mast, q, x, fh):
 
     return delta
 
+
+def _beregn_deformasjon_Py(mast, P, x, fh):
+    """Beregner derformasjonen D_y i kontakttrådhøyde pga. punktlast P
+    i angrepspunkt x."""
+
+    E = mast.E  # [N / mm^2] E-modul, stål
+    Iz = mast.Iz(mast.h * (2 / 3))  # [mm^4]
+    x = x * 1000  # [mm]
+    fh = fh * 1000  # [mm]
+
+    delta = (P / (2 * E * Iz)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
+
+    return delta
