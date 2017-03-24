@@ -1,5 +1,6 @@
 import math
 import numpy
+import deformasjon
 
 # Terrengkategorier etter EC1, NA.4.1
 kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2.0}
@@ -106,130 +107,250 @@ def vindlast_mast(i, mast, q_p):
     return R
 
 
-def _total_ledningsdiameter(i, sys):
-    """Summerer ledningsdiametere [m] for multiplikasjon med
-    masteavstand (=lengde KL). Y-line og hengetråd behandles separat.
-    """
-
-    d_tot = 0  # [mm] Total ledningsdiameter for vindlast
-
-    if i.at_ledn:
-        d_tot += 2 * sys.at_ledning["Diameter"]  # 2 stk
-
-    if i.matefjern_ledn:
-        n = i.matefjern_antall
-        d_tot += n * sys.matefjernledning["Diameter"]  # n stk
-
-    if i.jord_ledn:
-        d_tot += sys.jordledning["Diameter"]
-
-    if i.retur_ledn:
-        d_tot += 2 * sys.returledning["Diameter"]  # 2 stk
-
-    if i.forbigang_ledn:
-        d_tot += sys.returledning["Diameter"]
-
-    if i.fiberoptisk_ledn:
-        d_tot += sys.fiberoptisk["Diameter"]
-
-    if i.fixpunktmast or i.fixavspenningsmast:
-        d_tot += sys.fixline["Diameter"]
-
-    # Antall utliggere
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
-        utliggere = 2
-    else:
-        utliggere = 1
-    for utligger in range(utliggere):
-        d_tot += sys.baereline["Diameter"]
-        d_tot += sys.kontakttraad["Diameter"]
-
-    d_total = d_tot / 1000  # Total ledningsdiameter i [m]
-
-    return d_total
-
-
 def q_ledninger(i, sys, q_p):
-    """Beregner vindlast på ledninger (for beregning av masteavstand)."""
+    """Beregner vindlast på ledninger (for beregning av masteavstand).
+    Skjærkraftbidraget [N] fra hver ledning finnes ved å multiplisere
+    q_p med ledningens diameter [m] multiplisert med 1 m lengde."""
 
     # Inngangsparametre
-    d_total = _total_ledningsdiameter(i, sys)  # [m]
-    cf = 1.1  # Vindkraftfaktor ledning
-    d_henge, d_Y = 0, 0  # Diameter hengetraad og Y-line
+    a = i.masteavstand           # [m]
+    cf = 1.1                     # [1] Vindkraftfaktor ledning
+    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, lengde Y-line
+    q = 0                        # [N/m] Brukes til å beregne masteavstand, a
 
-    # Arealbidrag fra hengetråd og Y-line avhenger av ant. utliggere
+    # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
         utliggere = 2
     else:
         utliggere = 1
-    for utligger in range(utliggere):
-        d_henge += sys.hengetraad["Diameter"] / 1000  # [m]
-        if not sys.y_line == None:  # Sjekker at systemet har Y-line
-            d_Y += sys.y_line["Diameter"] / 1000  # [m]
-    # Bruker lineær interpolasjon for å finne lengde av hengetråd
-    L_henge = 8 * i.masteavstand / 60
 
-    # Lengde av Y-line
+    # Kontakttråd.
+    q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
+    q += q_kl
+
+    # Bæreline.
+    q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
+    q += q_b
+
+    # Hengetråd.
+    for utligger in range(utliggere):
+        d_henge += sys.hengetraad["Diameter"] / 1000   # [m]
+    # Bruker lineær interpolasjon for å finne lengde av hengetråd
+    L_henge = 8 * a / 60
+    q_henge = q_p * cf * d_henge  # [N/m]
+    q += q_henge
+
+    # Y-line.
     if not sys.y_line == None:  # Sjekker at systemet har Y-line
+        d_Y += sys.y_line["Diameter"] / 1000  # [m]
         # L_Y = lengde Y-line
         if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
             L_Y = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L_Y = 18
+    q_Y = q_p * cf * d_Y
+    q += q_Y
 
-    A_ref = d_total * i.masteavstand + d_henge * L_henge + d_Y * L_Y
-    q = q_p * cf * A_ref
+    # Fikspunktmast
+    if i.fixpunktmast:
+        q_fixpunkt = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
+        q += q_fixpunkt
+
+    # Fiksavspenningsmast
+    if i.fixavspenningsmast:
+        q_fixavsp = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
+        q += q_fixavsp
+
+    # Avspenningsmast
+    # ?????????????????????????????????????????????????????????????????
+
+    # Forbigangsledning
+    if i.forbigang_ledn:
+        q_forbi = q_p * cf * sys.forbigangsledning["Diameter"] / 1000  # [N /m]
+        q += q_forbi
+
+    # Returledning (2 stk.)
+    if i.retur_ledn:
+        q_retur= 2 * q_p * cf * sys.returledning["Diameter"]  # [N / m]
+        q += q_retur
+
+    # Fiberoptisk ledning (setter høyden lik FH. OK ??????????????????)
+    if i.fiberoptisk_ledn:
+        q_fiber = q_p * cf * sys.fiberoptisk["Diameter"] / 1000  # [N / m]
+        q += q_fiber
+
+    # Mate-/fjernledning (2 stk.)
+    if i.matefjern_ledn:
+        n = i.matefjern_antall
+        q_matefjern = q_p * cf * n * sys.matefjernledning["Diameter"] / 1000
+        q += q_matefjern
+
+    # AT-ledning (2 stk.)
+    if i.at_ledn:
+        q_at = 2 * q_p * cf * sys.at_ledning["Diameter"] / 1000
+        q += q_at
+
+    # Jordledning
+    if i.jord_ledn:
+        q_jord = q_p * cf * sys.jordledning["Diameter"] / 1000
+        q += q_jord
 
     return q
 
 
 def vindlast_ledninger(i, mast, sys, q_p):
-    """Beregner vindlast på ledninger pr. meter [N/m]."""
+    """Beregner respons pga vindlast på ledninger pr. meter [N/m]."""
 
-    V_z = q_ledninger(i, sys, q_p)
-    M_y = V_z * (i.fh + 0.5 * i.sh)  # ANGREPSPUNKT VINDLAST????
-
-    # Forskyvning grunnet vindlast
-    D_z = _beregn_vindforskyvning_ledninger(V_z, mast, i)
+    # Inngangsparametre
+    a = i.masteavstand  # [m]
+    cf = 1.1  # [1] Vindkraftfaktor ledning
+    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, lengde Y-line
+    q = 0  # [N/m] Brukes til å beregne masteavstand, a
 
     R = numpy.zeros((15, 9))
-    # Vind mot mast, fra spor
-    R[12][0] = M_y
-    R[12][3] = V_z
-    R[12][8] = D_z
-    # Vind fra spor, mot mast
-    R[13][0] = - M_y
-    R[13][3] = - V_z
-    R[13][8] = - D_z
+
+    # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
+    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
+        utliggere = 2
+    else:
+        utliggere = 1
+
+    # Kontakttråd.
+    q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
+    q += q_kl
+    V_z_kl = utliggere * q_kl * a  # [N]
+    M_y_kl = V_z_kl * i.fh  # [Nm]
+    D_z_kl = deformasjon._beregn_deformasjon_P(mast, V_z_kl, i.fh, i.fh)
+
+    # Bæreline.
+    q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
+    q += q_b
+    V_z_b = utliggere * q_b * a  # [N]
+    M_y_b = V_z_b * (i.fh + (i.sh / 2))  # [Nm]
+    D_z_b = deformasjon._beregn_deformasjon_P(mast, V_z_b, (i.fh + (i.sh / 2)), i.fh)
+
+    # Hengetråd.
+    for utligger in range(utliggere):
+        d_henge += sys.hengetraad["Diameter"] / 1000  # [m]
+    # Bruker lineær interpolasjon for å finne lengde av hengetråd
+    L_henge = 8 * a / 60
+    q_henge = q_p * cf * d_henge  # [N/m]
+    q += q_henge
+    V_z_henge = q_henge * L_henge  # [N]
+    M_y_henge = V_z_henge * (i.fh + (i.sh / 2))  # [Nm]
+    D_z_henge = deformasjon._beregn_deformasjon_P(mast, V_z_henge, (i.fh + (i.sh / 2)), i.fh)
+
+    # Y-line.
+    if not sys.y_line == None:  # Sjekker at systemet har Y-line
+        d_Y += sys.y_line["Diameter"] / 1000  # [m]
+        # L_Y = lengde Y-line
+        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+            L_Y = 14
+        elif sys.navn == "25" and i.radius >= 1200:
+            L_Y = 18
+    q_Y = q_p * cf * d_Y
+    q += q_Y
+    V_z_Y = q_Y * L_Y
+    M_y_Y = V_z_Y * (i.fh + (i.sh / 2))
+    D_z_Y = deformasjon._beregn_deformasjon_P(mast, V_z_Y, (i.fh + (i.sh / 2)), i.fh)
+
+    R[1][0] = M_y_kl + M_y_b + M_y_henge + M_y_Y
+    R[1][3] = V_z_kl + V_z_b + V_z_henge + V_z_Y
+    R[1][8] = D_z_kl + D_z_b + D_z_henge + D_z_Y
+
+    # Fikspunktmast
+    if i.fixpunktmast:
+        q_fixpunkt = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
+        q += q_fixpunkt
+        V_z_fixpunkt = q_fixpunkt * a
+        R[2][0] = V_z_fixpunkt * (i.fh + i.sh)  # [Nm]
+        R[2][3] = V_z_fixpunkt  # [N]
+        R[2][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fixpunkt, (i.fh + i.sh), i.fh)
+
+    # Fiksavspenningsmast
+    if i.fixavspenningsmast:
+        q_fixavsp = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
+        q += q_fixavsp
+        V_z_fixavsp = q_fixavsp * (a / 2)
+        R[3][0] = V_z_fixavsp * (i.fh + i.sh)
+        R[3][3] = V_z_fixavsp
+        R[3][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fixavsp, (i.fh + i.sh), i.fh)
+
+    # Avspenningsmast
+    # ?????????????????????????????????????????????????????????????????
+
+    # Forbigangsledning
+    if i.forbigang_ledn:
+        q_forbi = q_p * cf * sys.forbigangsledning["Diameter"] / 1000  # [N /m]
+        q += q_forbi
+        V_z_forbi = q_forbi * a
+        R[5][0] = V_z_forbi * i.hf
+        R[5][3] = V_z_forbi
+        R[5][8] = deformasjon._beregn_deformasjon_P(mast, V_z_forbi, i.hf, i.fh)
+
+    # Returledning (2 stk.)
+    if i.retur_ledn:
+        q_retur = 2 * q_p * cf * sys.returledning["Diameter"]  # [N / m]
+        q += q_retur
+        V_z_retur = q_retur * a
+        R[6][0] = V_z_retur * i.hr
+        R[6][3] = V_z_retur
+        R[6][8] = deformasjon._beregn_deformasjon_P(mast, V_z_retur, i.hr, i.fh)
+
+    # Fiberoptisk ledning (setter høyden lik FH. OK ??????????????????)
+    if i.fiberoptisk_ledn:
+        q_fiber = q_p * cf * sys.fiberoptisk["Diameter"] / 1000  # [N / m]
+        q += q_fiber
+        V_z_fiber = q_fiber * a
+        R[7][0] = V_z_fiber * i.fh
+        R[7][3] = V_z_fiber
+        R[7][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fiber, i.fh, i.fh)
+
+    # Mate-/fjernledning (2 stk.)
+    if i.matefjern_ledn:
+        n = i.matefjern_antall
+        q_matefjern = q_p * cf * n * sys.matefjernledning["Diameter"] / 1000
+        q += q_matefjern
+        V_z_matefjern = q_matefjern * a
+        R[8][0] = V_z_matefjern * i.hfj
+        R[8][3] = V_z_matefjern
+        R[8][8] = deformasjon._beregn_deformasjon_P(mast, V_z_matefjern, i.hfj, i.fh)
+
+    # AT-ledning (2 stk.)
+    if i.at_ledn:
+        q_at = 2 * q_p * cf * sys.at_ledning["Diameter"] / 1000
+        q += q_at
+        V_z_at = q_at * a
+        R[9][0] = V_z_at * i.hfj
+        R[9][3] = V_z_at
+        R[9][8] = deformasjon._beregn_deformasjon_P(mast, V_z_at, i.hfj, i.fh)
+
+    # Jordledning
+    if i.jord_ledn:
+        q_jord = q_p * cf * sys.jordledning["Diameter"] / 1000
+        q += q_jord
+        V_z_jord = q_jord * a
+        R[10][0] = V_z_jord * i.hj
+        R[10][3] = V_z_jord
+        R[10][8] = deformasjon._beregn_deformasjon_P(mast, V_z_jord, i.hj, i.fh)
+
+    # R = numpy.zeros((15, 9))
+    # # Vind mot mast, fra spor
+    # R[12][0] = M_y
+    # R[12][3] = V_z
+    # R[12][8] = D_z
+    # # Vind fra spor, mot mast
+    # R[13][0] = - M_y
+    # R[13][3] = - V_z
+    # R[13][8] = - D_z
 
     return R
-
-
-def _beregn_deformasjon(mast, M, x, fh):
-    """Beregner deformasjon D_z i høyde fh som følge av
-    moment om y-aksen med angrepspunkt i høyde x.
-    Dersom fh > x interpoleres forskyvningen til høyde fh
-    ved hjelp av tangens til vinkelen theta i høyde x
-    ganget med høydedifferansen fh - x.
-    """
-    E = mast.E
-    Iy = mast.Iy(mast.h)
-    M = M * 1000  # Konverterer til [Nmm]
-    x = x * 1000  # Konverterer til [mm]
-    fh = fh * 1000  # Konverterer til [mm]
-    if fh > x:
-        theta = (M * x) / (E * Iy)
-        D_z = (M * x ** 2) / (2 * E * Iy) \
-              + numpy.tan(theta) * (fh - x)
-    else:
-        D_z = (M * fh ** 2) / (2 * E * Iy)
-    return D_z
 
 
 def isogsno_last(i, mast, sys, a_T):
     """Beregner snø og islast basert på SIEMENS System 20."""
 
-    masteavstand = i.masteavstand
+    a = i.masteavstand
     fh = i.fh
 
     # Initierer variabler for kraft/momentsummasjon
@@ -266,25 +387,25 @@ def isogsno_last(i, mast, sys, a_T):
         N += q * a_T
         M = (q * a_T ** 2) / 2
         M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
         # Bæreline
         d = sys.baereline["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand
-        M = q * masteavstand * a_T
+        N += q * a
+        M = q * a * a_T
         M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
         # Hengetråd: Ingen snølast.
 
         # Kontakttråd
         d = sys.kontakttraad["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand
-        M = q * masteavstand * a_T
+        N += q * a
+        M = q * a * a_T
         M_y += M
-        D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+        D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
         # Y-line
         if not sys.y_line == None:  # Sjekker at systemet har Y-line
@@ -299,84 +420,83 @@ def isogsno_last(i, mast, sys, a_T):
             N += q * L
             M = q * L * a_T
             M_y += M
-            D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
     # Fixline
     if i.fixpunktmast or i.fixavspenningsmast:
         d = sys.fixline["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand / 2
+        N += q * a / 2
         if i.fixpunktmast:
             # Eksentrisitet pga. montert på utligger
-            N += q * masteavstand / 2
-            M = q * masteavstand * a_T
+            N += q * a / 2
+            M = q * a * a_T
             M_y += M
             h_utligger = fh + (i.sh / 2)  # Fixline montert på utligger
-            D_z += _beregn_deformasjon(mast, M, h_utligger, fh)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
     # Forbigangsledning
     if i.forbigang_ledn:
         d = sys.forbigangsledning["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand
+        N += q * a
         N += 30  # FORENKLET snølast isolator
         if i.matefjern_ledn or i.at_ledn or i.jord_ledn:
             # Eksentrisitet pga montert på siden av mast
             arm = -0.3  # Momentarm 0.3m (retning fra spor)
-            M_1 = q * masteavstand * arm
+            M_1 = q * a * arm
             M_2 = 30 * arm  # Moment fra isolator
             M_y += M_1 + M_2
-            D_z += _beregn_deformasjon(mast, M_1 + M_2, i.hf, fh)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M_1 + M_2, i.hf, fh)
 
 
     # Returledninger (2 stk.)
     if i.retur_ledn:
         d = sys.returledning["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += 2 * q * masteavstand
+        N += 2 * q * a
         N += 2 * 20  # FORENKLET snølast (2 stk.) for returledninger
         arm = -0.5  # Momentarm 0.5m (retning fra spor)
-        M_1 = 2 * q * masteavstand * arm
+        M_1 = 2 * q * a * arm
         M_2 = 2 * 20 * arm  # Moment fra isolator
         M_y += M_1 + M_2
-        D_z += _beregn_deformasjon(mast, M_1 + M_2, i.hr, fh)
+        D_z += deformasjon._beregn_deformasjon_M(mast, M_1 + M_2, i.hr, fh)
 
     # Mate-/fjernledning (n stk.)
     if i.matefjern_ledn:
         n = i.matefjern_antall
         d = sys.matefjernledning["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += n * q * masteavstand
+        N += n * q * a
         N += 220  # Travers/isolator for mate-/fjern
 
     # Fiberoptisk
     if i.fiberoptisk_ledn:
         d = sys.fiberoptisk["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand
+        N += q * a
 
     # AT-ledninger (2 stk.)
     if i.at_ledn:
         d = sys.at_ledning["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += 2 * q * masteavstand
+        N += 2 * q * a
 
     # Jordledning
     if i.jord_ledn:
         d = sys.jordledning["Diameter"]
         q = (2.5 + 0.5 * d)
-        N += q * masteavstand
+        N += q * a
         if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
             arm = -0.3  # Momentarm 0.3m (retning fra spor)
-            M = q * masteavstand * arm
+            M = q * a * arm
             M_y += M
-            D_z += _beregn_deformasjon(mast, M, i.hj, fh)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, i.hj, fh)
 
     # Vekt av avspenningslodd
     if i.avspenningsmast or i.fixavspenningsmast:
         # 10kN strekk i KL, 3:1 kraftforhold på trinse
         N += 50  # FORENKLET snølast på avspenningslodd
-
 
     # Fyller inn matrise med kraftbidrag
     R = numpy.zeros((15, 9))
@@ -723,19 +843,19 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
     N += q_sno * sms
     M = q_sno * (sms / 2) * a_T
     M_y += M
-    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # Bæreline
     N += q_sno * a
     M = q_sno * a * a_T
     M_y += M
-    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # Kontakttråd
     N += q_sno * a
     M = q_sno * a * a_T
     M_y += M
-    D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # AT-ledninger (2 stk.)
     if i.at_ledn:
@@ -752,7 +872,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             arm = -0.3
             M = q_sno * a * arm
             M_y += M
-            D_z += _beregn_deformasjon(mast, M, i.hj, FH)
+            D_z += _beregn_deformasjon_M(mast, M, i.hj, FH)
 
     # Returledning (2 stk.)
     if i.retur_ledn:
@@ -760,7 +880,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
         arm = -0.5
         M = 2 * q_sno * a * arm
         M_y += M
-        D_z += _beregn_deformasjon(mast, M, i.hr, FH)
+        D_z += _beregn_deformasjon_M(mast, M, i.hr, FH)
 
     # Forbigangsledning (1 stk.)
     if i.forbigang_ledn:
@@ -770,7 +890,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             arm = -0.3
             M = q_sno * a * arm
             M_y += M
-            D_z += _beregn_deformasjon(mast, M, i.hf, FH)
+            D_z += _beregn_deformasjon_M(mast, M, i.hf, FH)
 
     # Fiberoptisk ledning (1 stk.)
     if i.fiberoptisk_ledn:
@@ -794,7 +914,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             N += q_sno * (a / 2)
             M = q_sno * a * a_T
             M_y += M
-            D_z += _beregn_deformasjon(mast, M, h_utligger, FH)
+            D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     R = numpy.zeros((15, 9))
     R[11][0] = M_y
