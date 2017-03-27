@@ -21,9 +21,9 @@ def beregn_egenvekt(sys, i, mast, a_T):
     R[0][4] = mast.egenvekt * mast.h  # [N] Egenlast, mast
 
     # Antall utliggere
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere==2:
+    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
         utliggere = 2
-        R[0][4] += 220  # Vekt av travers
+        R[0][4] += 220  # [N] Vekt av travers
     else:
         utliggere = 1
 
@@ -49,8 +49,9 @@ def beregn_egenvekt(sys, i, mast, a_T):
         D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
         # Hengetråd
-        N_kl += sys.hengetraad["Egenvekt"] * masteavstand
-        M = sys.hengetraad["Egenvekt"] * masteavstand * a_T
+        L_henge = 8 * (masteavstand / 60)
+        N_kl += sys.hengetraad["Egenvekt"] * L_henge
+        M = sys.hengetraad["Egenvekt"] * L_henge * a_T
         M_y_kl += M
         D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
@@ -96,7 +97,6 @@ def beregn_egenvekt(sys, i, mast, a_T):
             M_2 = 150 * arm  # Moment fra isolator
             R[5][0] = M_1 + M_2
             R[5][8] = deformasjon._beregn_deformasjon_M(mast, M_1 + M_2, i.hf, fh)
-
 
     # Returledninger (2 stk.)
     if i.retur_ledn:

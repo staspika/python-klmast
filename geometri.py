@@ -4,6 +4,7 @@ def beregn_sikksakk(sys, i):
     """Beregning av KL sikksakk, B1 og B2, samt max forskyvning, e."""
 
     r = i.radius
+    sikksakk, UE = 0, 0
 
     # Systemavhengige sikksakk-verdier til input i max masteavstand.
     # struktur i sikksakk-ordbøker under: { "radius": [B1, B2] } i [m]
@@ -51,7 +52,7 @@ def beregn_sikksakk(sys, i):
         elif 300 < r <= 600:
             UE = 0.43
         elif 600 < r <= 700:
-            UE = 0.43  + (r - 600) * ((0.44 - 0.43) / (700 - 600))
+            UE = 0.43 + (r - 600) * ((0.44 - 0.43) / (700 - 600))
         elif 700 < r <= 900:
             UE = 0.44
         elif 900 < r <= 1000:
@@ -59,7 +60,7 @@ def beregn_sikksakk(sys, i):
         elif 1000 < r <= 2000:
             UE = 0.45
         elif 2000 < r <= 3000:
-            UE = 0.45  + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
+            UE = 0.45 + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
         else:
             UE = 0.50
     elif sys.navn == "35":
@@ -133,14 +134,16 @@ def beregn_arm(i, B1):
     # -----------------------!!NB!!-----------------------------------#
     #
     #   Hva skal velges av (+)0.3  eller (-)0.3 i uttrykkene under ??
+    #       (+-)0.3 kan settes inn etter begge uttrykkene under
+    #       for å ta hensyn til at bærelineholder kan justeres
     #
     # ----------------------------------------------------------------#
     if i.strekkutligger:
-        a_T = i.sms + i.fh * (ue[str(r)] / 1435) - b + 0.3
+        a_T = i.sms + i.fh * (ue[str(r)] / 1.435) - b
 
     # trykkutligger hvis ikke strekkutligger
     if not i.strekkutligger:
-        a_T_dot = i.sms - i.fh * (ue[str(r)] / 1435) + b + 0.3
+        a_T_dot = i.sms - i.fh * (ue[str(r)] / 1.435) + b
 
     return a_T, a_T_dot
 

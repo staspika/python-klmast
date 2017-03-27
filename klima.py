@@ -68,9 +68,9 @@ def beregn_vindkasthastighetstrykk_EC(z):
     # Vindkasthastighetstrykket
     q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
 
-    print("\n\n")
-    print("I_v = {}     q_p = {} kN/m^2".format(I_v,q_p/1000))
-    print("\n\n")
+    print("\n")
+    print("q_m = {} [N/m^2]    q_p = {} [kN/m^2]".format(q_m, q_p/1000))
+    print("\n")
 
     return q_p
 
@@ -103,6 +103,11 @@ def vindlast_mast(i, mast, q_p):
     R[14][1] = - V_y
     R[14][2] = M_z
     R[14][7] = - D_y
+
+    if mast.navn == "HE220B":
+        print("\n\n")
+        print("M_vind_mast = {} kNm     V_vind_mast = {} kN".format(M_y / 1000, V_z / 1000))
+        print("\n\n")
 
     return R
 
@@ -202,10 +207,10 @@ def vindlast_ledninger(i, mast, sys, q_p):
     """Beregner respons pga vindlast på ledninger pr. meter [N/m]."""
 
     # Inngangsparametre
-    a = i.masteavstand  # [m]
-    cf = 1.1  # [1] Vindkraftfaktor ledning
-    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, lengde Y-line
-    q = 0  # [N/m] Brukes til å beregne masteavstand, a
+    a = i.masteavstand           # [m]
+    cf = 1.1                     # [1] Vindkraftfaktor ledning
+    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, Y-line
+    q = 0                        # [N/m] Brukes til å beregne masteavstand, a
 
     R = numpy.zeros((15, 9))
 
@@ -218,15 +223,15 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Kontakttråd.
     q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
     q += q_kl
-    V_z_kl = utliggere * q_kl * a  # [N]
-    M_y_kl = V_z_kl * i.fh  # [Nm]
+    V_z_kl = utliggere * q_kl * a                          # [N]
+    M_y_kl = V_z_kl * i.fh                                 # [Nm]
     D_z_kl = deformasjon._beregn_deformasjon_P(mast, V_z_kl, i.fh, i.fh)
 
     # Bæreline.
     q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
     q += q_b
-    V_z_b = utliggere * q_b * a  # [N]
-    M_y_b = V_z_b * (i.fh + (i.sh / 2))  # [Nm]
+    V_z_b = utliggere * q_b * a                        # [N]
+    M_y_b = V_z_b * (i.fh + i.sh)                      # [Nm]
     D_z_b = deformasjon._beregn_deformasjon_P(mast, V_z_b, (i.fh + (i.sh / 2)), i.fh)
 
     # Hengetråd.
