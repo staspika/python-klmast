@@ -29,12 +29,11 @@ def _beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, hoyde):
 
     # Tilleggslast dersom mast bytter side av spor.
     if i.master_bytter_side:
-        V_y += s
-        M_z += V_y * hoyde
-        V_z += s * ((a_T + a_T_dot + 2 * c) / a)
-        M_y += V_z * hoyde
-        # Adderer bidrag fra strekk i fastavspent ledning.
-        T += s * c
+        V_y += s                                  # [N]
+        M_z += V_y * hoyde                        # [Nm]
+        V_z += s * ((a_T + a_T_dot + 2 * c) / a)  # [N]
+        M_y += V_z * hoyde                        # [Nm]
+        T += s * c                                # [Nm]
 
         # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
         D_z = deformasjon._beregn_deformasjon_P(mast, V_z, hoyde, i.fh)
@@ -47,31 +46,30 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot):
     og dz [mm] fra fixpunktmast.
     """
 
-    S = 1000 * sys.fixline["Strekk i ledning"]  # [N]
+    S_fix = 1000 * sys.fixline["Strekk i ledning"]  # [N]
     a = i.masteavstand                          # [m]
     r = i.radius                                # [m]
     FH = i.fh                                   # [m]
     SH = i.sh                                   # [m]
-    # Deklarerer My, Vz, Dz = 0.
-    M_y, V_z, D_z = 0, 0, 0
+    # Deklarerer V_z = 0.
+    V_z = 0
 
     if r <= 1200:
         # (-) i første ledd for strekkutligger (ytterkurve).
         if i.strekkutligger:
-            V_z = S * (-(a / r) + 2 * (a_T / a))
-            M_y = V_z * (FH + SH)
+            V_z = S_fix * (-(a / r) + 2 * (a_T / a))
         # (+) i første ledd for trykkutligger (innerkurve).
         else:
-            V_z = S * ((a / r) + 2 * (a_T_dot / a))
-            M_y = V_z * (FH + SH)
+            V_z = S_fix * ((a / r) + 2 * (a_T_dot / a))
     elif r > 1200:
         # Konservativ antagelse om (+) i begge uttrykk.
         if i.strekkutligger:
-            V_z = S * ((a / r) + 2 * (a_T / a))
-            M_y = V_z * (FH + SH)
+            V_z = S_fix * ((a / r) + 2 * (a_T / a))
         else:
-            V_z = S * ((a / r) + 2 * (a_T_dot / a))
-            M_y = V_z * (FH + SH)
+            V_z = S_fix * ((a / r) + 2 * (a_T_dot / a))
+
+    # Moment [Nm] pga. sidekraft fra fixpunktmast.
+    M_y = V_z * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra fixpunktmast
     D_z = deformasjon._beregn_deformasjon_P(mast, V_z, (FH + SH), FH)
@@ -81,53 +79,58 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot):
     R[2][3] = V_z
     R[2][8] = D_z
 
+    print("V_z = {} ".format(V_z / 1000))
+
     return R
 
 
-def beregn_fixavspenning(sys, i, mast, a_T, B1, B2):
+def beregn_fixavspenning(sys, i, mast, a_T, a_T_dot, B1, B2):
     """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
     fixavspenningsmast."""
 
-    S = 1000 * sys.fixline["Strekk i ledning"]  # [N]
+    S_fixavsp = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
     a = i.masteavstand  # [m]
     r = i.radius        # [m]
     FH = i.fh           # [m]
     SH = i.sh           # [m]
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z = a_T + (B1 + B2)
-    # Deklarerer My, Vy, Mz, Vz, Dz = 0.
-    M_y, M_z, V_z, V_y, N, D_z = 0, 0, 0, 0, 0, 0
+    # Deklarerer Mz, Vz, Vy, N, Dz, Dy = 0.
+    M_z, V_z, V_y, N, D_z, D_y = 0, 0, 0, 0, 0, 0
 
+    # Sidekraft fra avspenningsbardun hvis fixavspenningsmast.
     if r <= 1200:
         # Programmet bruker da (+) for strekkutligger (ytterkurve).
         if i.strekkutligger:
-            # Sidekraft fra avspenningsbardun.
-            V_z += S * (0.5 * (a / r) + (z / a))
-            M_y += V_z * (FH + SH)
+            V_z += S_fixavsp * (0.5 * (a / r) + (z / a))
         else:
-            # Sidekraft fra avspenningsbardun.
-            V_z += S * (- 0.5 * (a / r) + (z / a))
-            M_y += V_z * (FH + SH)
-    elif r > 1200:
+            z = a_T_dot + (B1 + B2)
+            V_z += S_fixavsp * (- 0.5 * (a / r) + (z / a))
+    else:
         # Konservativ antagelse om (+) i begge uttrykk.
-        V_z += S * (0.5 * (a / r) + (z / a))
-        M_y += V_z * (FH + SH)
+        V_z += S_fixavsp * (0.5 * (a / r) + (z / a))
 
-    V_y += - S
-    M_z += S * (FH + SH)
-
-    if i.avspenningsbardun:
-        # Fixavspenningsbardun står normalt på utligger med 45 grader.
-        # Dette gir et bidrag til normalkraften N [N].
-        N += S
-
-        # Differansen mellom den horisontale kraftkomponenten i bardunen
-        # og strekket i KL gir Vy og Mz.
-        V_y += S
-        M_z += - V_y * (FH + SH)
+    # Moment [Nm] pga. sidekrefter fra fixpunktmast.
+    M_y = V_z * (FH + SH)
 
     # Forskyvning dz [mm] i høyde FH pga. V_z fra fixavspenning
     D_z = deformasjon._beregn_deformasjon_P(mast, V_z, (FH + SH), FH)
+
+    # Fixavspenningsmasten pådras V_y og M_z hvis ikke den barduneres.
+    V_y -= S_fixavsp
+    M_z += S_fixavsp * (FH + SH)
+
+    if i.avspenningsbardun:
+        # Bardunen utlikner strekket i fixlinen.
+        V_y += S_fixavsp
+        M_z += - V_y * (FH + SH)
+
+        # Fixavspenningsbardun står normalt på utligger med 45 grader.
+        # Dette gir et bidrag til normalkraften N [N] i masten.
+        N += S_fixavsp
+
+    # Forskyvning dy [mm] i høyde FH pga. V_y fra fixavspenning
+    D_y = deformasjon._beregn_deformasjon_Py(mast, V_y, (FH + SH), FH)
 
     R = numpy.zeros((15, 9))
     R[3][0] = M_y
@@ -135,12 +138,13 @@ def beregn_fixavspenning(sys, i, mast, a_T, B1, B2):
     R[3][2] = M_z
     R[3][3] = V_z
     R[3][4] = N
+    R[3][7] = D_y
     R[3][8] = D_z
 
     return R
 
 
-def beregn_avspenning(sys, i, mast, a_T, B1, B2):
+def beregn_avspenning(sys, i, mast, a_T, a_T_dot, B1, B2):
     """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
     avspenningsmast."""
 
@@ -151,56 +155,62 @@ def beregn_avspenning(sys, i, mast, a_T, B1, B2):
     FH = i.fh           # [m]
     SH = i.sh           # [m]
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
-    z = a_T + (B1 + B2)
+    z_kl = a_T + (B1 + B2)
+    z_b = a_T
     # Deklarerer My, Vy, Mz, Vz, N, Dz = 0.
-    M_y, V_y, M_z, V_z, N, D_z = 0, 0, 0, 0, 0, 0
+    V_y, M_z, N, D_z = 0, 0, 0, 0
 
     if r <= 1200:
         # Programmet bruker (+) for strekkutligger (ytterkurve).
         if i.strekkutligger:
             # Sidekraft fra avspenningsbardun.
-            V_z_kl = S_kl * (0.5 * (a / r) + (z / a))
-            V_z_b = S_b * (a / r)
-            M_y = (V_z_kl + V_z_b) * (FH + SH / 2)
+            V_z_kl = S_kl * (0.5 * (a / r) + (z_kl / a))
+            V_z_b = S_b * (0.5 * (a / r) + (z_b / a))
         # Programmet bruker (-) for trykkutligger (innerkurve).
         else:
+            # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
+            z_kl = a_T_dot + (B1 + B2)
+            z_b = a_T_dot
             # Sidekraft fra avspenningsbardun.
-            V_z_kl = S_kl * (- 0.5 * (a / r) + (z / a))
-            V_z_b = S_b * (- a / r)
-            M_y = V_z_kl + V_z_b * (FH + SH / 2)
-    elif r > 1200:
+            V_z_kl = S_kl * (- 0.5 * (a / r) + (z_kl / a))
+            V_z_b = S_b * (-0.5 * (a / r) + (z_b / a))
+    else:
         # Konservativ antagelse om (+) i begge uttrykk.
-        V_z_kl = S_kl * (0.5 * (a / r) + (z / a))
-        V_z_b = S_b * (a / r)
-        M_y = V_z_kl + V_z_b * (FH + SH / 2)
+        V_z_kl = S_kl * (0.5 * (a / r) + (z_kl / a))
+        V_z_b = S_b * (0.5 * (a / r))
 
+    # Antar at KL og bæreline avspennes SAMMEN i SAMME høyde.
+    # Skjærkraft [N] og momentet [Nm] på mast fra avspenningen.
+    V_z = V_z_kl + V_z_b
+    M_y = V_z * (FH + (SH / 2))
+
+    # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
+    D_z = deformasjon._beregn_deformasjon_P(mast, V_z, (FH + SH / 2), FH)
+
+    # Skjærkraft Vy [N] og moment Mz [Nm] hvis ikke masten barduneres.
     V_y += - S_kl - S_b
     M_z += - V_y * (FH + SH / 2)
 
     if i.avspenningsbardun:
-        # Fixavspenningsbarduner står normalt på utligger med 45 grader.
-        # Dette gir et bidrag til normalkraften N [N].
-        N += S_kl + S_b
-
-        # Differansen mellom den horisontale kraftkomponenten i bardunen
-        # og strekket i KL gir Vy og Mz.
+        # Barduneringen utlikner strekket i KL og bæreline.
         V_y += S_kl + S_b
         M_z += V_y * (FH + SH / 2)
 
-    # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
-    D_z = deformasjon._beregn_deformasjon_P(mast, (V_z_kl + V_z_b), (FH + SH / 2), FH)
+        # Fixavspenningsbarduner står normalt på utligger med 45 grader.
+        # Dette bidrar til normalkraften N [N] i masten.
+        N += S_kl + S_b
+
+    # Forskyvning dy [mm] i høyde FH pga. V_y fra avspenning
+    D_y = deformasjon._beregn_deformasjon_Py(mast, V_y, (FH + SH / 2), FH)
 
     R = numpy.zeros((15, 9))
     R[4][0] = M_y
     R[4][1] = V_y
     R[4][2] = M_z
-    R[4][3] = V_z_kl + V_z_b
+    R[4][3] = V_z
     R[4][4] = N
+    R[4][7] = D_y
     R[4][8] = D_z
-
-    print("\n")
-    print("N = {} [kN]".format(N / 1000))
-    print("\n")
 
     return R
 
@@ -224,7 +234,7 @@ def sidekraft_forbi(sys, i, mast, a_T, a_T_dot):
         M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, Hf)
     else:
         # Forbigangsledningen henger i bakkant av masten.
-        c = 0.3  # [m]
+        c = -0.3  # [m]
         # Tilleggskraft da mast bytter side av sporet.
         M_y, V_y, M_z, V_z, T, D_z = _beregn_fastavspent(i, mast, s_forbi, a_T, a_T_dot, c, Hf)
 

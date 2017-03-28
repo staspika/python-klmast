@@ -104,11 +104,6 @@ def vindlast_mast(i, mast, q_p):
     R[14][2] = M_z
     R[14][7] = - D_y
 
-    if mast.navn == "HE220B":
-        print("\n\n")
-        print("M_vind_mast = {} kNm     V_vind_mast = {} kN".format(M_y / 1000, V_z / 1000))
-        print("\n\n")
-
     return R
 
 
@@ -295,7 +290,7 @@ def vindlast_ledninger(i, mast, sys, q_p):
 
     # Returledning (2 stk.)
     if i.retur_ledn:
-        q_retur = 2 * q_p * cf * sys.returledning["Diameter"]  # [N / m]
+        q_retur = 2 * q_p * cf * sys.returledning["Diameter"] / 1000  # [N / m]
         q += q_retur
         V_z_retur = q_retur * a
         R[6][0] = V_z_retur * i.hr
@@ -848,19 +843,19 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
     N += q_sno * sms
     M = q_sno * (sms / 2) * a_T
     M_y += M
-    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
+    D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # Bæreline
     N += q_sno * a
     M = q_sno * a * a_T
     M_y += M
-    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
+    D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # Kontakttråd
     N += q_sno * a
     M = q_sno * a * a_T
     M_y += M
-    D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
+    D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     # AT-ledninger (2 stk.)
     if i.at_ledn:
@@ -877,7 +872,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             arm = -0.3
             M = q_sno * a * arm
             M_y += M
-            D_z += _beregn_deformasjon_M(mast, M, i.hj, FH)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, i.hj, FH)
 
     # Returledning (2 stk.)
     if i.retur_ledn:
@@ -885,7 +880,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
         arm = -0.5
         M = 2 * q_sno * a * arm
         M_y += M
-        D_z += _beregn_deformasjon_M(mast, M, i.hr, FH)
+        D_z += deformasjon._beregn_deformasjon_M(mast, M, i.hr, FH)
 
     # Forbigangsledning (1 stk.)
     if i.forbigang_ledn:
@@ -895,7 +890,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             arm = -0.3
             M = q_sno * a * arm
             M_y += M
-            D_z += _beregn_deformasjon_M(mast, M, i.hf, FH)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, i.hf, FH)
 
     # Fiberoptisk ledning (1 stk.)
     if i.fiberoptisk_ledn:
@@ -919,7 +914,7 @@ def snolast_ledninger_NEK(mast, sys, i, a_T):
             N += q_sno * (a / 2)
             M = q_sno * a * a_T
             M_y += M
-            D_z += _beregn_deformasjon_M(mast, M, h_utligger, FH)
+            D_z += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, FH)
 
     R = numpy.zeros((15, 9))
     R[11][0] = M_y

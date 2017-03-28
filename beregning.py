@@ -76,9 +76,9 @@ def beregn(ini):
         if i.fixpunktmast:
             R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot)
         if i.fixavspenningsmast:
-            R += k2.beregn_fixavspenning(sys, i, mast, a_T, B1, B2)
+            R += k2.beregn_fixavspenning(sys, i, mast, a_T, a_T_dot, B1, B2)
         if i.avspenningsmast:
-            R += k2.beregn_avspenning(sys, i, mast, a_T, B1, B2)
+            R += k2.beregn_avspenning(sys, i, mast, a_T, a_T_dot, B1, B2)
         if i.forbigang_ledn:
             R += k2.sidekraft_forbi(sys, i, mast, a_T, a_T_dot)
         if i.retur_ledn:
