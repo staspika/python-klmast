@@ -68,10 +68,6 @@ def beregn_vindkasthastighetstrykk_EC(z):
     # Vindkasthastighetstrykket
     q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
 
-    print("\n")
-    print("q_m = {} [N/m^2]    q_p = {} [kN/m^2]".format(q_m, q_p/1000))
-    print("\n")
-
     return q_p
 
 
@@ -107,16 +103,14 @@ def vindlast_mast(i, mast, q_p):
     return R
 
 
-def q_ledninger(i, sys, q_p):
-    """Beregner vindlast på ledninger (for beregning av masteavstand).
-    Skjærkraftbidraget [N] fra hver ledning finnes ved å multiplisere
-    q_p med ledningens diameter [m] multiplisert med 1 m lengde."""
+def q_KL(i, sys, q_p):
+    """Beregner vindlast på kontaktledningen. Denne verdien brukes til
+    å beregne masteavstanden, a."""
 
     # Inngangsparametre
-    a = i.masteavstand           # [m]
-    cf = 1.1                     # [1] Vindkraftfaktor ledning
-    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, lengde Y-line
-    q = 0                        # [N/m] Brukes til å beregne masteavstand, a
+    cf = 1.1             # [1] Vindkraftfaktor ledning
+    d_henge, d_Y = 0, 0  # [m] Diameter hengetraad, lengde Y-line
+    q = 0                # [N/m] Brukes til å beregne masteavstand, a
 
     # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
@@ -124,88 +118,45 @@ def q_ledninger(i, sys, q_p):
     else:
         utliggere = 1
 
+    # ALTERNATIV #1: q = 1.2 * q_KL
     # Kontakttråd.
     q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
     q += q_kl
 
+    # ALTERNATIV #2: q = q_KL + q_bæreline + q_henge + q_Y
+    # Kontakttråd.
+    # q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
+    # q += q_kl
+
     # Bæreline.
-    q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
-    q += q_b
+    # q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
+    # q += q_b
 
     # Hengetråd.
-    for utligger in range(utliggere):
-        d_henge += sys.hengetraad["Diameter"] / 1000   # [m]
-    # Bruker lineær interpolasjon for å finne lengde av hengetråd
-    L_henge = 8 * a / 60
-    q_henge = q_p * cf * d_henge  # [N/m]
-    q += q_henge
+    # for utligger in range(utliggere):
+    #     d_henge += sys.hengetraad["Diameter"] / 1000   # [m]
+    # q_henge = q_p * cf * d_henge  # [N/m]
+    # q += q_henge
 
     # Y-line.
-    if not sys.y_line == None:  # Sjekker at systemet har Y-line
-        d_Y += sys.y_line["Diameter"] / 1000  # [m]
-        # L_Y = lengde Y-line
-        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
-            L_Y = 14
-        elif sys.navn == "25" and i.radius >= 1200:
-            L_Y = 18
-    q_Y = q_p * cf * d_Y
-    q += q_Y
-
-    # Fikspunktmast
-    if i.fixpunktmast:
-        q_fixpunkt = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        q += q_fixpunkt
-
-    # Fiksavspenningsmast
-    if i.fixavspenningsmast:
-        q_fixavsp = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        q += q_fixavsp
-
-    # Avspenningsmast
-    # ?????????????????????????????????????????????????????????????????
-
-    # Forbigangsledning
-    if i.forbigang_ledn:
-        q_forbi = q_p * cf * sys.forbigangsledning["Diameter"] / 1000  # [N /m]
-        q += q_forbi
-
-    # Returledning (2 stk.)
-    if i.retur_ledn:
-        q_retur= 2 * q_p * cf * sys.returledning["Diameter"]  # [N / m]
-        q += q_retur
-
-    # Fiberoptisk ledning (setter høyden lik FH. OK ??????????????????)
-    if i.fiberoptisk_ledn:
-        q_fiber = q_p * cf * sys.fiberoptisk["Diameter"] / 1000  # [N / m]
-        q += q_fiber
-
-    # Mate-/fjernledning (2 stk.)
-    if i.matefjern_ledn:
-        n = i.matefjern_antall
-        q_matefjern = q_p * cf * n * sys.matefjernledning["Diameter"] / 1000
-        q += q_matefjern
-
-    # AT-ledning (2 stk.)
-    if i.at_ledn:
-        q_at = 2 * q_p * cf * sys.at_ledning["Diameter"] / 1000
-        q += q_at
-
-    # Jordledning
-    if i.jord_ledn:
-        q_jord = q_p * cf * sys.jordledning["Diameter"] / 1000
-        q += q_jord
+    # if not sys.y_line == None:  # Sjekker at systemet har Y-line
+    #     d_Y += sys.y_line["Diameter"] / 1000  # [m]
+    #     # L_Y = lengde Y-line
+    # q_Y = q_p * cf * d_Y
+    # q += q_Y
 
     return q
 
 
 def vindlast_ledninger(i, mast, sys, q_p):
-    """Beregner respons pga vindlast på ledninger pr. meter [N/m]."""
+    """Beregner respons pga. vindlast på ledninger pr. meter [N/m].
+    Skjærkraftbidraget [N] fra hver ledning finnes ved å multiplisere
+    q_p med ledningens diameter [m] multiplisert med 1 m lengde."""
 
     # Inngangsparametre
     a = i.masteavstand           # [m]
     cf = 1.1                     # [1] Vindkraftfaktor ledning
     d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, Y-line
-    q = 0                        # [N/m] Brukes til å beregne masteavstand, a
 
     R = numpy.zeros((15, 9))
 
@@ -217,16 +168,14 @@ def vindlast_ledninger(i, mast, sys, q_p):
 
     # Kontakttråd.
     q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
-    q += q_kl
-    V_z_kl = utliggere * q_kl * a                          # [N]
-    M_y_kl = V_z_kl * i.fh                                 # [Nm]
+    V_z_kl = utliggere * q_kl * a
+    M_y_kl = V_z_kl * i.fh
     D_z_kl = deformasjon._beregn_deformasjon_P(mast, V_z_kl, i.fh, i.fh)
 
     # Bæreline.
     q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
-    q += q_b
-    V_z_b = utliggere * q_b * a                        # [N]
-    M_y_b = V_z_b * (i.fh + i.sh)                      # [Nm]
+    V_z_b = utliggere * q_b * a
+    M_y_b = V_z_b * (i.fh + i.sh)
     D_z_b = deformasjon._beregn_deformasjon_P(mast, V_z_b, (i.fh + (i.sh / 2)), i.fh)
 
     # Hengetråd.
@@ -235,9 +184,8 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Bruker lineær interpolasjon for å finne lengde av hengetråd
     L_henge = 8 * a / 60
     q_henge = q_p * cf * d_henge  # [N/m]
-    q += q_henge
-    V_z_henge = q_henge * L_henge  # [N]
-    M_y_henge = V_z_henge * (i.fh + (i.sh / 2))  # [Nm]
+    V_z_henge = q_henge * L_henge
+    M_y_henge = V_z_henge * (i.fh + (i.sh / 2))
     D_z_henge = deformasjon._beregn_deformasjon_P(mast, V_z_henge, (i.fh + (i.sh / 2)), i.fh)
 
     # Y-line.
@@ -249,7 +197,6 @@ def vindlast_ledninger(i, mast, sys, q_p):
         elif sys.navn == "25" and i.radius >= 1200:
             L_Y = 18
     q_Y = q_p * cf * d_Y
-    q += q_Y
     V_z_Y = q_Y * L_Y
     M_y_Y = V_z_Y * (i.fh + (i.sh / 2))
     D_z_Y = deformasjon._beregn_deformasjon_P(mast, V_z_Y, (i.fh + (i.sh / 2)), i.fh)
@@ -261,16 +208,14 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Fikspunktmast
     if i.fixpunktmast:
         q_fixpunkt = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        q += q_fixpunkt
         V_z_fixpunkt = q_fixpunkt * a
-        R[2][0] = V_z_fixpunkt * (i.fh + i.sh)  # [Nm]
-        R[2][3] = V_z_fixpunkt  # [N]
+        R[2][0] = V_z_fixpunkt * (i.fh + i.sh)
+        R[2][3] = V_z_fixpunkt
         R[2][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fixpunkt, (i.fh + i.sh), i.fh)
 
     # Fiksavspenningsmast
     if i.fixavspenningsmast:
         q_fixavsp = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        q += q_fixavsp
         V_z_fixavsp = q_fixavsp * (a / 2)
         R[3][0] = V_z_fixavsp * (i.fh + i.sh)
         R[3][3] = V_z_fixavsp
@@ -282,7 +227,6 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Forbigangsledning
     if i.forbigang_ledn:
         q_forbi = q_p * cf * sys.forbigangsledning["Diameter"] / 1000  # [N /m]
-        q += q_forbi
         V_z_forbi = q_forbi * a
         R[5][0] = V_z_forbi * i.hf
         R[5][3] = V_z_forbi
@@ -291,7 +235,6 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Returledning (2 stk.)
     if i.retur_ledn:
         q_retur = 2 * q_p * cf * sys.returledning["Diameter"] / 1000  # [N / m]
-        q += q_retur
         V_z_retur = q_retur * a
         R[6][0] = V_z_retur * i.hr
         R[6][3] = V_z_retur
@@ -300,7 +243,6 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Fiberoptisk ledning (setter høyden lik FH. OK ??????????????????)
     if i.fiberoptisk_ledn:
         q_fiber = q_p * cf * sys.fiberoptisk["Diameter"] / 1000  # [N / m]
-        q += q_fiber
         V_z_fiber = q_fiber * a
         R[7][0] = V_z_fiber * i.fh
         R[7][3] = V_z_fiber
@@ -309,8 +251,7 @@ def vindlast_ledninger(i, mast, sys, q_p):
     # Mate-/fjernledning (2 stk.)
     if i.matefjern_ledn:
         n = i.matefjern_antall
-        q_matefjern = q_p * cf * n * sys.matefjernledning["Diameter"] / 1000
-        q += q_matefjern
+        q_matefjern = q_p * cf * n * sys.matefjernledning["Diameter"] / 1000  # [N/m]
         V_z_matefjern = q_matefjern * a
         R[8][0] = V_z_matefjern * i.hfj
         R[8][3] = V_z_matefjern
@@ -318,8 +259,7 @@ def vindlast_ledninger(i, mast, sys, q_p):
 
     # AT-ledning (2 stk.)
     if i.at_ledn:
-        q_at = 2 * q_p * cf * sys.at_ledning["Diameter"] / 1000
-        q += q_at
+        q_at = 2 * q_p * cf * sys.at_ledning["Diameter"] / 1000  # [N/m]
         V_z_at = q_at * a
         R[9][0] = V_z_at * i.hfj
         R[9][3] = V_z_at
@@ -327,8 +267,7 @@ def vindlast_ledninger(i, mast, sys, q_p):
 
     # Jordledning
     if i.jord_ledn:
-        q_jord = q_p * cf * sys.jordledning["Diameter"] / 1000
-        q += q_jord
+        q_jord = q_p * cf * sys.jordledning["Diameter"] / 1000  # [N/m]
         V_z_jord = q_jord * a
         R[10][0] = V_z_jord * i.hj
         R[10][3] = V_z_jord

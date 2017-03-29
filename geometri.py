@@ -4,11 +4,11 @@ def beregn_sikksakk(sys, i):
     """Beregning av KL sikksakk, B1 og B2, samt max forskyvning, e."""
 
     r = i.radius
-    sikksakk, UE = 0, 0
+    sikksakk, e_max = 0, 0
 
     # Systemavhengige sikksakk-verdier til input i max masteavstand.
     # struktur i sikksakk-ordbøker under: { "radius": [B1, B2] } i [m]
-    # max tillatt overhøyde, overhøyde UE [m], bestemmes i indre if-setning.
+    # max tillatt utblåsning e_max i [m], bestemmes i indre if-setning.
     if sys.navn == "20a" or sys.navn == "20b":
         sikksakk = {"180": [-0.30, -0.30], "250": [-0.30, -0.30],
                     "300": [-0.30, -0.30], "400": [-0.30, -0.30],
@@ -25,13 +25,13 @@ def beregn_sikksakk(sys, i):
                     "7000": [-0.30, 0.30], "10000": [-0.30, 0.30],
                     "20000": [-0.30, 0.30], "10000000": [-0.30, 0.30]}
         if r <= 1000:
-            UE = 0.42
+            e_max = 0.42
         elif 1000 < r <= 2000:
-            UE = 0.42 + (r - 1000) * ((0.50 - 0.42) / (2000 - 1000))
+            e_max = 0.42 + (r - 1000) * ((0.50 - 0.42) / (2000 - 1000))
         elif 2000 < r <= 4000:
-            UE = 0.50 + (r - 2000) * ((0.55 - 0.50) / (4000 - 2000))
+            e_max = 0.50 + (r - 2000) * ((0.55 - 0.50) / (4000 - 2000))
         else:
-            UE = 0.55
+            e_max = 0.55
     elif sys.navn == "25":
         sikksakk = {"180": [-0.30, -0.30], "250": [-0.30, -0.30],
                     "300": [-0.30, -0.30], "400": [-0.30, -0.30],
@@ -48,21 +48,21 @@ def beregn_sikksakk(sys, i):
                     "7000": [-0.30, 0.19], "10000": [-0.30, 0.22],
                     "20000": [-0.30, 0.25], "10000000": [-0.30, 0.30]}
         if 180 <= r <= 300:
-            UE = 0.40 + (r - 180) * ((0.43 - 0.40) / (300 - 180))
+            e_max = 0.40 + (r - 180) * ((0.43 - 0.40) / (300 - 180))
         elif 300 < r <= 600:
-            UE = 0.43
+            e_max = 0.43
         elif 600 < r <= 700:
-            UE = 0.43 + (r - 600) * ((0.44 - 0.43) / (700 - 600))
+            e_max = 0.43 + (r - 600) * ((0.44 - 0.43) / (700 - 600))
         elif 700 < r <= 900:
-            UE = 0.44
+            e_max = 0.44
         elif 900 < r <= 1000:
-            UE = 0.44 + (r - 900) * ((0.45 - 0.44) / (1000 - 900))
+            e_max = 0.44 + (r - 900) * ((0.45 - 0.44) / (1000 - 900))
         elif 1000 < r <= 2000:
-            UE = 0.45
+            e_max = 0.45
         elif 2000 < r <= 3000:
-            UE = 0.45 + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
+            e_max = 0.45 + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
         else:
-            UE = 0.50
+            e_max = 0.50
     elif sys.navn == "35":
         sikksakk = {"180": [-0.4, -0.4], "250": [-0.4, -0.4],
                     "300": [-0.4, -0.4], "400": [-0.4, -0.4],
@@ -78,27 +78,26 @@ def beregn_sikksakk(sys, i):
                     "4000": [-0.2, -0.2], "5000": [-0.4, 0.4],
                     "7000": [-0.4, 0.4], "10000": [-0.4, 0.4],
                     "20000": [-0.4, 0.4], "10000000": [-0.4, 0.4]}
-        UE = 0.7
+        e_max = 0.7
 
     B1 = sikksakk[str(r)][0]
     B2 = sikksakk[str(r)][1]
-    return B1, B2, UE
+    return B1, B2, e_max
 
 
-def beregn_masteavstand(sys, i, B1, B2, q):
+def beregn_masteavstand(sys, i, B1, B2, e_max, q):
     """Beregning av tillatt masteavstand, a, mht utblåsning av KL."""
 
-    e_per = 0.63                                        # [m]
     r = i.radius                                        # [m]
     s_kl = sys.kontakttraad["Strekk i ledning"] * 1000  # [N]
 
     # KL blåser UT fra kurven
-    a1 = math.sqrt(((2 * s_kl) / (q - (s_kl / r))) * ((2 * e_per - B1 - B2)
-                   + math.sqrt((2 * e_per - B1 - B2) ** 2 - (B1 - B2) ** 2)))
+    a1 = math.sqrt(((2 * s_kl) / (q - (s_kl / r))) * ((2 * e_max - B1 - B2)
+                   + math.sqrt((2 * e_max - B1 - B2) ** 2 - (B1 - B2) ** 2)))
 
     # KL blåser INN i kurven
-    a2 = math.sqrt(((2 * s_kl) / (q + (s_kl / r))) * ((2 * e_per + B1 + B2)
-                   + math.sqrt((2 * e_per + B1 + B2) ** 2 - (B1 - B2) ** 2)))
+    a2 = math.sqrt(((2 * s_kl) / (q + (s_kl / r))) * ((2 * e_max + B1 + B2)
+                   + math.sqrt((2 * e_max + B1 + B2) ** 2 - (B1 - B2) ** 2)))
 
     a = min(a1, a2)
 
@@ -116,11 +115,11 @@ def beregn_masteavstand(sys, i, B1, B2, q):
 
 
 def beregn_arm(i, B1):
-    """Beregner momentarm a_T for strekk- eller trykkutligger."""
+    """Beregner momentarm a_T for strekkutligger og momentarm
+    a_T_dot for trykkutligger."""
 
     r = i.radius
     b = abs(B1)
-    a_T, a_T_dot = 0, 0  # Initialiserer momentarmvariabler
 
     # Overhøyde, UE i [m], pga kurveradius i [m]
     ue = {"180": 0.150, "250": 0.150, "300": 0.150, "400": 0.150,
@@ -138,12 +137,12 @@ def beregn_arm(i, B1):
     #       for å ta hensyn til at bærelineholder kan justeres
     #
     # ----------------------------------------------------------------#
-    if i.strekkutligger:
-        a_T = i.sms + i.fh * (ue[str(r)] / 1.435) - b
 
-    # trykkutligger hvis ikke strekkutligger
-    if not i.strekkutligger:
-        a_T_dot = i.sms - i.fh * (ue[str(r)] / 1.435) + b
+    # Momentarm [m] for strekkutligger.
+    a_T = i.sms + i.fh * (ue[str(r)] / 1.435) - b
+
+    # Momentarm [m] for trykkutligger.
+    a_T_dot = i.sms - i.fh * (ue[str(r)] / 1.435) + b
 
     return a_T, a_T_dot
 

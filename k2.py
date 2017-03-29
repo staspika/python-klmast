@@ -35,7 +35,7 @@ def _beregn_fastavspent(i, mast, s, a_T, a_T_dot, c, hoyde):
         M_y += V_z * hoyde                        # [Nm]
         T += s * c                                # [Nm]
 
-        # Forskyvning dz [mm] i høyde FH pga. V_z når mast bytter side.
+        # Forskyvning dz og dy [mm] i høyde FH når mast bytter side.
         D_z = deformasjon._beregn_deformasjon_P(mast, V_z, hoyde, i.fh)
 
     return M_y, V_y, M_z, V_z, T, D_z
@@ -78,8 +78,6 @@ def beregn_fixpunkt(sys, i, mast, a_T, a_T_dot):
     R[2][0] = M_y
     R[2][3] = V_z
     R[2][8] = D_z
-
-    print("V_z = {} ".format(V_z / 1000))
 
     return R
 
@@ -145,8 +143,8 @@ def beregn_fixavspenning(sys, i, mast, a_T, a_T_dot, B1, B2):
 
 
 def beregn_avspenning(sys, i, mast, a_T, a_T_dot, B1, B2):
-    """Beregner bidrag til Vz [N], My [Nm] og dz [mm] fra
-    avspenningsmast."""
+    """Beregner bidrag til Vz [N], My [Nm] og dz [mm]
+    pga. sidekraft fra avspenningsbardun."""
 
     S_kl = 1000 * (sys.kontakttraad["Strekk i ledning"])  # [N]
     S_b = 1000 * (sys.baereline["Strekk i ledning"])  # [N]
@@ -157,51 +155,30 @@ def beregn_avspenning(sys, i, mast, a_T, a_T_dot, B1, B2):
     # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
     z_kl = a_T + (B1 + B2)
     z_b = a_T
-    # Deklarerer My, Vy, Mz, Vz, N, Dz = 0.
-    V_y, M_z, N, D_z = 0, 0, 0, 0
-
-    if r <= 1200:
-        # Programmet bruker (+) for strekkutligger (ytterkurve).
-        if i.strekkutligger:
-            # Sidekraft fra avspenningsbardun.
-            V_z_kl = S_kl * (0.5 * (a / r) + (z_kl / a))
-            V_z_b = S_b * (0.5 * (a / r) + (z_b / a))
-        # Programmet bruker (-) for trykkutligger (innerkurve).
-        else:
-            # Sum av sideforskyvn. for to påfølgende opphengningspunkter.
-            z_kl = a_T_dot + (B1 + B2)
-            z_b = a_T_dot
-            # Sidekraft fra avspenningsbardun.
-            V_z_kl = S_kl * (- 0.5 * (a / r) + (z_kl / a))
-            V_z_b = S_b * (-0.5 * (a / r) + (z_b / a))
-    else:
-        # Konservativ antagelse om (+) i begge uttrykk.
-        V_z_kl = S_kl * (0.5 * (a / r) + (z_kl / a))
-        V_z_b = S_b * (0.5 * (a / r))
-
-    # Antar at KL og bæreline avspennes SAMMEN i SAMME høyde.
-    # Skjærkraft [N] og momentet [Nm] på mast fra avspenningen.
-    V_z = V_z_kl + V_z_b
-    M_y = V_z * (FH + (SH / 2))
-
-    # Forskyvning dz [mm] i høyde FH pga. V_z fra avspenning
-    D_z = deformasjon._beregn_deformasjon_P(mast, V_z, (FH + SH / 2), FH)
-
-    # Skjærkraft Vy [N] og moment Mz [Nm] hvis ikke masten barduneres.
-    V_y += - S_kl - S_b
-    M_z += - V_y * (FH + SH / 2)
+    # Deklarerer variabler.
+    N, V_z, M_y, V_y, M_z, D_z, D_y = 0, 0, 0, 0, 0, 0, 0
 
     if i.avspenningsbardun:
-        # Barduneringen utlikner strekket i KL og bæreline.
-        V_y += S_kl + S_b
-        M_z += V_y * (FH + SH / 2)
-
-        # Fixavspenningsbarduner står normalt på utligger med 45 grader.
-        # Dette bidrar til normalkraften N [N] i masten.
-        N += S_kl + S_b
-
-    # Forskyvning dy [mm] i høyde FH pga. V_y fra avspenning
-    D_y = deformasjon._beregn_deformasjon_Py(mast, V_y, (FH + SH / 2), FH)
+        N = S_kl + S_b
+        if r <= 1200 and not i.strekkutligger:
+            z_kl = a_T_dot + (B1 + B2)
+            z_b = a_T_dot
+            V_z_kl = S_kl * (- 0.5 * (a / r) + (z_kl / a))
+            V_z_b = S_b * (- 0.5 * (a / r) + (z_b / a))
+        else:
+            V_z_kl = S_kl * (0.5 * (a / r) + (z_kl / a))
+            V_z_b = S_b * (0.5 * (a / r) + (z_b / a))
+        V_z = V_z_kl + V_z_b
+        M_y = V_z * (FH + (SH / 2))
+        D_z = deformasjon._beregn_deformasjon_P(mast, V_z, (FH + (SH / 2)), FH)
+        # Avspenningsbardunen utlikner Vy og dermed Mz.
+        V_y, M_z = 0, 0
+    # Dersom masten IKKE har en avspenningsbardun.
+    else:
+        N, V_z, M_y = 0, 0, 0
+        V_y = S_kl + S_b
+        M_z = V_y * (FH + (SH / 2))
+        D_y = deformasjon._beregn_deformasjon_Py(mast, V_y, FH + (SH / 2), FH)
 
     R = numpy.zeros((15, 9))
     R[4][0] = M_y

@@ -46,11 +46,11 @@ def beregn(ini):
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
     q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
-    B1, B2, UE = geometri.beregn_sikksakk(sys, i)
+    B1, B2, e_max = geometri.beregn_sikksakk(sys, i)
     a_T, a_T_dot = geometri.beregn_arm(i, B1)
 
     print("\n")
-    print("B1 = {} [m]   B2 = {} [m]   UE = {}   a_T = {} [m]     a_T_dot = {} m".format(B1, B2, UE, a_T, a_T_dot))
+    print("B1={}   B2 = {}   a_T = {}[m]   a_T_dot = {} [m]".format(B1, B2, a_T, a_T_dot))
     print("\n")
 
     # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
@@ -68,8 +68,8 @@ def beregn(ini):
     for mast in master:
 
         # Bygger R-matrise
-        q = klima.q_ledninger(i, sys, q_p)
-        a = geometri.beregn_masteavstand(sys, i, B1, B2, q)
+        q = klima.q_KL(i, sys, q_p)
+        a = geometri.beregn_masteavstand(sys, i, B1, B2, e_max, q)
         R = numpy.zeros((15, 9))
         R += egenvekt.beregn_egenvekt(sys, i, mast, a_T)
         R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2)

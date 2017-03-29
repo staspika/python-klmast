@@ -21,7 +21,7 @@ def beregn_egenvekt(sys, i, mast, a_T):
     R[0][4] = mast.egenvekt * mast.h  # [N] Egenlast, mast
 
     # Antall utliggere
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
+    if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         utliggere = 2
         R[0][4] += 220  # [N] Vekt av travers
     else:
