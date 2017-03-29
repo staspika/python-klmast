@@ -10,14 +10,12 @@ class Inndata(object):
         # Oppretter variabler for data fra .ini-fil
 
         # Info
-        self.banestrekning = cfg.getint("Info", "banestrekning")
+        self.banestrekning = cfg.get("Info", "banestrekning")
         self.km = cfg.getfloat("Info", "km")
         self.prosjektnr = cfg.getint("Info", "prosjektnr")
         self.mastenr = cfg.getint("Info", "mastenr")
         self.signatur = cfg.get("Info", "signatur")
         self.dato = cfg.get("Info", "dato")
-        self.kontroll = cfg.get("Info", "kontroll")
-        self.kontrolldato = cfg.get("Info", "kontrolldato")
 
         # Mastealternativer
         self.siste_for_avspenning = cfg.getboolean("Mastealternativer", "siste_for_avspenning")

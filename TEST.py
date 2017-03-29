@@ -1,5 +1,6 @@
 import os
 import psutil
+import configparser
 
 """Funksjoner for testing av applikasjon"""
 
@@ -17,20 +18,57 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    def yc(h,b,tw,tf):
-        teller = b**2*tf + 0.5*tw**2*(h-2*tf)
-        nevner = 2*b*tf + (h-2*tf)*tw
-        return teller/nevner
+    cfg = configparser.ConfigParser()
+    cfg.read("input.ini")
+    s = "cfg[\"Info\"] = OrderedDict(["
+    t = 0
+    for key in cfg["Info"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t\t\t   "
+    s += " ])\n\n"
 
-    print("UNP120: {}".format(yc(120, 55, 7, 9)))
-    print("UNP140: {}".format(yc(140, 60, 7, 10)))
-    print("UNP160: {}".format(yc(160, 65, 7.5, 10.5)))
-    print("UNP200: {}".format(yc(200, 75, 8.5, 11.5)))
+    s += "cfg[\"Mastealternativer\"] = OrderedDict(["
+    t = 0
+    for key in cfg["Mastealternativer"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t\t\t\t\t"
+    s += " ])\n\n"
 
-    def yc2(b,t):
-        teller = b**2*t + (b-t)*t**2
-        nevner = b*t + (b-t)*t
-        return 0.5*teller/nevner
+    s += "cfg[\"Fastavspent\"] = OrderedDict(["
+    t = 0
+    for key in cfg["Fastavspent"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t\t\t  "
+    s += " ])\n\n"
 
-    print("L75x75x8: {}".format(yc2(75,8)))
-    print("L75x75x10: {}".format(yc2(75, 10)))
+    s += "cfg[\"System\"] = OrderedDict(["
+    t = 0
+    for key in cfg["System"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t\t "
+    s += " ])\n\n"
+
+    s += "cfg[\"Geometri\"] = OrderedDict(["
+    t = 1
+    for key in cfg["Geometri"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t\t   "
+        t = t+1
+    s += " ])\n\n"
+
+    s += "cfg[\"Div\"] = OrderedDict(["
+    t = 1
+    for key in cfg["Div"]:
+        s += "(\"{}\", {}.get()), ".format(key, key)
+        if t % 2 == 0:
+            s += "\n\t\t\t  "
+        t = t+1
+    s += " ])\n\n"
+
+    with open("kode.txt", "w") as kode:
+        kode.write(s)
