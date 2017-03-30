@@ -12,8 +12,8 @@ from datetime import date
 root = Tk()
 root.title("KL_fund 2.0")
 #root.state("zoomed")
-bredde = 1920
-hoyde = 1080
+bredde = 1280
+hoyde = 720
 root.geometry("{}x{}".format(bredde, hoyde))
 
 # Variabeloversikt
@@ -174,7 +174,7 @@ img = ImageTk.PhotoImage(Image.open(bilde))
 Label(grafikk, image=img).grid(row=0, column=0)
 
 # Kjør
-kjor = Frame(root, width=0.48 * bredde, height=0.10 * hoyde)
+kjor = Frame(inngangsdata, width=0.48 * bredde, height=0.10 * hoyde)
 kjor.grid(row=2, column=0, padx=5, pady=5, sticky=W)
 Button(kjor, text="KJØR", command=_skriv_ini).grid(row=0, column=0)
 

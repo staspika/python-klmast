@@ -1,5 +1,7 @@
 import numpy
 import deformasjon
+from last import *
+from numpy import array
 
 
 def beregn_egenvekt(sys, i, mast, a_T):
@@ -36,11 +38,25 @@ def beregn_egenvekt(sys, i, mast, a_T):
         """
         h_utligger = fh + (i.sh/2)
 
+        """
         # Utliggere
         R[0][4] += sys.utligger["Egenvekt"] * sms
         M = sys.utligger["Egenvekt"] * sys.utligger["Momentarm"] * sms ** 2
         R[0][0] += M
         R[0][8] += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+        """
+
+
+        # Utliggere
+        fx = sys.utligger["Egenvekt"] * sms
+        f = np.array([fx, 0, 0])
+        ex = i.fh + i.sh/2
+        ez = sys.utligger["Momentarm"] * sms
+        e = np.array([ex, 0, ez])
+        utligger = Last(f=f, e=e, kat="g")
+
+        #morn morn
+
 
         # Bæreline
         N_kl += sys.baereline["Egenvekt"] * masteavstand
@@ -56,6 +72,12 @@ def beregn_egenvekt(sys, i, mast, a_T):
         D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
 
         # Kontakttråd
+        f = array([sys.kontakttraad["Egenvekt"] * masteavstand, 0, 0])
+        e = ([fh, 0, sms])
+        kl = Last(f=f, e=e, kat="g")
+        mast.add(kl)
+
+
         N_kl += sys.kontakttraad["Egenvekt"] * masteavstand
         M = sys.kontakttraad["Egenvekt"] * masteavstand * a_T
         M_y_kl += M

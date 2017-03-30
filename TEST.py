@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     s += "cfg[\"System\"] = OrderedDict(["
     t = 0
+
     for key in cfg["System"]:
         s += "(\"{}\", {}.get()), ".format(key, key)
         if t % 2 == 0:
