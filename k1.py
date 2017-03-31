@@ -25,8 +25,8 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
     b_mast = mast.bredde(i.h - i.fh) / 1000             # [m]
     r = i.radius                                        # [m]
     a = i.masteavstand                                  # [m]
-    FH = i.fh                                           # [m]
-    SH = i.sh                                           # [m]
+    fh = i.fh                                           # [m]
+    sh = i.sh                                           # [m]
     alpha = 1.7 * 10 ** (-5)                            # [1/(grader C)]
     delta_t = 45                                        # [(grader C)]
 
@@ -87,11 +87,11 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
 
     # Bidrag til skjærkraft [N] og moment [Nm] på mast fra strekk i KL.
     V_z = V_kl + V_b
-    M_y = V_kl * FH + V_b * (FH + SH)
+    M_y = V_kl * fh + V_b * (fh + sh)
 
     # Forskyvning dz [mm] i KL-høyde pga. V_kl og V_b
-    dz_kl = deformasjon._beregn_deformasjon_P(mast, V_kl, FH, FH)
-    dz_b = deformasjon._beregn_deformasjon_P(mast, V_b, (FH + SH), FH)
+    dz_kl = deformasjon._beregn_deformasjon_P(mast, V_kl, fh, fh)
+    dz_b = deformasjon._beregn_deformasjon_P(mast, V_b, (fh + sh), fh)
 
     # (4) Vandringskraft
     # Ved temperaturendring vil KL vandre og utligger følge med.
@@ -104,11 +104,11 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
             V_y_kl = V_z * (dl / a_T)      # [N]
         else:
             V_y_kl = V_z * (dl / a_T_dot)  # [N]
-        M_z = V_y_kl * FH                  # [Nm]
+        M_z = V_y_kl * fh                  # [Nm]
         T = V_y_kl * b_mast                # [Nm]
 
     # Forskyvning dy [mm] pga vandringskraften V_y
-    dy_kl = deformasjon._beregn_deformasjon_Py(mast, V_y_kl, FH, FH)
+    dy_kl = deformasjon._beregn_deformasjon_Py(mast, V_y_kl, fh, fh)
 
     R = numpy.zeros((15, 9))
     R[1][0] = M_y

@@ -5,7 +5,7 @@ class Last(object):
 
     def __init__(self, f=np.array([0,0,0]), q=np.array([0,0,0]),
                  b=np.array([0,0,0]), e=np.array([0,0,0]),
-                 type=0, kat=None):
+                 type=0, kat=None, navn=""):
         """Initierer kraft/moment-objekt.
         :param f: Kraftkomponenter [x, y, z]  [N]
         :param q: Kraftkomponenter for fordelt last [x, y, z]  [N/m]
@@ -16,6 +16,7 @@ class Last(object):
         :param kat: Lastkategori for applikasjon av partialfaktorer 
         """
 
+        self.navn = navn
         self.e = e
         self.type = type
         self.kat = kat

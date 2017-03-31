@@ -120,7 +120,7 @@ def q_KL(i, sys, q_p):
 
     # ALTERNATIV #1: q = 1.2 * q_KL
     # Kontakttråd.
-    q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
+    q_kl = 1.2 * q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
     q += q_kl
 
     # ALTERNATIV #2: q = q_KL + q_bæreline + q_henge + q_Y

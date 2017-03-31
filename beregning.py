@@ -1,5 +1,4 @@
 import numpy
-import inndata
 import system
 import geometri
 import egenvekt
@@ -9,7 +8,7 @@ import klima
 import tilstand
 import TEST
 
-def beregn(ini):
+def beregn(i):
     import mast
 
     # R = bidrag til reaksjonskrefter og forskyvninger
@@ -39,8 +38,6 @@ def beregn(ini):
     # |                                     | 14 Vind (parallelt spor)
     #  -------------------------------------
 
-    # Oppretter inndataobjekt med data fra .ini-fil
-    i = inndata.Inndata(ini)
     # Oppretter masteobjekt med brukerdefinert høyde
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
@@ -196,7 +193,7 @@ def beregn(ini):
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
 
-    return i, master
+    return master
 
 
 

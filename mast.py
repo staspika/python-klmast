@@ -45,6 +45,7 @@ class Mast(object):
         self.stigning = stigning   # Mastens stigning (promille)
         self.k_g = k_g  # Knekklengdefaktor gurt
         self.k_d = k_d  # Knekklengdefaktordiagonal
+        self.laster = []
 
         # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
         if navn == "H6":
@@ -162,6 +163,10 @@ class Mast(object):
         elif self.type == "bjelke":
             Iz = self.Iz_profil
         return Iz
+
+    def add(self, last):
+        """Legger lastobjekt til liste over laster"""
+        self.laster.append(last)
 
     def _sammenlign_tilstander(self, t1, t2):
         """Sjekker om t1 er dimensjonerende framfor t2.
