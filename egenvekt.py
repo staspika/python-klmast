@@ -1,10 +1,8 @@
-import numpy
-import deformasjon
 from last import *
 from numpy import array
 
 
-def beregn_egenvekt(sys, i, mast, a_T):
+def beregn_egenvekt(sys, i, mast, a_T, a_T_dot):
     """Beregner bidrag grunnet egenvekt av ledninger,
     isolatorer, utliggere og eventuell travers.
     """
@@ -12,20 +10,19 @@ def beregn_egenvekt(sys, i, mast, a_T):
     masteavstand = i.masteavstand
     sms = i.sms
     fh = i.fh
+    sh = i.sh
 
-    R = numpy.zeros((15, 9))
-
-    # Initierer variabler for kontaktledninger
-    N_kl, M_y_kl, D_z_kl = 0, 0, 0  # [N], [Nm], [mm]
-
-    # Variabel M/M_1/M_2 brukes kun for mellomlagring av M_y-verdier
-
-    R[0][4] = mast.egenvekt * mast.h  # [N] Egenlast, mast
+    # Mastens genvekt [N]
+    f = array([mast.egenvekt * mast.h, 0, 0])
+    e = array([0, 0, 0])
+    egenvekt = Last(navn="mast, egenvekt", type=0, f=f, e=e, kat="g")
 
     # Antall utliggere
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         utliggere = 2
-        R[0][4] += 220  # [N] Vekt av travers
+        f = array([220, 0, 0])
+        e = array([0, 0, 0])
+        travers = Last(navn="Travers", type=0, f=f, e=e, kat="g")
     else:
         utliggere = 1
 
@@ -36,52 +33,34 @@ def beregn_egenvekt(sys, i, mast, a_T):
         angrepshøyden til det horisontalte kraftparet
         i utliggerens innspenning grunnet gravitasjonlast.
         """
-        h_utligger = fh + (i.sh/2)
 
-        """
-        # Utliggere
-        R[0][4] += sys.utligger["Egenvekt"] * sms
-        M = sys.utligger["Egenvekt"] * sys.utligger["Momentarm"] * sms ** 2
-        R[0][0] += M
-        R[0][8] += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
-        """
+        # Utligger
+        f = array([sys.utligger["Egenvekt"] * sms, 0, 0])
+        e = array([fh + sh/2, 0, sys.utligger["Momentarm"] * sms])
+        utligger = Last(navn="Utligger", type=0, f=f, e=e, kat="g")
 
-
-        # Utliggere
-        fx = sys.utligger["Egenvekt"] * sms
-        f = np.array([fx, 0, 0])
-        ex = i.fh + i.sh/2
-        ez = sys.utligger["Momentarm"] * sms
-        e = np.array([ex, 0, ez])
-        utligger = Last(f=f, e=e, kat="g")
-
-        #morn morn
-
+        # Eksentrisitet i z-retning for KL.
+        if i.strekkutligger:
+            ez = a_T
+        else:
+            ez = a_T_dot
 
         # Bæreline
-        N_kl += sys.baereline["Egenvekt"] * masteavstand
-        M = sys.baereline["Egenvekt"] * masteavstand * a_T
-        M_y_kl += M
-        D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+        fx = sys.baereline["Egenvekt"] * masteavstand
+        f = array([fx, 0, 0])
+        e = array([fh + sh, 0, ez])
+        baereline = Last(navn="Baereline", type=1, f=f, e=e, kat="g")
 
         # Hengetråd
         L_henge = 8 * (masteavstand / 60)
-        N_kl += sys.hengetraad["Egenvekt"] * L_henge
-        M = sys.hengetraad["Egenvekt"] * L_henge * a_T
-        M_y_kl += M
-        D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+        f = array([sys.hengetraad["Egenvekt"] * L_henge, 0, 0])
+        e = array([fh + sh, 0, ez])
+        hengetraad = Last(navn="Hengetraad", type=1, f=f, e=e, kat="g")
 
         # Kontakttråd
         f = array([sys.kontakttraad["Egenvekt"] * masteavstand, 0, 0])
-        e = ([fh, 0, sms])
-        kl = Last(f=f, e=e, kat="g")
-        mast.add(kl)
-
-
-        N_kl += sys.kontakttraad["Egenvekt"] * masteavstand
-        M = sys.kontakttraad["Egenvekt"] * masteavstand * a_T
-        M_y_kl += M
-        D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+        e = ([fh, 0, ez])
+        kontakttraad = Last(navn="kontakttraad", type=1, f=f, e=e, kat="g")
 
         # Y-line
         if not sys.y_line == None:  # Sjekker at systemet har Y-line
@@ -91,37 +70,54 @@ def beregn_egenvekt(sys, i, mast, a_T):
                 L = 14
             elif sys.navn == "25" and i.radius >= 1200:
                 L = 18
-            N_kl += sys.y_line["Egenvekt"] * L
-            M = sys.y_line["Egenvekt"] * L * a_T
-            M_y_kl += M
-            D_z_kl += deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+            f = array([sys.y_line["Egenvekt"] * L, 0, 0])
+            e = array([fh + sh, 0, ez])
+            y_line = Last(navn="Y-line", type=1, f=f, e=e, kat="g")
 
     # Fixpunktmast
     if i.fixpunktmast:
-        R[2][4] = sys.fixline["Egenvekt"] * masteavstand
-        M = sys.fixline["Egenvekt"] * masteavstand * a_T
-        R[2][0] = M
-        h_utligger = fh + (i.sh / 2)  # Fixline montert på utligger
-        R[2][8] = deformasjon._beregn_deformasjon_M(mast, M, h_utligger, fh)
+        f = array([sys.fixline["Egenvekt"] * masteavstand, 0, 0])
+        e = array([fh + sh, 0, sms])
+        fixpunkt = Last(navn="fixpunkt", type=2, f=f, e=e, kat="g")
 
     # Fixavspenningsmast
     if i.fixavspenningsmast:
-        R[3][4] += sys.fixline["Egenvekt"] * masteavstand / 2
+        f = array([sys.fixline["Egenvekt"] * masteavstand / 2, 0, 0])
+        e = array ([fh+sh, 0, 0])
+        fixavspenning = Last(navn="fixavspenningsmast", type=3, f=f, e=e, kat="g")
 
     # Forbigangsledning
     if i.forbigang_ledn:
-        R[5][4] = sys.forbigangsledning["Egenvekt"] * masteavstand
-        R[5][4] += 150  # Isolator for forbigangsledning
+        # Isolatorens egenvekt er 150 [N] for forbigangsledning
+        fx = sys.forbigangsledning["Egenvekt"] * masteavstand + 150
+        f = array([fx, 0, 0])
+        e = array([i.hf, 0, 0])
+        forbigangsledn = Last(navn="Forbigangsledn", type=5, f=f, e=e, kat="g")
+
+        # Forbigangsledn henger i bakkant av mast dersom dette stemmer:
         if i.matefjern_ledn or i.at_ledn or i.jord_ledn:
+            f = array([fx, 0, 0])
+            e = array([i.hf, 0, -0.3])
+            forbigangsledn = Last(navn="Forbigangsledn", type=5, f=f, e=e, kat="g")
+
+            """
             # Eksentrisitet pga montert på siden av mast
             arm = -0.3  # Momentarm 0.3m (retning fra spor)
             M_1 = sys.forbigangsledning["Egenvekt"] * masteavstand * arm
             M_2 = 150 * arm  # Moment fra isolator
             R[5][0] = M_1 + M_2
             R[5][8] = deformasjon._beregn_deformasjon_M(mast, M_1 + M_2, i.hf, fh)
+            """
 
     # Returledninger (2 stk.)
     if i.retur_ledn:
+        # Isolatorens egenvekt er 150 [N] pr returledning
+        fx = 2 * (sys.returledning["Egenvekt"] * masteavstand + 100)
+        f = array([fx, 0, 0])
+        e = array([i.hr, 0, -0.5])
+        returledn = Last(navn="Returledn", type=6, f=f, e=e, kat=0)
+
+        """
         R[6][4] = 2 * sys.returledning["Egenvekt"] * masteavstand
         R[6][4] += 2 * 100  # # Isolatorer (2 stk.) for returledninger
         arm = -0.5  # Momentarm 0.5m (retning fra spor)
@@ -129,32 +125,44 @@ def beregn_egenvekt(sys, i, mast, a_T):
         M_2 = 2 * 100 * arm  # Moment fra isolator
         R[6][0] = M_1 + M_2
         R[6][8] = deformasjon._beregn_deformasjon_M(mast, M_1 + M_2, i.hr, fh)
-
-    # Mate-/fjernledning (n stk.)
-    if i.matefjern_ledn:
-        n = i.matefjern_antall
-        R[8][4] = n * sys.matefjernledning["Egenvekt"] * masteavstand
-        R[8][4] += 220  # Travers/isolator for mate-/fjern
+        """
 
     # Fiberoptisk
     if i.fiberoptisk_ledn:
-        R[7][4] = sys.fiberoptisk["Egenvekt"] * masteavstand
+        f = array([sys.fiberoptisk["Egenvekt"] * masteavstand, 0, 0])
+        e = array([i.fh, 0, -0.3])
+        fiberoptisk = Last(navn="Fiberoptisk", type=7, f=f, e=e, kat="g")
+
+    # Mate-/fjernledning (n stk.)
+    if i.matefjern_ledn:
+        # Det kan henge én eller to mate-/fjernledn. i masten.
+        n = i.matefjern_antall
+        # Isolatorens egenvekt er 220 [N] for mate-/fjernledn.
+        fx = n * sys.matefjernledning["Egenvekt"] * masteavstand + 220
+        f = array([fx, 0, 0])
+        e = array([i.hfj, 0, 0])
+        matefjernledn = Last(navn="Matefjernledn", type=8, f=f, e=e, kat="g")
 
     # AT-ledninger (2 stk.)
     if i.at_ledn:
-        R[9][4] = 2 * sys.at_ledning["Egenvekt"] * masteavstand
+        f = array([2 * sys.at_ledning["Egenvekt"] * masteavstand, 0, 0])
+        e = array([i.hfj, 0, 0])
+        at_ledn = Last(navn="AT-ledn", type=9, f=f, e=e, kat="g")
 
     # Jordledning
     if i.jord_ledn:
-        R[10][4] = sys.jordledning["Egenvekt"] * masteavstand
-        if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
-            arm = -0.3  # Momentarm 0.3m (retning fra spor)
-            M = sys.jordledning["Egenvekt"] * masteavstand * arm
-            R[10][0] = M
-            R[10][8] = deformasjon._beregn_deformasjon_M(mast, M, i.hj, fh)
+        f = array([sys.jordledning["Egenvekt"] * masteavstand, 0, 0])
+        e = array([i.hj, 0, 0])
+        jordledn = Last(navn="Jordledning", type=10, f=f, e=e, kat="g")
 
+        # Jordledninger henger i bakkant av mast dersom dette stemmer:
+        if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
+            f = array([sys.jordledning["Egenvekt"] * masteavstand, 0, 0])
+            e = array([i.hj, 0, -0.3])
+            jordledn = Last(navn="Jordledning", type=10, f=f, e=e, kat="g")
+
+    # Loddavspenning
     N_avsp = 0
-    # Vekt av avspenningslodd
     if i.fixavspenningsmast or i.avspenningsmast:
         utvekslingsforhold = 3
         if sys.navn == "35":
@@ -162,19 +170,16 @@ def beregn_egenvekt(sys, i, mast, a_T):
         # Strekk i kontakttraad + bæreline, omregnet til [N]
         N_avsp = 2 * 1000 * sys.kontakttraad["Strekk i ledning"] / utvekslingsforhold
     if i.fixavspenningsmast:
-        R[3][4] = N_avsp
+        f = array([N_avsp, 0, 0])
+        e = array(0, 0, 0)
+        loddavsp = Last(navn="Loddavspenning", type=3, f=f, e=e, kat="g")
     elif i.avspenningsmast:
-        R[4][4] = N_avsp
+        f = array([N_avsp, 0, 0])
+        e = array(0, 0, 0)
+        loddavsp = Last(navn="Loddavspenning", type=4, f=f, e=e, kat="g")
 
-
-    # Fyller inn matrise med kraftbidrag
-    # HER MÅ DET SORTERES IHHT BIDRAG I KL FUND / bidrag.txt !
-    R[1][0] = M_y_kl
-    R[1][4] = N_kl
-    R[1][8] = D_z_kl
-
-    return R
-
-
+    return utligger, baereline, hengetraad, y_line, kontakttraad, fixpunkt,\
+           fixavspenning, forbigangsledn, returledn, fiberoptisk, \
+           matefjernledn, at_ledn, jordledn, loddavsp
 
 
