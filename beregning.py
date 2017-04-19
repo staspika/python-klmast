@@ -12,32 +12,58 @@ import TEST
 def beregn(ini):
     import mast
 
-    # R = bidrag til reaksjonskrefter og forskyvninger
-    # R opprettes og beregnes for hver mast i mastelista
+    # R = reaksjonskrefter ved mastens innspenning
+    #
+    #              R
+    #
+    #          Indekser:
+    #   0   1   2   3   4   5
+    #   My  Vy  Mz  Vz  N   T
+    #  ________________________
+    # |                        | 0  Egenvekt (mast, utligger, ledninger)
+    # |                        | 1  Kontaktledning
+    # |                        | 2  Fixpunkt
+    # |                        | 3  Fixavspenning
+    # |                        | 4  Avspenning
+    # |                        | 5  Forbigangsledning
+    # |                        | 6  Returledning
+    # |                        | 7  Fiberoptisk ledning
+    # |                        | 8  Mate-/fjernledning
+    # |                        | 9  AT-ledning
+    # |                        | 10 Jordledning
+    # |                        | 11 Snø og is
+    # |                        | 12 Vind (fra mast, mot spor)
+    # |                        | 13 Vind (fra spor, mot mast)
+    # |                        | 14 Vind (parallelt spor)
+    #  ------------------------
+    #
+    #
+    # D = forskyvning av mast i kontakttradhøyde FH
+    #
+    #       D
+    #
+    #   Indekser:
+    #   0   1   2
+    #   Dy  Dz  phi
+    #  _____________
+    # |             | 0  Egenvekt (mast, utligger, ledninger)
+    # |             | 1  Kontaktledning
+    # |             | 2  Fixpunkt
+    # |             | 3  Fixavspenning
+    # |             | 4  Avspenning
+    # |             | 5  Forbigangsledning
+    # |             | 6  Returledning
+    # |             | 7  Fiberoptisk ledning
+    # |             | 8  Mate-/fjernledning
+    # |             | 9  AT-ledning
+    # |             | 10 Jordledning
+    # |             | 11 Snø og is
+    # |             | 12 Vind (fra mast, mot spor)
+    # |             | 13 Vind (fra spor, mot mast)
+    # |             | 14 Vind (parallelt spor)
+    #  -------------
 
-    #
-    #                   R
-    #
-    #               Indekser:
-    #   0   1   2   3   4   5   6    7   8
-    #   My  Vy  Mz  Vz  N   T   phi  Dy  Dz
-    #  _____________________________________
-    # |                                     | 0  Egenvekt (mast, utligger, ledninger)
-    # |                                     | 1  Kontaktledning
-    # |                                     | 2  Fixpunkt
-    # |                                     | 3  Fixavspenning
-    # |                                     | 4  Avspenning
-    # |                                     | 5  Forbigangsledning
-    # |                                     | 6  Returledning
-    # |                                     | 7  Fiberoptisk ledning
-    # |                                     | 8  Mate-/fjernledning
-    # |                                     | 9  AT-ledning
-    # |                                     | 10 Jordledning
-    # |                                     | 11 Snø og is
-    # |                                     | 12 Vind (fra mast, mot spor)
-    # |                                     | 13 Vind (fra spor, mot mast)
-    # |                                     | 14 Vind (parallelt spor)
-    #  -------------------------------------
+
 
     # Oppretter inndataobjekt med data fra .ini-fil
     i = inndata.Inndata(ini)
@@ -64,7 +90,13 @@ def beregn(ini):
 
     grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
 
+    # FELLES FOR ALLE MASTER
+    F = []
+    F.append(egenvekt.beregn())
+    F.append(k1.beregn())
+    F.append(k2.beregn())
 
+    # UNIKT FOR HVER MAST
     for mast in master:
 
         # Bygger R-matrise

@@ -115,6 +115,8 @@ class Mast(object):
         self.forskyvning_kl = None
         self.forskyvning_tot = None
 
+        self.krefter = []
+
     def __repr__(self):
         Iy = self.Iy(self.h)/10**8
         Iz = self.Iz(self.h)/10**6

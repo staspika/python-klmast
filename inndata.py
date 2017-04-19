@@ -44,7 +44,8 @@ class Inndata(object):
         self.systemnavn = cfg.get("System", "systemnavn")
         self.radius = cfg.getint("System", "radius")
         self.hogfjellsgrense = cfg.getboolean("System", "hogfjellsgrense")
-        self.masteavstand = cfg.getfloat("System", "masteavstand")
+        self.a1 = cfg.getfloat("System", "a1")
+        self.a2 = cfg.getfloat("System", "a2")
         self.vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
 
         # Geometri
