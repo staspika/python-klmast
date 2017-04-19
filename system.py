@@ -26,7 +26,6 @@ class System(object):
 
 def hent_system(i):
     """Returnerer navngitt system"""
-    navn = i.systemnavn
 
 
     # Bære/fixliner
@@ -73,56 +72,52 @@ def hent_system(i):
                      "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5}
 
     # AT-ledninger
-    Al_400_37 = {"Navn": "Al_400_37", "Egenvekt": 10.31,
+    at_ledninger = []
+    Al_400_37 = {"Navn": "Al 400-37 uisolert", "Egenvekt": 10.31,
                          "Diameter": 25.34, "Tverrsnitt": 381.0,
                          "Max tillatt spenning": 50.0}
-    Al_240_19 = {"Navn": "Al_240_19", "Egenvekt": 6.46,
+    Al_240_19 = {"Navn": "Al 240-19 uisolert", "Egenvekt": 6.46,
                          "Diameter": 20.0, "Tverrsnitt": 238.76,
                          "Max tillatt spenning": 50.0}
-    Al_150_19 = {"Navn": "Al_150_19", "Egenvekt": 4.07,
+    Al_150_19 = {"Navn": "Al 150-19 uisolert", "Egenvekt": 4.07,
                          "Diameter": 15.9, "Tverrsnitt": 150.90,
                          "Max tillatt spenning": 50.0}
-    BLX_T_241_19_iso = {"Navn": "BLX_T_241_19_iso", "Egenvekt": 8.13,
+    BLX_T_241_19_iso = {"Navn": "BLX-T 241-19 isolert", "Egenvekt": 8.13,
                          "Diameter": 26.10, "Tverrsnitt": 241.0,
                          "Max tillatt spenning": 80.0}
-    BLX_T_209_9_19_iso = {"Name": "BLX_T_209_9_19_iso", "Egenvekt": 7.91,
+    BLX_T_209_9_19_iso = {"Name": "BLX-T 209,9-19 isolert", "Egenvekt": 7.91,
                          "Diameter": 25.8, "Tverrsnitt": 209.0,
                          "Max tillatt spenning": 80.0}
-    BLX_T_111_3_7_iso = {"Navn": "BLX_T_111_3_7_iso", "Egenvekt": 4.71,
+    BLX_T_111_3_7_iso = {"Navn": "BLX-T 111,3-7 isolert", "Egenvekt": 4.71,
                          "Diameter": 20.4, "Tverrsnitt": 111.0,
                          "Max tillatt spenning": 80.0}
+    at_ledninger.extend([Al_400_37, Al_240_19, Al_150_19, BLX_T_241_19_iso,
+                        BLX_T_209_9_19_iso, BLX_T_111_3_7_iso])
 
     # Jordledninger
-    KHF_70 = {"Navn": "KHF_70", "Egenvekt": 6.23,
+    jordledninger = []
+    KHF_70 = {"Navn": "KHF-70", "Egenvekt": 6.23,
                           "Diameter": 10.7, "Tverrsnitt": 70.0,
                           "Max tillatt spenning": 125.0}
-    KHF_95 = {"Navn": "KHF_95", "Egenvekt": 8.44,
+    KHF_95 = {"Navn": "KHF-95", "Egenvekt": 8.44,
                           "Diameter": 12.6, "Tverrsnitt": 95.0,
                           "Max tillatt spenning": 125.0}
-
-    # Setter AT-ledning
-    if i.at_type == 0:
-        at_ledning = Al_400_37
-    elif i.at_type == 1:
-        at_ledning = Al_240_19
-    elif i.at_type == 2:
-        at_ledning = Al_150_19
-    elif i.at_type == 3:
-        at_ledning = BLX_T_241_19_iso
-    elif i.at_type == 4:
-        at_ledning = BLX_T_209_9_19_iso
-    elif i.at_type == 5:
-        at_ledning = BLX_T_111_3_7_iso
-
-    # Setter jordledning
-    if i.jord_type == 0:
-        jordledning = KHF_70
-    elif i.jord_type == 1:
-        jordledning = KHF_95
+    jordledninger.extend([KHF_70, KHF_95])
 
     # Utliggere (s2x for system 20A/20B/25, s3x for system 35)
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
+
+
+    # Setter AT-ledning
+    for ledning in at_ledninger:
+        if ledning["Navn"] == i.at_type:
+            at_ledning = ledning
+
+    # Setter jordledning
+    for ledning in jordledninger:
+        if ledning["Navn"] == i.jord_type:
+            jordledning = ledning
 
     # Setter utligger
     if i.systemnavn=="35":
@@ -131,28 +126,28 @@ def hent_system(i):
         utligger = utligger_s2x
 
 
-    if navn == "20a":
+    if i.systemnavn == "20a":
         return System(navn="20a", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger)
-    elif navn == "20b":
+    elif i.systemnavn == "20b":
         return System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=None, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger)
-    elif navn == "25":
+    elif i.systemnavn == "25":
         return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
                      fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                      jordledning=jordledning, utligger=utligger)
-    elif navn == "35":
+    elif i.systemnavn == "35":
         return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
