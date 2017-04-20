@@ -1,4 +1,6 @@
 import math
+from kraft import *
+
 import numpy
 import deformasjon
 
@@ -17,19 +19,13 @@ def beregn_vindkasthastighetstrykk_EC(z):
     """
 
     # Inngangsparametre
+    v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
     c_dir = 1.0     # [1] Retningsfaktor
     c_season = 1.0  # [1] Årstidsfaktor
     c_alt = 1.0     # [1] Nivåfaktor
     c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
-    v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
-    kategori = 2
-    # ---------------------------!!NB!!-------------------------------#
-    #
-    #   Hvordan settes terrengformfaktoren c_0 riktig?
-    #   Hva med v_b_0 ?
-    #
-    # ----------------------------------------------------------------#
     c_0 = 1.0       # [1] Terrengformfaktoren
+    kategori = 2
 
     # Basisvindhastighet [m/s]
     v_b = c_dir * c_season * c_alt * c_prob * v_b_0
@@ -50,7 +46,7 @@ def beregn_vindkasthastighetstrykk_EC(z):
 
     # Stedets vindhastighetstrykk [N/m^2]
     rho = 1.25                  # [kg/m^3] Luftens densitet
-    q_m = 0.5 * rho * (v_m)**2  # [N / m^2]
+    q_m = 0.5 * rho * v_m ** 2  # [N / m^2]
 
     # Turbulensintensiteten
     k_l = 1.0  # Turbulensintensiteten, anbefalt verdi er 1.0
@@ -71,39 +67,7 @@ def beregn_vindkasthastighetstrykk_EC(z):
     return q_p
 
 
-def vindlast_mast(i, mast, q_p):
-    """Beregner reaksjonskrefter fra vindlast på mast"""
-
-    cf = 2.2                            # Vindkraftfaktor mast
-    q = q_p * cf * mast.A_ref           # [N/m]
-    q_par = q_p * cf * mast.A_ref_par   # [N/m]
-    R = numpy.zeros((15, 9))
-
-    # Vind normalt spor
-    V_z = q * mast.h
-    M_y = q * mast.h ** 2 * (0.5)  # ANGREPSPUNKT VINDLAST????
-    D_z = _beregn_vindforskyvning_Dz(mast, i, True, q_p)
-    # Vind fra mast, mot spor
-    R[12][0] = M_y
-    R[12][3] = V_z
-    R[12][7] = D_z
-    # Vind fra spor, mot mast
-    R[13][0] = - M_y
-    R[13][3] = - V_z
-    R[13][7] = - D_z
-
-    # Vind parallelt spor
-    V_y = q_par * mast.h
-    M_z = q_par * mast.h ** 2 * (0.5)  # ANGREPSPUNKT VINDLAST????
-    D_y = _beregn_vindforskyvning_Dy(mast, i, True, q_p)
-    R[14][1] = - V_y
-    R[14][2] = M_z
-    R[14][7] = - D_y
-
-    return R
-
-
-def q_KL(i, sys, q_p):
+def q_KL(sys, i, q_p):
     """Beregner vindlast på kontaktledningen. Denne verdien brukes til
     å beregne masteavstanden, a."""
 
@@ -113,17 +77,15 @@ def q_KL(i, sys, q_p):
     q = 0                # [N/m] Brukes til å beregne masteavstand, a
 
     # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
+    utliggere = 1
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
         utliggere = 2
-    else:
-        utliggere = 1
 
-    # ALTERNATIV #1: q = 1.2 * q_KL
-    # Kontakttråd.
+    # ALTERNATIV #1: q = 1.2 * q_kontakttråd
     q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
     q += q_kl
 
-    # ALTERNATIV #2: q = q_KL + q_bæreline + q_henge + q_Y
+    # ALTERNATIV #2: q = q_kontakttråd + q_bæreline + q_henge + q_Y
     # Kontakttråd.
     # q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
     # q += q_kl
@@ -148,17 +110,48 @@ def q_KL(i, sys, q_p):
     return q
 
 
+def vindlast_mast(mast, i, q_p):
+    """Definerer vindlast på mast"""
+
+    cf = 2.2                           # [1] Vindkraftfaktor mast
+    h = i.h                            # [m] Høyde mast
+    q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
+    q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
+
+    # Liste over krefter som skal returneres
+    F = []
+
+    F.append(Kraft(navn="Vindlast: Fra mast mot spor", type=12,
+                   q=[0, 0, q_normalt],
+                   b=[-h, 0, 0],
+                   e=[-h/2, 0, 0]))
+
+    F.append(Kraft(navn="Vindlast: Fra spor mot mast", type=13,
+                   q=[0, 0, -q_normalt],
+                   b=[-h, 0, 0],
+                   e=[-h/2, 0, 0]))
+
+    F.append(Kraft(navn="Vindlast: Parallelt spor", type=14,
+                   q=[0, q_par, 0],
+                   b=[-h, 0, 0],
+                   e=[-h/2, 0, 0]))
+
+    return F
+
+
 def vindlast_ledninger(i, mast, sys, q_p):
     """Beregner respons pga. vindlast på ledninger pr. meter [N/m].
     Skjærkraftbidraget [N] fra hver ledning finnes ved å multiplisere
     q_p med ledningens diameter [m] multiplisert med 1 m lengde."""
 
     # Inngangsparametre
-    a = i.masteavstand           # [m]
+    a = (i.a2 + i.a1) / 2        # [m] Midlere masteavstand
+    a2 = i.a2                    # [m] Avstand til nest mast
     cf = 1.1                     # [1] Vindkraftfaktor ledning
     d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, Y-line
 
-    R = numpy.zeros((15, 9))
+    # F = liste over krefter som skal returneres
+    F = []
 
     # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
     if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
@@ -166,29 +159,30 @@ def vindlast_ledninger(i, mast, sys, q_p):
     else:
         utliggere = 1
 
-    # Kontakttråd.
-    q_kl = q_p * cf * sys.kontakttraad["Diameter"] / 1000  # [N / m]
-    V_z_kl = utliggere * q_kl * a
-    M_y_kl = V_z_kl * i.fh
-    D_z_kl = deformasjon._beregn_deformasjon_P(mast, V_z_kl, i.fh, i.fh)
+    # Kontakttråd
+    F.append(Kraft(navn="Vindlast: Kontakttråd", type=1,
+                   q=[0, 0, q_p * cf * sys.kontakttraad["Diameter"] / 1000],
+                   b=[0, a, 0],
+                   e=[-i.fh, 0, 0]))
 
-    # Bæreline.
-    q_b = q_p * cf * sys.baereline["Diameter"] / 1000  # [N / m]
-    V_z_b = utliggere * q_b * a
-    M_y_b = V_z_b * (i.fh + i.sh)
-    D_z_b = deformasjon._beregn_deformasjon_P(mast, V_z_b, (i.fh + (i.sh / 2)), i.fh)
+    # Bæreline
+    F.append(Kraft(navn="Vindlast: Bæreline", type=1,
+                   q=[0, 0, q_p * cf * sys.baereline["Diameter"] / 1000],
+                   b=[0, a, 0],
+                   e=[-i.fh - i.sh, 0, 0]))
 
-    # Hengetråd.
+    # Hengetråd
     for utligger in range(utliggere):
         d_henge += sys.hengetraad["Diameter"] / 1000  # [m]
     # Bruker lineær interpolasjon for å finne lengde av hengetråd
     L_henge = 8 * a / 60
     q_henge = q_p * cf * d_henge  # [N/m]
-    V_z_henge = q_henge * L_henge
-    M_y_henge = V_z_henge * (i.fh + (i.sh / 2))
-    D_z_henge = deformasjon._beregn_deformasjon_P(mast, V_z_henge, (i.fh + (i.sh / 2)), i.fh)
+    F.append(Kraft(navn="Vindlast: Hengetråd", type=1,
+                   q=[0, 0, q_henge],
+                   b=[0, L_henge, 0],
+                   e=[-i.fh - i.sh/2, 0, 0]))
 
-    # Y-line.
+    # Y-line
     if not sys.y_line == None:  # Sjekker at systemet har Y-line
         d_Y += sys.y_line["Diameter"] / 1000  # [m]
         # L_Y = lengde Y-line
@@ -196,41 +190,39 @@ def vindlast_ledninger(i, mast, sys, q_p):
             L_Y = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L_Y = 18
-    q_Y = q_p * cf * d_Y
-    V_z_Y = q_Y * L_Y
-    M_y_Y = V_z_Y * (i.fh + (i.sh / 2))
-    D_z_Y = deformasjon._beregn_deformasjon_P(mast, V_z_Y, (i.fh + (i.sh / 2)), i.fh)
-
-    R[1][0] = M_y_kl + M_y_b + M_y_henge + M_y_Y
-    R[1][3] = V_z_kl + V_z_b + V_z_henge + V_z_Y
-    R[1][8] = D_z_kl + D_z_b + D_z_henge + D_z_Y
+    q_Y = q_p * cf * d_Y  # [N/m]
+    F.append(Kraft(navn="Vindlast: Y-line", type=1,
+                   q=[0, 0, q_Y],
+                   b=[0, L_Y, 0],
+                   e=[-i.fh - i.sh/2, 0, 0]))
 
     # Fikspunktmast
     if i.fixpunktmast:
-        q_fixpunkt = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        V_z_fixpunkt = q_fixpunkt * a
-        R[2][0] = V_z_fixpunkt * (i.fh + i.sh)
-        R[2][3] = V_z_fixpunkt
-        R[2][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fixpunkt, (i.fh + i.sh), i.fh)
+        F.append(Kraft(navn="Vindlast: Fixpunktmast", type=2,
+                       q=[0, 0, q_p * cf * sys.fixline["Diameter"] / 1000],
+                       b=[0, a, 0],
+                       e=[-i.fh - i.sh, 0, 0]))
 
     # Fiksavspenningsmast
     if i.fixavspenningsmast:
-        q_fixavsp = q_p * cf * sys.fixline["Diameter"] / 1000  # [N / m]
-        V_z_fixavsp = q_fixavsp * (a / 2)
-        R[3][0] = V_z_fixavsp * (i.fh + i.sh)
-        R[3][3] = V_z_fixavsp
-        R[3][8] = deformasjon._beregn_deformasjon_P(mast, V_z_fixavsp, (i.fh + i.sh), i.fh)
+        F.append(Kraft(navn="Vindlast: Fixavspenningsmast", type=3,
+                       q=[0, 0, q_p * cf * sys.fixline["Diameter"] / 1000],
+                       b=[0, a2/2, 0],
+                       e=[-i.fh - i.sh, 0, 0]))
 
     # Avspenningsmast
-    # ?????????????????????????????????????????????????????????????????
+    if i.avspenningsmast:
+        F.append(Kraft(navn="Vindlast: Avspenningsmast", type=4,
+                       q=[0, 0, q_p * cf * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000)],
+                       b=[0, a2/2, 0],
+                       e=[-i.fh - i.sh, 0, 0]))
 
     # Forbigangsledning
     if i.forbigang_ledn:
-        q_forbi = q_p * cf * sys.forbigangsledning["Diameter"] / 1000  # [N /m]
-        V_z_forbi = q_forbi * a
-        R[5][0] = V_z_forbi * i.hf
-        R[5][3] = V_z_forbi
-        R[5][8] = deformasjon._beregn_deformasjon_P(mast, V_z_forbi, i.hf, i.fh)
+        F.append(Kraft(navn="Vindlast: Forbigangsledn", type=5,
+                       q=[0, 0, q_p * cf * sys.forbigangsledning["Diameter"] / 1000],
+                       b=[0, a, 0],
+                       e=[-i.hf, 0, 0]))
 
     # Returledning (2 stk.)
     if i.retur_ledn:
