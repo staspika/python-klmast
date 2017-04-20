@@ -32,7 +32,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         n = 2
         F.append(Kraft(navn="Egenvekt: Traverser", type=0,
-                       f=[220, 0, 0]), e=[-fh -sh/2, 0, 0])
+                       f=[220, 0, 0], e=[-fh -sh/2, 0, 0]))
 
     # Utligger(e)
     F.append(Kraft(navn="Egenvekt: Utligger", type=0,
@@ -76,19 +76,17 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     f_z_avsp_b = 0
     f_z_avsp_kl = 0
     if i.siste_for_avspenning:
-        f_z_avsp_b = - n * s * (sms / a2)
-        f_z_avsp_kl = - n * s * (arm / a2)
+        f_z_avsp_b = - s * (sms / a2)
+        f_z_avsp_kl = - s * (arm / a2)
         if i.master_bytter_side:
-            f_z_avsp_b = n * s * (sms / a2)
-            f_z_avsp_kl = n * s * (arm / a2)
+            f_z_avsp_b = s * (sms / a2)
+            f_z_avsp_kl = s * (arm / a2)
     F.append(Kraft(navn="Sidekraft: Bæreline", type=1,
                    f=[0, 0, f_z_kurvatur + f_z_avsp_b],
                    e=[-fh - sh, 0, sms]))
     F.append(Kraft(navn="Sidekraft: Kontakttråd", type=1,
                    f=[0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk],
                    e=[-fh, 0, arm]))
-    hey = f_z_sikksakk
-    print(1.3*hey)
 
     # Vandringskraft
     dl = alpha * delta_t * i.avstand_fixpunkt
@@ -135,7 +133,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if i.fixavspenningsmast:
             s = sys.fixline["Strekk i ledning"]
             s_avsp = 1000 * s / utvekslingsforhold
-            F.append(Kraft(navn="Fixavspenningsmast: Avspenningslodd", type=0,
+            F.append(Kraft(navn="Fixavspenningsmast: Avspenningslodd", type=1,
                            f=[s_avsp, 0, 0], e=[-fh - sh, 0, 0]))
 
     # Avspenningsmast
@@ -155,9 +153,9 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
                        f=[g_b * a1 / 2, 0, 0], e=[-fh - sh, 0, 0]))
         F.append(Kraft(navn="Egenvekt: Kontakttråd til avspenning", type=0,
                        f=[g_kl * a1 / 2, 0, 0], e=[-fh, 0, 0]))
-        F.append(Kraft(navn="Sidekraft: Avspenning bæreline", type=4,
+        F.append(Kraft(navn="Sidekraft: Avspenning bæreline", type=1,
                        f=[0, s_b, f_z_b], e=[-fh - sh, 0, 0]))
-        F.append(Kraft(navn="Sidekraft: Avspenning kontakttråd", type=4,
+        F.append(Kraft(navn="Sidekraft: Avspenning kontakttråd", type=1,
                        f=[0, s_kl, f_z_kl], e=[-fh, 0, 0]))
         # Avspenningsbardun
         if i.avspenningsbardun:
@@ -168,7 +166,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if sys.navn == "35":
             utvekslingsforhold = 2
         s_avsp = (s_b + s_kl) / utvekslingsforhold
-        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=0,
+        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=1,
                        f=[s_avsp, 0, 0], e=[-fh - sh/2, 0, 0]))
 
     # Forbigangsledning (1 stk., inkl. isolator)
@@ -250,7 +248,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     # Bidrag til normalkraft dersom ulik høyde mellom nabomaster
     s = 1000 * (sys.baereline["Strekk i ledning"] + sys.kontakttraad["Strekk i ledning"])
     f_x = s * (i.delta_h1 / a1 + i.delta_h2 / a2)
-    F.append(Kraft(navn="Geometri: Ulik mellom master", type=0,
+    F.append(Kraft(navn="Geometri: Ulik høyde mellom master", type=0,
                    f=[f_x, 0, 0], e=[-fh - sh/2, 0, (sms+arm)/2]))
 
     return F

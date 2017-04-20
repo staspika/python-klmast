@@ -1,4 +1,4 @@
-from numpy import array
+from numpy import array, count_nonzero
 
 class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster og momenter"""
@@ -24,7 +24,10 @@ class Kraft(object):
 
     def __repr__(self):
         rep = "\n{}   type={}\n".format(self.navn, self.type)
-        rep += "f = {}\n".format(self.f)
+        if not count_nonzero(self.q) == 0:
+            rep += "q*b = {}\n".format(self.q*self.b)
+        else:
+            rep += "f = {}\n".format(self.f)
         return rep
 
 

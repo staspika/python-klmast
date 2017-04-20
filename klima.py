@@ -111,11 +111,11 @@ def q_KL(i, sys, q_p):
     return q
 
 
-def vindlast_mast(mast, i, q_p):
+def vindlast_mast(mast, q_p):
     """Definerer vindlast på mast"""
 
     cf = 2.2                           # [1] Vindkraftfaktor mast
-    h = i.h                            # [m] Høyde mast
+    h = mast.h                            # [m] Høyde mast
     q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
     q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
 

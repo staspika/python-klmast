@@ -18,8 +18,8 @@ def _beregn_reaksjonskrefter(F):
     for j in F:
         R_0 = numpy.zeros((15, 6))
         f = j.f
-        if numpy.count_nonzero(j.q) is not 0:
-            f = [j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b]
+        if not numpy.count_nonzero(j.q) == 0:
+            f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
 
         # Sorterer bidrag til reaksjonskrefter
         R_0[j.type][0] = (f[0] * j.e[2]) + (f[2] * -j.e[0])
@@ -94,13 +94,10 @@ def beregn(ini):
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
-    q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
+    # q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
+    q_p = i.vindkasthastighetstrykk * 1000
     B1, B2, e_max = geometri.beregn_sikksakk(sys, i)
     a_T, a_T_dot = geometri.beregn_arm(i, B1)
-
-    arm = a_T_dot
-    if i.strekkutligger:
-        arm = a_T
 
 
     # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
@@ -118,21 +115,21 @@ def beregn(ini):
     F_generell = []
     F_generell.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
     F_generell.extend(klima.vindlast_ledninger(i, sys, q_p))
-    F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
-
+    #F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
 
 
     # UNIKT FOR HVER MAST
     for mast in master:
 
-        F = F_generell
+        F = []
+        F.extend(F_generell)
         F.extend(laster.egenvekt_mast(mast))
-        F.extend(klima.vindlast_mast(mast, i, q_p))
+        F.extend(klima.vindlast_mast(mast, q_p))
 
-        if mast.navn == "HE200B":
+
+        if mast.navn == "H5":
             for j in F:
                 print(j)
-
 
 
         if i.ec3:
