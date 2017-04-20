@@ -44,7 +44,7 @@ class Mast(object):
         self.toppmaal = toppmaal  # Toppmål mast [mm]
         self.stigning = stigning   # Mastens stigning (promille)
         self.k_g = k_g  # Knekklengdefaktor gurt
-        self.k_d = k_d  # Knekklengdefaktordiagonal
+        self.k_d = k_d  # Knekklengdefaktor diagonal
 
         # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
         if navn == "H6":
@@ -62,7 +62,7 @@ class Mast(object):
         elif type == "bjelke":
             self.A = A_profil
 
-        self.max_hoyde = h_max
+        self.h_max= h_max
 
         # Setter mastehøyde h samt hødeavhengige attributter
         self.h = h
@@ -102,10 +102,10 @@ class Mast(object):
         self.materialkoeff = materialkoeff
 
         # Setter stålkvalitet
+        self.fy = 355
         if s235:
             self.fy = 235
-        else:
-            self.fy = 355
+
 
         self.Wy_el = self.Iy(h) / (self.bredde(h) / 2)
         self.Wz_el = self.Iz(h) / (self.d / 2)
@@ -115,7 +115,7 @@ class Mast(object):
         self.forskyvning_kl = None
         self.forskyvning_tot = None
 
-        self.krefter = []
+        self.F = []
 
     def __repr__(self):
         Iy = self.Iy(self.h)/10**8
@@ -183,14 +183,6 @@ class Mast(object):
                     # Sammenligner N
                     if abs(t1.K[4]) > abs(t2.K[4]):
                         return True
-        else:
-            # Sammenligner forskyvning D_z
-            if abs(t1.K[8]) > abs(t2.K[8]):
-                return True
-            elif abs(t1.K[8]) == abs(t2.K[8]):
-                # Sammenligner D_y
-                if abs(t1.K[7]) > abs(t2.K[7]):
-                    return True
         return False
 
     def lagre_tilstand(self, tilstand):

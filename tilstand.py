@@ -10,15 +10,13 @@ class Tilstand(object):
                  g=0, l=0, f1=0, f2=0, f3=0, k=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
-         K[:][0:6] = reaksjonskrefter ved fundament
-         K[:][6:] = torsjonsvinkel/forskyvning av kontakttråd
          """
         self.R = R
 
         """ DENNE KODESNUTTEN FUNGERER IKKE. R_f skal erstatte
         R ved utskrift av bidrag i resultater.skriv_bidrag()
         for å ta hensyn til lastfaktorer, slik at utskrift
-        kan sammenligner med bidragslista fra Kl_fund.
+        kan sammenlignes med bidragslista fra Kl_fund.
 
         # R_f = R-matrise med lastfaktorer multiplisert inn
         self.R_f = numpy.zeros((15,9))
