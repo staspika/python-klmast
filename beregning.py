@@ -75,9 +75,10 @@ def beregn(ini):
     B1, B2, e_max = geometri.beregn_sikksakk(sys, i)
     a_T, a_T_dot = geometri.beregn_arm(i, B1)
 
-    print("\n")
-    print("B1={}   B2 = {}   a_T = {}[m]   a_T_dot = {} [m]".format(B1, B2, a_T, a_T_dot))
-    print("\n")
+    arm = a_T_dot
+    if i.strekkutligger:
+        arm = a_T
+
 
     # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
     # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
@@ -92,9 +93,9 @@ def beregn(ini):
 
     # FELLES FOR ALLE MASTER
     F = []
-    F.append(egenvekt.beregn())
-    F.append(k1.beregn())
-    F.append(k2.beregn())
+    F.extend(egenvekt.beregn())
+    F.extend(k1.beregn())
+    F.extend(k2.beregn())
 
     # UNIKT FOR HVER MAST
     for mast in master:
@@ -103,26 +104,26 @@ def beregn(ini):
         q = klima.q_KL(i, sys, q_p)
         a = geometri.beregn_masteavstand(sys, i, B1, B2, e_max, q)
         R = numpy.zeros((15, 9))
-        R += egenvekt.beregn_egenvekt(sys, i, mast, a_T)
-        R += k1.sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2)
+        R += egenvekt.beregn_egenvekt(sys, i, mast, arm)
+        R += k1.sidekraft(sys, i, mast, arm, B1, B2)
         if i.fixpunktmast:
-            R += k2.beregn_fixpunkt(sys, i, mast, a_T, a_T_dot)
+            R += k2.beregn_fixpunkt(sys, i, mast, arm)
         if i.fixavspenningsmast:
-            R += k2.beregn_fixavspenning(sys, i, mast, a_T, a_T_dot, B1, B2)
+            R += k2.beregn_fixavspenning(sys, i, mast, arm, B1, B2)
         if i.avspenningsmast:
-            R += k2.beregn_avspenning(sys, i, mast, a_T, a_T_dot, B1, B2)
+            R += k2.beregn_avspenning(sys, i, mast, arm, B1, B2)
         if i.forbigang_ledn:
-            R += k2.sidekraft_forbi(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_forbi(sys, i, mast, arm)
         if i.retur_ledn:
-            R += k2.sidekraft_retur(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_retur(sys, i, mast, arm)
         if i.fiberoptisk_ledn:
-            R += k2.sidekraft_fiber(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_fiber(sys, i, mast, arm)
         if i.matefjern_ledn:
-            R += k2.sidekraft_matefjern(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_matefjern(sys, i, mast, arm)
         if i.at_ledn:
-            R += k2.sidekraft_at(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_at(sys, i, mast, arm)
         if i.jord_ledn:
-            R += k2.sidekraft_jord(sys, i, mast, a_T, a_T_dot)
+            R += k2.sidekraft_jord(sys, i, mast, arm)
 
         if i.ec3:
             # Beregninger med lastfaktorkombinasjoner ihht. EC3

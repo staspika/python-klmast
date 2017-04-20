@@ -1,11 +1,10 @@
-import numpy as np
+from numpy import array
 
 class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster og momenter"""
 
-    def __init__(self, navn="", type=0, f=np.array([0,0,0]),
-                 q=np.array([0,0,0]), b=np.array([0,0,0]),
-                 e=np.array([0,0,0])):
+    def __init__(self, navn="", type=0, f=[0,0,0],
+                 q=[0,0,0], b=[0,0,0], e=[0,0,0]):
         """
         Initierer kraft/moment-objekt.
         :param navn: Lastens navn
@@ -17,11 +16,12 @@ class Kraft(object):
         """
 
         self.navn = navn
-        self.f = f
-        self.q = q
-        self.b = b
-        self.e = e
         self.type = type
+        self.f = array(f)
+        self.q = array(q)
+        self.b = array(b)
+        self.e = array(e)
+
 
 
 

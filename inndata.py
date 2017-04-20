@@ -46,6 +46,8 @@ class Inndata(object):
         self.hogfjellsgrense = cfg.getboolean("System", "hogfjellsgrense")
         self.a1 = cfg.getfloat("System", "a1")
         self.a2 = cfg.getfloat("System", "a2")
+        self.delta_h1 = cfg.getfloat("System", "delta_h1")
+        self.delta_h2 = cfg.getfloat("System", "delta_h2")
         self.vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
 
         # Geometri

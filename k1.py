@@ -1,10 +1,7 @@
-import numpy
-import deformasjon
-from numpy import array
 from kraft import *
 
 
-def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
+def sidekraft(sys, i, arm, B1, B2):
     """Beregner sidekraft [kN] og moment [kNm] ved normal ledningsføring,
     samt forskyvning [mm]. Videre beregnes vandringskraften pga.
     temperatureffekter.
@@ -20,10 +17,6 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
     sms = i.sms
     alpha = 1.7 * 10 ** (-5)                            # [1/(grader C)]
     delta_t = 45                                        # [(grader C)]
-
-    arm = a_T_dot
-    if i.strekkutligger:
-        arm = a_T
 
     # F = liste over krefter som skal returneres
     F = []
@@ -47,20 +40,20 @@ def sidekraft(sys, i, mast, a_T, a_T_dot, B1, B2):
             f_z_avsp_kl = utliggere * s * (arm / a2)
 
     F.append(Kraft(navn="Sidekraft: Bæreline", type=1,
-                   f=array([0, 0, f_z_kurvatur + f_z_avsp_b]),
-                   e=array([-fh-sh, 0, sms])))
+                   f=[0, 0, f_z_kurvatur + f_z_avsp_b],
+                   e=[-fh-sh, 0, sms]))
     F.append(Kraft(navn="Sidekraft: Kontakttråd", type=1,
-                   f=array([0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk]),
-                   e=array([-fh, 0, arm])))
+                   f=[0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk],
+                   e=[-fh, 0, arm]))
 
     # Vandringskraft
     dl = alpha * delta_t * i.avstand_fixpunkt
     if not utliggere == 2:
         F.append(Kraft(navn="Vandringskraft: Bæreline", type=1,
-                       f=array([0, f_z_kurvatur * (dl / sms), 0]),
-                       e=array([-fh - sh, 0, sms])))
+                       f=[0, f_z_kurvatur * (dl / sms), 0],
+                       e=[-fh - sh, 0, sms]))
         F.append(Kraft(navn="Vandringskraft: Kontakttråd", type=1,
-                       f=array([0, (f_z_kurvatur+f_z_sikksakk) * (dl / arm), 0]),
-                       e=array([-fh - sh, 0, arm])))
+                       f=[0, (f_z_kurvatur + f_z_sikksakk) * (dl / arm), 0],
+                       e=[-fh - sh, 0, arm]))
 
     return F
