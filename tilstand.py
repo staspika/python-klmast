@@ -12,6 +12,13 @@ class Tilstand(object):
          samt lastfaktorer ved gitt lasttilfelle.
          """
         self.R = R
+        self.g = g
+        self.l = l
+        self.f1 = f1
+        self.f2 = f2
+        self.f3 = f3
+        self.k = k
+
 
         """ DENNE KODESNUTTEN FUNGERER IKKE. R_f skal erstatte
         R ved utskrift av bidrag i resultater.skriv_bidrag()

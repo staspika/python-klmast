@@ -1,22 +1,22 @@
 Normalkraft i bruddgrensetilstand                        N_max (kN)
 
-1 stk KL                                                 0.91
+1 stk KL                                                 0.00
+Avspenningsmast                                          0.00
 
 
 
 
 
+Mast                                                     14.38
 
-Mast                                                     7.75
-
-SUM                                                      0.00
+SUM                                                      35.94
 
 
 
 Skjærkraft i bruddgrensetilstand                         Vz_max (kN)
 
-1 stk KL                                                 0.04
-
+1 stk KL                                                 2.10
+Avspenningsmast                                          2.06
 
 
 
@@ -30,22 +30,22 @@ SUM                                                      0.00
 
 Moment i bruddgrensetilstand                             My_max (kNm)
 
-1 stk KL                                                 3.42
+1 stk KL                                                 13.54
+Avspenningsmast                                          13.88
 
 
 
 
 
+Mast                                                     3.92
 
-Mast                                                     0.73
-
-SUM                                                      8.47
+SUM                                                      15.90
 
 
 
 Torsjonsmoment i bruddgrensetilstand / ulykkestilstand   T_max (kNm)
 
-Fra KL                                                   0.00
+Fra KL                                                   -0.52
 Differansestrekk + vandringskrefter                      0.00
 
 SUM                                                      0.00

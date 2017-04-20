@@ -173,13 +173,14 @@ class Mast(object):
         if t2 == None:
             return True
         if t1.navn == "bruddgrense":
+            # Sammenligner My
             if abs(t1.K[0]) > abs(t2.K[0]):
                 return True
             elif abs(t1.K[0]) == abs(t2.K[0]):
-                # Sammenligner UR
-                if t1.utnyttelsesgrad > t2.utnyttelsesgrad:
+                # Sammenligner Vz
+                if abs(t1.K[3]) > abs(t2.K[3]):
                     return True
-                elif t1.utnyttelsesgrad == t2.utnyttelsesgrad:
+                elif abs(t1.K[0]) == abs(t2.K[0]):
                     # Sammenligner N
                     if abs(t1.K[4]) > abs(t2.K[4]):
                         return True

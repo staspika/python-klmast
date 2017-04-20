@@ -15,7 +15,7 @@ with open("input.ini", "r") as ini:
     i, master = beregning.beregn(ini)
 
 g, b = resultater.sorter_resultater(master)
-mast = master[b]  # g for gitter, b for bjelke
+mast = master[g]  # g for gitter, b for bjelke
 #resultater.skriv_bidrag(i, mast)
 
 print()

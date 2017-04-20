@@ -20,8 +20,8 @@ def print_memory_info():
 if __name__ == "__main__":
     a = [2, 4, 1]
     b = numpy.array(a)
-    c = numpy.array([2, 4, 1])
-    print(a)
-    print(b)
-    print(c)
-    print(b==c)
+    c = numpy.array([0, 0, 0])
+    d = numpy.count_nonzero(b)
+    e = numpy.count_nonzero(c)
+    print(d)
+    print(e)

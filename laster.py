@@ -73,6 +73,8 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     if i.strekkutligger:
         f_z_kurvatur = n * s * (a1 + a2) / (2 * r)
         f_z_sikksakk = n * s * 2 * ((B2 - B1) / a1)
+    f_z_avsp_b = 0
+    f_z_avsp_kl = 0
     if i.siste_for_avspenning:
         f_z_avsp_b = - n * s * (sms / a2)
         f_z_avsp_kl = - n * s * (arm / a2)
@@ -85,6 +87,8 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     F.append(Kraft(navn="Sidekraft: Kontakttråd", type=1,
                    f=[0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk],
                    e=[-fh, 0, arm]))
+    hey = f_z_sikksakk
+    print(1.3*hey)
 
     # Vandringskraft
     dl = alpha * delta_t * i.avstand_fixpunkt
@@ -165,7 +169,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
             utvekslingsforhold = 2
         s_avsp = (s_b + s_kl) / utvekslingsforhold
         F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=0,
-                       f=[s_avsp, 0, 0]), e=[-fh - sh/2, 0, 0])
+                       f=[s_avsp, 0, 0], e=[-fh - sh/2, 0, 0]))
 
     # Forbigangsledning (1 stk., inkl. isolator)
     if i.forbigang_ledn:

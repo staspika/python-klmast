@@ -67,9 +67,10 @@ def beregn_vindkasthastighetstrykk_EC(z):
     return q_p
 
 
-def q_KL(sys, i, q_p):
+def q_KL(i, sys, q_p):
     """Beregner vindlast på kontaktledningen. Denne verdien brukes til
-    å beregne masteavstanden, a."""
+    å beregne masteavstanden, a.
+    """
 
     # Inngangsparametre
     cf = 1.1             # [1] Vindkraftfaktor ledning
@@ -78,7 +79,7 @@ def q_KL(sys, i, q_p):
 
     # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
     utliggere = 1
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
+    if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         utliggere = 2
 
     # ALTERNATIV #1: q = 1.2 * q_kontakttråd
@@ -121,17 +122,17 @@ def vindlast_mast(mast, i, q_p):
     # Liste over krefter som skal returneres
     F = []
 
-    F.append(Kraft(navn="Vindlast: Fra mast mot spor", type=12,
+    F.append(Kraft(navn="Vindlast: Mast", type=12,
                    q=[0, 0, q_normalt],
                    b=h,
                    e=[-h/2, 0, 0]))
 
-    F.append(Kraft(navn="Vindlast: Fra spor mot mast", type=13,
+    F.append(Kraft(navn="Vindlast: Fra Mast", type=13,
                    q=[0, 0, -q_normalt],
                    b=h,
                    e=[-h/2, 0, 0]))
 
-    F.append(Kraft(navn="Vindlast: Parallelt spor", type=14,
+    F.append(Kraft(navn="Vindlast: Mast", type=14,
                    q=[0, q_par, 0],
                    b=h,
                    e=[-h/2, 0, 0]))
@@ -152,30 +153,31 @@ def vindlast_ledninger(i, sys, q_p):
     # F = liste over krefter som skal returneres
     F = []
 
-    # Bidrag fra KL, bæreline, hengetråd og Y-line avhenger av utliggere
-    if i.siste_for_avspenning or i.avspenningsmast or i.linjemast_utliggere == 2:
-        utliggere = 2
-    else:
-        utliggere = 1
+    # Antall utliggere
+    n = 1
+    if i.siste_for_avspenning or i.linjemast_utliggere == 2:
+        n = 2
+
 
     # Kontakttråd
-    F.append(Kraft(navn="Vindlast: Kontakttråd", type=1,
-                   f=[0, 0, a * q_p * cf * sys.kontakttraad["Diameter"] / 1000],
-                   e=[-i.fh, 0, 0]))
+    f_z = n * a * q_p * cf * sys.kontakttraad["Diameter"] / 1000
+    F.append(Kraft(navn="Vindlast: Kontakttråd", type=12,
+                   f=[0, 0, f_z], e=[-i.fh, 0, 0]))
+    F.append(Kraft(navn="Vindlast: Kontakttråd", type=13,
+                   f=[0, 0, - f_z], e=[-i.fh, 0, 0]))
 
     # Bæreline
     F.append(Kraft(navn="Vindlast: Bæreline", type=1,
-                   f=[0, 0, a * q_p * cf * sys.baereline["Diameter"] / 1000],
+                   f=[0, 0, n * a * q_p * cf * sys.baereline["Diameter"] / 1000],
                    e=[-i.fh - i.sh, 0, 0]))
 
     # Hengetråd
-    for utligger in range(utliggere):
-        d_henge += sys.hengetraad["Diameter"] / 1000  # [m]
+    d_henge = sys.hengetraad["Diameter"] / 1000  # [m]
     # Bruker lineær interpolasjon for å finne lengde av hengetråd
     L_henge = 8 * a / 60
     q_henge = q_p * cf * d_henge  # [N/m]
     F.append(Kraft(navn="Vindlast: Hengetråd", type=1,
-                   f=[0, 0, L_henge * q_henge],
+                   f=[0, 0, n * L_henge * q_henge],
                    e=[-i.fh - i.sh/2, 0, 0]))
 
     # Y-line
@@ -186,10 +188,10 @@ def vindlast_ledninger(i, sys, q_p):
             L_Y = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L_Y = 18
-    q_Y = q_p * cf * d_Y  # [N/m]
-    F.append(Kraft(navn="Vindlast: Y-line", type=1,
-                   f=[0, 0, L_Y * q_Y],
-                   e=[-i.fh - i.sh/2, 0, 0]))
+        q_Y = q_p * cf * d_Y  # [N/m]
+        F.append(Kraft(navn="Vindlast: Y-line", type=1,
+                       f=[0, 0, n * L_Y * q_Y],
+                       e=[-i.fh - i.sh/2, 0, 0]))
 
     # Fikspunktmast
     if i.fixpunktmast:
@@ -231,7 +233,7 @@ def vindlast_ledninger(i, sys, q_p):
     if i.matefjern_ledn:
         n = i.matefjern_antall
         F.append(Kraft(navn="Vindlast: Mate-/fjernledning", type=8,
-                       f=[0, 0, a * q_p * cf * n * sys.matefjernledning["Diameter"] / 1000],
+                       f=[0, 0, n * a * q_p * cf * sys.matefjernledning["Diameter"] / 1000],
                        e=[-i.hfj, 0, 0]))
 
     # AT-ledning (2 stk.)
@@ -249,9 +251,10 @@ def vindlast_ledninger(i, sys, q_p):
     return F
 
 
-def isogsno_last(i, mast, sys, a_T, a_T_dot):
+def isogsno_last(i, sys, a_T, a_T_dot):
     """Beregner krefter på mast på grunn av is- og snølast på
-    ledninger"""
+    ledninger.
+    """
 
     a = (i.a2 + i.a1) / 2  # [m] Midlere masteavstand
     a2 = i.a2              # [m] Avstand til neste mast
@@ -267,49 +270,41 @@ def isogsno_last(i, mast, sys, a_T, a_T_dot):
     F = []
 
     # Antall utliggere
-    utliggere = 1
+    n = 1
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
-        utliggere = 2
+        n = 2
         F.append(Kraft(navn="Islast: Travers", type=11,
                        f=[2 * i.traverslengde * (2.5 + 0.5 * 100), 0, 0],
                        e=[-i.fh - i.sh/2, 0, 0]))
 
-    for utligger in range(utliggere):
+    # Utliggere
+    F.append(Kraft(navn="Islast: Utligger", type=11,
+                   f=[n * i.sms * (2.5 + 0.5 * 50), 0, 0],
+                   e=[-i.fh - i.sh, 0, i.sms/2]))
 
-        """Setter vertikal momentarm til kontakttrådhøyde
-        + halvparten av systemhøyden, et konservativt estimat for
-        angrepshøyden til det horisontalte kraftparet
-        i utliggerens innspenning grunnet snølast.
-        """
+    # Bæreline
+    F.append(Kraft(navn="Islast: Bæreline", type=11,
+                   f=[n * a * (2.5 + 0.5 * sys.baereline["Diameter"]), 0, 0],
+                   e=[-i.fh - i.sh, 0, i.sms]))
 
-        # Utliggere
-        F.append(Kraft(navn="Islast: Utligger", type=11,
-                       f=[i.sms * (2.5 + 0.5 * 50), 0, 0],
-                       e=[-i.fh - i.sh, 0, i.sms/2]))
+    # Hengetråd: Ingen snølast.
 
-        # Bæreline
-        F.append(Kraft(navn="Islast: Bæreline", type=11,
-                       f=[a * (2.5 + 0.5 * sys.baereline["Diameter"]), 0, 0],
-                       e=[-i.fh - i.sh, 0, i.sms]))
+    # Kontakttråd
+    F.append(Kraft(navn="Islast: Kontakttråd", type=11,
+                   f=[n * a * (2.5 + 0.5 * sys.kontakttraad["Diameter"]), 0, 0],
+                   e=[-i.fh, 0, arm]))
 
-        # Hengetråd: Ingen snølast.
-
-        # Kontakttråd
-        F.append(Kraft(navn="Islast: Kontakttråd", type=11,
-                       f=[a * (2.5 + 0.5 * sys.kontakttraad["Diameter"]), 0, 0],
-                       e=[-i.fh, 0, arm]))
-
-        # Y-line
-        if not sys.y_line == None:  # Sjekker at systemet har Y-line
-            # L = lengde Y-line
-            L = 0
-            if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
-                L = 14
-            elif sys.navn == "25" and i.radius >= 1200:
-                L = 18
-            F.append(Kraft(navn="Islast: Y-line", type=11,
-                           f=[L * (2.5 + 0.5 * sys.y_line["Diameter"]), 0, 0],
-                           e=[-i.fh, 0, i.sms]))
+    # Y-line
+    if not sys.y_line == None:  # Sjekker at systemet har Y-line
+        # L = lengde Y-line
+        L = 0
+        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+            L = 14
+        elif sys.navn == "25" and i.radius >= 1200:
+            L = 18
+        F.append(Kraft(navn="Islast: Y-line", type=11,
+                       f=[n * L * (2.5 + 0.5 * sys.y_line["Diameter"]), 0, 0],
+                       e=[-i.fh, 0, i.sms]))
 
     # Fikspunktmast
     if i.fixpunktmast:
@@ -322,12 +317,16 @@ def isogsno_last(i, mast, sys, a_T, a_T_dot):
         F.append(Kraft(navn="Islast: Fixavspenningsmast", type=11,
                        f=[(a2 / 2) * (2.5 + 0.5 * sys.fixline["Diameter"]), 0, 0],
                        e=[-i.fh - i.sh, 0, 0]))
+        F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
+                       f=[50, 0, 0], e=[-i.fh - i.sh, 0, 0]))
 
     # Avspenningsmast
     if i.avspenningsmast:
         F.append(Kraft(navn="Islast: Avspenningsmast", type=11,
                        f=[(a2 / 2) * (2.5 + 0.5 * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000)), 0, 0],
-                       e=[-i.fh - i.sh, 0, 0]))
+                       e=[-i.fh - i.sh/2, 0, 0]))
+    F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
+                   f=[50, 0, 0], e=[-i.fh - i.sh/2, 0, 0]))
 
     # Forbigangsledning
     if i.forbigang_ledn:
@@ -345,7 +344,7 @@ def isogsno_last(i, mast, sys, a_T, a_T_dot):
     if i.retur_ledn:
         # Snølast på isolator antas lik 20 N
         F.append(Kraft(navn="Islast: Returledning", type=11,
-                       f=[2 * 20 + a * (2.5 + 0.5 * sys.returledning["Diameter"]), 0, 0],
+                       f=[2 * (20 + a * (2.5 + 0.5 * sys.returledning["Diameter"])), 0, 0],
                        e=[-i.hr, 0, -0.5]))
 
     # Mate-/fjernledning (n stk.)
@@ -353,7 +352,7 @@ def isogsno_last(i, mast, sys, a_T, a_T_dot):
         # Snølast på isolator for mate-/fjernledning antas lik 220 N
         n = i.matefjern_antall
         F.append(Kraft(navn="Islast: Mate-/fjernledning", type=11,
-                       f=[a * (220 + (2.5 + 0.5 * sys.matefjernledning["Diameter"])), 0, 0],
+                       f=[n * a * (220 + (2.5 + 0.5 * sys.matefjernledning["Diameter"])), 0, 0],
                        e=[-i.hfj, 0, 0]))
 
     # Fiberoptisk
@@ -370,20 +369,13 @@ def isogsno_last(i, mast, sys, a_T, a_T_dot):
 
     # Jordledning
     if i.jord_ledn:
+        e_z = 0
+        if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
+            e_z = -0.3
         F.append(Kraft(navn="Islast: Jordledning", type=11,
                        f=[a * (2.5 + 0.5 * sys.returledning["Diameter"]), 0, 0],
-                       e=[-i.hj, 0, 0]))
-        if i.matefjern_ledn or i.at_ledn or i.forbigang_ledn:
-            # Jordledningen henger i bakkant av masten.
-            F.append(Kraft(navn="Islast: Jordledning", type=11,
-                           f=[a * (2.5 + 0.5 * sys.returledning["Diameter"]), 0, 0],
-                           e=[-i.hj, 0, -0.3]))
+                       e=[-i.hj, 0, e_z]))
 
-    # Avspenningslodd
-    if i.avspenningsmast or i.fixavspenningsmast:
-        # Forenklet beregning av snølast på avspenningslodd
-        F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
-                       f=[50, 0, 0]))
 
     return F
 

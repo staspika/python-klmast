@@ -3,10 +3,34 @@ import inndata
 import system
 import geometri
 import laster
-import k1
 import klima
 import tilstand
 import TEST
+
+
+def _beregn_reaksjonskrefter(F):
+    """Beregner reaksjonskrefter og plasserer bidragene i riktig rad
+    og kolonne i R-matrisen."""
+
+    # Initierer R-matrisen for reaksjonskrefter
+    R = numpy.zeros((15, 6))
+
+    for j in F:
+        R_0 = numpy.zeros((15, 6))
+        f = j.f
+        if numpy.count_nonzero(j.q) is not 0:
+            f = [j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b]
+
+        # Sorterer bidrag til reaksjonskrefter
+        R_0[j.type][0] = (f[0] * j.e[2]) + (f[2] * -j.e[0])
+        R_0[j.type][1] = f[1]
+        R_0[j.type][2] = (f[0] * -j.e[1]) + (f[1] * j.e[0])
+        R_0[j.type][3] = f[2]
+        R_0[j.type][4] = f[0]
+        R_0[j.type][5] = (f[1] * -j.e[2]) + (f[2] * j.e[1])
+        R += R_0
+
+    return R
 
 def beregn(ini):
     import mast
@@ -91,26 +115,31 @@ def beregn(ini):
     grensetilstander = [bruddgrense]
 
     # FELLES FOR ALLE MASTER
-    F = []
-    F.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
+    F_generell = []
+    F_generell.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
+    F_generell.extend(klima.vindlast_ledninger(i, sys, q_p))
+    F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
+
+
 
     # UNIKT FOR HVER MAST
     for mast in master:
 
+        F = F_generell
         F.extend(laster.egenvekt_mast(mast))
+        F.extend(klima.vindlast_mast(mast, i, q_p))
 
-        # Bygger R-matrise
-        q = klima.q_KL(i, sys, q_p)
-        a = geometri.beregn_masteavstand(sys, i, B1, B2, e_max, q)
-        R = numpy.zeros((15, 6))
-        R += laster.beregn_egenvekt(sys, i, mast, arm)
+        if mast.navn == "HE200B":
+            for j in F:
+                print(j)
+
+
 
         if i.ec3:
             # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-            #R += klima.isogsno_last(i, mast, sys, a_T)
-            R += klima.vindlast_mast(i, mast, q_p)
-            R += klima.vindlast_ledninger(i, mast, sys, q_p)
+            R = _beregn_reaksjonskrefter(F)
+
 
             # Samler laster med lastfaktor g
             gravitasjonslast = R[0][:]
