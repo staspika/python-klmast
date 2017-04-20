@@ -2,9 +2,8 @@ import numpy
 import inndata
 import system
 import geometri
-import egenvekt
+import laster
 import k1
-import k2
 import klima
 import tilstand
 import TEST
@@ -89,41 +88,22 @@ def beregn(ini):
     forskyvning_tot = {"Navn": "forskyvning_tot",
                        "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
 
-    grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
+    grensetilstander = [bruddgrense]
 
     # FELLES FOR ALLE MASTER
     F = []
-    F.extend(egenvekt.beregn())
-    F.extend(k1.beregn())
-    F.extend(k2.beregn())
+    F.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
 
     # UNIKT FOR HVER MAST
     for mast in master:
 
+        F.extend(laster.egenvekt_mast(mast))
+
         # Bygger R-matrise
         q = klima.q_KL(i, sys, q_p)
         a = geometri.beregn_masteavstand(sys, i, B1, B2, e_max, q)
-        R = numpy.zeros((15, 9))
-        R += egenvekt.beregn_egenvekt(sys, i, mast, arm)
-        R += k1.sidekraft(sys, i, mast, arm, B1, B2)
-        if i.fixpunktmast:
-            R += k2.beregn_fixpunkt(sys, i, mast, arm)
-        if i.fixavspenningsmast:
-            R += k2.beregn_fixavspenning(sys, i, mast, arm, B1, B2)
-        if i.avspenningsmast:
-            R += k2.beregn_avspenning(sys, i, mast, arm, B1, B2)
-        if i.forbigang_ledn:
-            R += k2.sidekraft_forbi(sys, i, mast, arm)
-        if i.retur_ledn:
-            R += k2.sidekraft_retur(sys, i, mast, arm)
-        if i.fiberoptisk_ledn:
-            R += k2.sidekraft_fiber(sys, i, mast, arm)
-        if i.matefjern_ledn:
-            R += k2.sidekraft_matefjern(sys, i, mast, arm)
-        if i.at_ledn:
-            R += k2.sidekraft_at(sys, i, mast, arm)
-        if i.jord_ledn:
-            R += k2.sidekraft_jord(sys, i, mast, arm)
+        R = numpy.zeros((15, 6))
+        R += laster.beregn_egenvekt(sys, i, mast, arm)
 
         if i.ec3:
             # Beregninger med lastfaktorkombinasjoner ihht. EC3
