@@ -6,6 +6,7 @@ import laster
 import klima
 import tilstand
 import TEST
+import deformasjon
 
 
 def _beregn_reaksjonskrefter(F):
@@ -31,6 +32,35 @@ def _beregn_reaksjonskrefter(F):
         R += R_0
 
     return R
+
+
+def beregn_deformasjoner(mast, F, i):
+    """Beregner deformasjoner og plasserer bidragene
+     i riktig rad og kolonne i D-matrisen.
+    """
+
+    # Initerer deformasjonsmatrisen, D
+    D = numpy.zeros((15, 3))
+
+    for j in F:
+        D_0 = numpy.zeros((15, 3))
+
+        # D_y
+        D_0[j.type][0] = deformasjon._beregn_Dy_Py(mast, j.f[1], -j.e[0], i.fh) \
+                         + deformasjon._beregn_Dy_q(mast, j.q[1], j.b, i.fh)
+        # D_z
+        D_0[j.type][1] = deformasjon._beregn_Dz_Pz(mast, j.f[2], -j.e[0], i.fh) \
+                         + deformasjon._beregn_Dz_q(mast, j.q[2], j.b, i.fh) \
+                         + deformasjon._beregn_Dz_M(mast, (j.f[0] * j.e[2] + j.f[2] * -j.e[0]), -j.e[0], i.fh)
+        # phi
+        D_0[j.type][2] = 0
+        if mast.type == "bjelke":
+            D_0[j.type][2] = deformasjon._beregn_phi(mast, (j.f[1] * -j.e[2] + j.f[2] * j.e[1]), -j.e[0], i.fh)
+
+        D += D_0
+
+    return D
+
 
 def beregn(ini):
     import mast
