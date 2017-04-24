@@ -216,16 +216,16 @@ def beregn(ini):
                                         K1 = K + k * (sno[index] + vind_max[index])
                                         K2 = K + k * (sno[index] + vind_min[index])
                                         K3 = K + k * (sno[index] + vind_par[index])
-                                        t1 = tilstand.Tilstand(mast, i, R, K1,
-                                                              grensetilstand,
+                                        t1 = tilstand.Tilstand(mast, i, R, K1, 1,
+                                                              grensetilstand, F,
                                                               g, l, f1, f2,
                                                               f3, k)
-                                        t2 = tilstand.Tilstand(mast, i, R, K2,
-                                                               grensetilstand,
+                                        t2 = tilstand.Tilstand(mast, i, R, K2, 2,
+                                                               grensetilstand, F,
                                                                g, l, f1, f2,
                                                                f3, k)
-                                        t3 = tilstand.Tilstand(mast, i, R, K3,
-                                                               grensetilstand,
+                                        t3 = tilstand.Tilstand(mast, i, R, K3, 3,
+                                                               grensetilstand, F,
                                                                g, l, f1, f2,
                                                                f3, k)
                                         mast.lagre_tilstand(t1)

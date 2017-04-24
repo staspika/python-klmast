@@ -33,10 +33,7 @@ class Mast(object):
             self.Iz_profil = Iz_profil
 
         self.Wyp = Wyp  # Plastisk tverrsnittsmodul om profilets sterke akse [mm^3]
-        if Wzp == 0:
-            self.Wzp = Wyp
-        else:
-            self.Wzp = Wzp
+        self.Wzp = Wzp
 
         self.toppmaal = toppmaal  # Toppmål mast [mm]
         self.stigning = stigning  # Mastens stigning (promille)
@@ -156,7 +153,7 @@ class Mast(object):
         """
         if self.type == "B":
             z = self.bredde(x)/2 - self.noytralakse
-            Iy = 2 * (self.Iy_profil + self.A_profil * z**2)
+            Iy = 2 * (self.Iz_profil + self.A_profil * z**2)
         if self.type == "H":
             z = self.bredde(x)/2 - self.noytralakse
             Iy = 4 * (self.Iy_profil + self.A_profil * z**2)
@@ -169,7 +166,7 @@ class Mast(object):
         i avstand x fra mastens toppunkt [mm^4]
         """
         if self.type == "B":
-            Iz = 2 * self.Iz_profil
+            Iz = 2 * self.Iy_profil
         if self.type == "H":
             y = self.bredde(x)/2 - self.noytralakse
             Iz = 4 * (self.Iz_profil + self.A_profil * y**2)
