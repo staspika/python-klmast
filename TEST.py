@@ -18,10 +18,6 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    a = [2, 4, 1]
-    b = numpy.array(a)
-    c = numpy.array([0, 0, 0])
-    d = numpy.count_nonzero(b)
-    e = numpy.count_nonzero(c)
-    print(d)
-    print(e)
+    a = 6
+    b = 2 / 3 * 6
+    print(b)

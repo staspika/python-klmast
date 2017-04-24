@@ -122,17 +122,17 @@ def vindlast_mast(mast, q_p):
     # Liste over krefter som skal returneres
     F = []
 
-    F.append(Kraft(navn="Vindlast: Mast", type=12,
+    F.append(Kraft(navn="Vindlast: Mast (fra mast mot spor)", type=12,
                    q=[0, 0, q_normalt],
                    b=h,
                    e=[-h/2, 0, 0]))
 
-    F.append(Kraft(navn="Vindlast: Fra Mast", type=13,
+    F.append(Kraft(navn="Vindlast: Mast (fra spor mot mast)", type=13,
                    q=[0, 0, -q_normalt],
                    b=h,
                    e=[-h/2, 0, 0]))
 
-    F.append(Kraft(navn="Vindlast: Mast", type=14,
+    F.append(Kraft(navn="Vindlast: Mast (parallelt spor)", type=14,
                    q=[0, q_par, 0],
                    b=h,
                    e=[-h/2, 0, 0]))

@@ -196,6 +196,14 @@ class Mast(object):
                     # Sammenligner N
                     if abs(t1.K[4]) > abs(t2.K[4]):
                         return True
+        else:
+            # Sammenligner Dz
+            if abs(t1.K[1]) > abs(t2.K[1]):
+                return True
+            elif abs(t1.K[1]) == abs(t2.K[1]):
+                # Sammenligner phi
+                if abs(t1.K[2]) > abs(t2.K[2]):
+                    return True
         return False
 
     def lagre_tilstand(self, tilstand):

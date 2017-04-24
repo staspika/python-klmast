@@ -6,7 +6,7 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, R, K, grensetilstand, vindretning,
+    def __init__(self, mast, i, R, K, grensetilstand,
                  g=0, l=0, f1=0, f2=0, f3=0, k=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
@@ -19,38 +19,20 @@ class Tilstand(object):
         self.f3 = f3
         self.k = k
 
-
-        """ DENNE KODESNUTTEN FUNGERER IKKE. R_f skal erstatte
-        R ved utskrift av bidrag i resultater.skriv_bidrag()
-        for å ta hensyn til lastfaktorer, slik at utskrift
-        kan sammenlignes med bidragslista fra Kl_fund.
-
-        # R_f = R-matrise med lastfaktorer multiplisert inn
-        self.R_f = numpy.zeros((15,9))
-        self.R_f = numpy.multiply(R[0][:], g)
-        self.R_f[1][:] = numpy.multiply(R[1][:], l)
-        self.R_f[2:4][:] = numpy.multiply(R[2:4][:], f1)
-        self.R_f[4:8][:] = numpy.multiply(R[4:8][:], f2)
-        self.R_f[8:11][:] = numpy.multiply(R[8:11][:], f3)
-        self.R_f[11:][:] = numpy.multiply(R[11:][:], k)
-        """
-
         self.K = K
         self.navn = grensetilstand["Navn"]
         self.faktorer = {"g": g, "l": l, "f1": f1, "f2": f2, "f3": f3, "k": k}
-        # Vindretning #1 = fra mast mot spor
-        # Vindretning #2 = fra spor mot mast
-        # Vindretning #3 = parallelt spor
-        self.vindretning = vindretning
+
         if self.navn == "bruddgrense":
             self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
             # Ganger med 1000 for å få momenter i [Nmm]
             self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
             self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K, R)
+            self.utnyttelsesgrad = self.N_kap + self.My_kap + self.Mz_kap
         else:
             # Max tillatt utblåsning av kontaktledning i [mm]
-            self.utnyttelsesgrad = K[8]/63
+            self.utnyttelsesgrad = K[1]/63
 
     def __repr__(self):
         if self.navn == "bruddgrense":
@@ -62,9 +44,9 @@ class Tilstand(object):
                    "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
             rep += "Utnyttelsesgrad: {:.3g}%".format(self.utnyttelsesgrad * 100)
         else:
-            phi = self.K[6]*360/(2*math.pi)  # Torsjonsvinkel i grader
-            rep = "Torsjonsvinkel: {:.3g} grader    Dy = {:.3g}mm    " \
-                  "Dz = {:.3g}mm\n".format(phi, self.K[7], self.K[8])
+            phi = self.K[2]*360/(2*math.pi)  # Torsjonsvinkel i grader
+            rep = "Dy = {:.3g}mm    Dz = {:.3g}mm   " \
+                "Torsjonsvinkel: {:.3g} grader\n".format(self.K[0], self.K[1], phi)
             rep += "Utnyttelsesgrad: {:.3g}%".format(self.utnyttelsesgrad * 100)
         return rep
 
