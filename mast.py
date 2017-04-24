@@ -1,3 +1,5 @@
+import math
+
 class Mast(object):
     """Parent class for alle masteyper"""
 
@@ -36,23 +38,16 @@ class Mast(object):
         else:
             self.Wzp = Wzp
 
-        self.It = It  # St. Venants torsjonskonstant [mm^4]
-        self.Cw = Cw  # Hvelvingskonstant [mm^6]
+        self.toppmaal = toppmaal  # Toppmål mast [mm]
+        self.stigning = stigning  # Mastens stigning (promille)
+
         self.noytralakse = noytralakse  # Avstand ytterkant profil til n.a.
         self.d_h = d_h  # Diagonalhøyde [mm]
         self.d_b = d_b  # Diagonalbredde [mm]
-        self.toppmaal = toppmaal  # Toppmål mast [mm]
-        self.stigning = stigning   # Mastens stigning (promille)
         self.k_g = k_g  # Knekklengdefaktor gurt
         self.k_d = k_d  # Knekklengdefaktor diagonal
 
-        # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
-        if navn == "H6":
-            self.d_A = 691
-            self.d_I = 9.44*10**4
-        else:
-            self.d_A = d_b * d_h
-            self.d_I = d_b * d_h**3 / 12
+
 
         # Beregner totalt tverrsnittsareal A [mm^2]
         if type == "B":
@@ -106,9 +101,26 @@ class Mast(object):
         if s235:
             self.fy = 235
 
-
         self.Wy_el = self.Iy(h) / (self.bredde(h) / 2)
         self.Wz_el = self.Iz(h) / (self.d / 2)
+
+        # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
+        self.d_L = math.sqrt((0.9 * self.bredde(h)) ** 2 + 500 ** 2)
+        if navn == "H6":
+            self.d_A = 691
+            self.d_I = 9.44 * 10 ** 4
+        else:
+            self.d_A = d_b * d_h
+            self.d_I = d_b * d_h ** 3 / 12
+
+        self.It = It  # St. Venants torsjonskonstant [mm^4]
+        if type == "B":
+            self.It = 2 * It + 1 / 3 * 0.9 * \
+                               (self.bredde(h) * (
+                               (self.E * 1000 * 0.9 * self.bredde(h) * self.d_A) / (self.G * self.d_L ** 3)))
+        self.Cw = Cw  # Hvelvingskonstant [mm^6]
+        if type == "B":
+            self.Cw = 0.5 * self.Iy_profil * 0.9 * self.bredde(h)
 
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
         self.bruddgrense = None

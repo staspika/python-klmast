@@ -32,73 +32,65 @@ def bjelkeformel_M(mast, j, fh):
     return D
 
 
-def _beregn_Dz_Pz(mast, P, x, fh):
-    """Beregner derformasjonen D_z i kontakttrådhøyde
-    pga. punktlast P_z i angrepspunkt x."""
+def bjelkeformel_P(mast, j, fh):
+    """Beregner derformasjon i kontakttrådhøyde
+    pga. en generell horisontal last
+    """
 
-    E = mast.E                    # [N / mm^2] E-modul, stål
-    Iy = mast.Iy(mast.h * (2/3))  # [mm^4]
-    x = x * 1000                  # [mm]
-    fh = fh * 1000                # [mm]
+    E = mast.E
+    I_y = mast.Iy(mast.h)
+    I_z = mast.Iz(mast.h)
+    f_y = j.f[1]
+    f_z = j.f[2]
+    e_x = -j.e[0] * 1000
+    fh *= 1000
 
-    delta = (P / (2 * E * Iy)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D = numpy.zeros((15, 3))
 
-    return delta
+    D[j.type][1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D[j.type][0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
 
-
-def _beregn_Dz_q(mast, q, x, fh):
-    """Beregner deformasjonen D_z i kontakttråhøyde
-    pga. vindlast q i angrepspunkt x."""
-
-    E = mast.E                      # [N / mm^2] E-modul, stål
-    Iy = mast.Iy(mast.h * (2 / 3))  # [mm^4] i mastens 3.delspunkt
-    x = x * 1000                    # [mm]
-    fh = fh * 1000                  # [mm]
-
-    delta = ((q * fh ** 2) / (24 * E * Iy)) * (6 * x ** 2 - 4 * x * fh + fh ** 2)
-
-    return delta
+    return D
 
 
-def _beregn_Dy_q(mast, q, x, fh):
-    """Beregner deformasjonen D_y i kontakttråhøyde fh
-    pga. vindlast q i angrepspunkt x."""
+def bjelkeformel_q(mast, j, fh):
+    """Beregner derformasjon i kontakttrådhøyde
+    pga. en generell jevnt fordelt horisontal last
+    """
 
-    E = mast.E                      # [N / mm^2] E-modul, stål
-    Iz = mast.Iz(mast.h * (2 / 3))  # [mm^4] i mastens 3.delspunkt
-    x = x * 1000                    # [mm]
-    fh = fh * 1000                  # [mm]
+    E = mast.E
+    I_y = mast.Iy(2 / 3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
+    I_z = mast.Iz(2 / 3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
+    q_y = j.q[1]
+    q_z = j.q[2]
+    b = j.b * 1000
+    fh *= 1000
 
-    delta = ((q * fh ** 2) / (24 * E * Iz)) * (6 * x ** 2 - 4 * x * fh + fh ** 2)
+    D = numpy.zeros((15, 3))
 
-    return delta
+    D[j.type][1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    D[j.type][0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
 
-
-def _beregn_Dy_Py(mast, P, x, fh):
-    """Beregner derformasjonen D_y i kontakttrådhøyde
-    pga. punktlast P_y i angrepspunkt x."""
-
-    E = mast.E                      # [N / mm^2] E-modul, stål
-    Iz = mast.Iz(mast.h * (2 / 3))  # [mm^4]
-    x = x * 1000                    # [mm]
-    fh = fh * 1000                  # [mm]
-
-    delta = (P / (2 * E * Iz)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
-
-    return delta
+    return D
 
 
-def _beregn_phi(mast, T, x, fh):
+def torsjonsvinkel(mast, j, fh):
     """Beregner torsjonsvinkelen phi i radianer i kontakttrådhøyde FH
     for en fast innspent mast pga. tosjonsmoment i en avstand x fra
     fundamentet."""
 
+    T = abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])
     E = mast.E
     G = mast.G
     I_T = mast.It
     C_w = mast.Cw
-    K = math.sqrt((E * C_w) / (G * I_T))
+    alpha = math.sqrt((E * C_w) / (G * I_T))
+    fh *= 1000
+    e_x = -j.e[0] * 1000
 
-    phi = K * (T / (G * I_T)) * (math.tanh(x / K) * (math.cosh((fh / K) - 1)) - math.sinh(fh / K) + fh / K)
+    D = numpy.zeros((15, 3))
 
-    return phi
+    D[j.type][2] = alpha * (T / (G * I_T)) * \
+                   ((math.tanh(e_x / alpha) * (math.cosh((fh / alpha) - 1)) - math.sinh(fh / alpha) + fh / alpha))
+
+    return D

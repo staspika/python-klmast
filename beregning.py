@@ -28,7 +28,7 @@ def _beregn_reaksjonskrefter(F):
         R_0[j.type][2] = (f[0] * -j.e[1]) + (f[1] * j.e[0])
         R_0[j.type][3] = f[2]
         R_0[j.type][4] = f[0]
-        R_0[j.type][5] = (f[1] * -j.e[2]) + (f[2] * j.e[1])
+        R_0[j.type][5] = abs(f[1] * -j.e[2]) + abs(f[2] * j.e[1])
         R += R_0
 
     return R
@@ -45,18 +45,12 @@ def _beregn_deformasjoner(mast, F, i):
     for j in F:
         D_0 = numpy.zeros((15, 3))
 
-        D_0 = deformasjon.bjelkeformel_M(mast, j, i.fh) + 
+        D_0 += deformasjon.bjelkeformel_M(mast, j, i.fh) \
+            + deformasjon.bjelkeformel_P(mast, j, i.fh) \
+            + deformasjon.bjelkeformel_q(mast, j, i.fh)
 
-        # D_y
-        D_0[j.type][0] = deformasjon._beregn_Dy_Py(mast, j.f[1], -j.e[0], i.fh) \
-                         + deformasjon._beregn_Dy_q(mast, j.q[1], j.b, i.fh)
-        # D_z
-        D_0[j.type][1] = deformasjon._beregn_Dz_Pz(mast, j.f[2], -j.e[0], i.fh) \
-                         + deformasjon._beregn_Dz_q(mast, j.q[2], j.b, i.fh)
-        # phi
-        D_0[j.type][2] = 0
         if mast.type == "bjelke":
-            D_0[j.type][2] = deformasjon._beregn_phi(mast, (j.f[1] * -j.e[2] + j.f[2] * j.e[1]), -j.e[0], i.fh)
+            D_0 += deformasjon.torsjonsvinkel(mast, j, i.fh)
 
         D += D_0
 
