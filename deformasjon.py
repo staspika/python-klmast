@@ -2,24 +2,34 @@ import numpy
 import math
 
 
-def _beregn_Dz_M(mast, M, x, fh):
+def bjelkeformel_M(mast, j, fh):
     """Beregner deformasjon D_z i kontakttrådhøyde som følge av moment
     om  y-aksen med angrepspunkt i høyde x. Dersom FH > x interpoleres
     forskyvningen til høyde FH ved hjelp av tangens til vinkelen theta
     i høyde x ganget med høydedifferansen fh - x.
     """
-    E = mast.E              # [N / mm^2] E-modul, stål
-    Iy = mast.Iy(mast.h)    # [mm^4]
-    M = M * 1000            # Konverterer til [Nmm]
-    x = x * 1000            # Konverterer til [mm]
-    fh = fh * 1000          # Konverterer til [mm]
+    E = mast.E
+    I_y = mast.Iy(mast.h)
+    I_z = mast.Iz(mast.h)
+    f_x = j.f[0]
+    e_y = j.e[1] * 1000
+    e_z = j.e[2] * 1000
+    M_y = f_x * e_z
+    M_z = f_x * e_y
+    x = -j.e[0] * 1000
+    fh = fh * 1000
 
+    D = numpy.zeros((15, 3))
     if fh > x:
-        theta = (M * x) / (E * Iy)
-        D_z = (M * x ** 2) / (2 * E * Iy) + numpy.tan(theta) * (fh - x)
+        theta_y = (M_y * x) / (E * I_y)
+        theta_z = (M_z * x) / (E * I_z)
+        D[j.type][1] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
+        D[j.type][0] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
     else:
-        D_z = (M * fh ** 2) / (2 * E * Iy)
-    return D_z
+        D[j.type][1] = (M_y * fh ** 2) / (2 * E * I_y)
+        D[j.type][0] = (M_z * fh ** 2) / (2 * E * I_z)
+
+    return D
 
 
 def _beregn_Dz_Pz(mast, P, x, fh):
