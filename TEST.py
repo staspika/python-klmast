@@ -18,6 +18,8 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    a = 6
-    b = 2 / 3 * 6
-    print(b)
+    a = 1
+    b = 1
+    c = b
+    if c == a and b:
+        print("hei")

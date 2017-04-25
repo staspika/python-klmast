@@ -45,7 +45,6 @@ class Mast(object):
         self.k_d = k_d  # Knekklengdefaktor diagonal
 
 
-
         # Beregner totalt tverrsnittsareal A [mm^2]
         if type == "B":
             self.A = 2 * A_profil
@@ -108,7 +107,7 @@ class Mast(object):
             self.d_I = 9.44 * 10 ** 4
         else:
             self.d_A = d_b * d_h
-            self.d_I = d_b * d_h ** 3 / 12
+            self.d_I = d_b * d_h ** 3 / 12  # Sterk akse [mm^4]
 
         self.It = It  # St. Venants torsjonskonstant [mm^4]
         if type == "B":
@@ -147,15 +146,17 @@ class Mast(object):
             return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
 
-    def Iy(self, x):
+    def Iy(self, x, breddefaktor=1.0):
         """Beregner annet arealmoment om sterk akse
-        i avstand x fra mastens toppunkt [mm^4]
+        i avstand x fra mastens toppunkt [mm^4].
+        Breddefaktor kan oppgis for å ta hensyn til
+        redusert effektiv bredde grunnet helning på mast.
         """
         if self.type == "B":
-            z = self.bredde(x)/2 - self.noytralakse
+            z = breddefaktor*self.bredde(x)/2 - self.noytralakse
             Iy = 2 * (self.Iz_profil + self.A_profil * z**2)
         if self.type == "H":
-            z = self.bredde(x)/2 - self.noytralakse
+            z = breddefaktor*self.bredde(x)/2 - self.noytralakse
             Iy = 4 * (self.Iy_profil + self.A_profil * z**2)
         elif self.type == "bjelke":
             Iy = self.Iy_profil
@@ -182,16 +183,16 @@ class Mast(object):
         if t2 == None:
             return True
         if t1.navn == "bruddgrense":
-            # Sammenligner My
-            if abs(t1.K[0]) > abs(t2.K[0]):
+            # Sammenligner Utnyttelsesgrad
+            if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
                 return True
-            elif abs(t1.K[0]) == abs(t2.K[0]):
-                # Sammenligner Vz
-                if abs(t1.K[3]) > abs(t2.K[3]):
+            elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
+                # Sammenligner My
+                if abs(t1.K[0]) > abs(t2.K[0]):
                     return True
                 elif abs(t1.K[0]) == abs(t2.K[0]):
-                    # Sammenligner N
-                    if abs(t1.K[4]) > abs(t2.K[4]):
+                    # Sammenligner Mz
+                    if abs(t1.K[2]) > abs(t2.K[2]):
                         return True
         else:
             # Sammenligner Dz
@@ -256,7 +257,7 @@ def hent_master(hoyde, s235, materialkoeff):
               k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
     H6 = Mast(navn="H6", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3, A_ref=0.20,
               Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000,
-              k_g=0.85, k_d=0.55, h=hoyde, s235=s235, materialkoeff=materialkoeff)
+              k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     # Bjelkemaster (tverrsnittsklasse 1)
     HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81 * 10 ** 3,
@@ -288,7 +289,8 @@ def hent_master(hoyde, s235, materialkoeff):
     master.extend([B2, B3, B4, B6, H3, H5, H6])
     master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
-    return master
+    return [mast for mast in master if mast.navn == "B3"]
+    #return [mast for mast in master if mast.h_max >= hoyde]
 
 
 

@@ -18,14 +18,13 @@ with open("input.ini", "r") as ini:
 master_sortert = sorted(master, key=lambda mast:mast.bruddgrense.utnyttelsesgrad, reverse=True)
 
 for mast in master_sortert:
-    print("Navn: {}     UR = {} %".format(mast.navn, 100*mast.bruddgrense.utnyttelsesgrad))
+    print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense.utnyttelsesgrad))
 
 mastetype = "g"  # g for gitter, b for bjelke
 mast = None
-for m in master:
+for m in master_sortert:
     if mastetype == "g":
         if (m.type == "B" or m.type == "H") and m.bruddgrense.utnyttelsesgrad <= 1.0:
-
             mast = m
             break
     else:

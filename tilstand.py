@@ -35,7 +35,6 @@ class Tilstand(object):
             self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
             self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K, F)
-            self.utnyttelsesgrad = self.N_kap + self.My_kap + self.Mz_kap
         else:
             # Max tillatt utblåsning av kontaktledning i [mm]
             self.utnyttelsesgrad = K[1]/63
@@ -48,7 +47,8 @@ class Tilstand(object):
                 format(K[0],K[1], K[2],K[3], K[4], K[5])
             rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
                    "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
-            rep += "Utnyttelsesgrad: {:.3g}%".format(self.utnyttelsesgrad * 100)
+            rep += "Sum = {} %\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
+            rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
         else:
             phi = self.K[2]*360/(2*math.pi)  # Torsjonsvinkel i grader
             rep = "Dy = {:.3g}mm    Dz = {:.3g}mm   " \
@@ -85,7 +85,7 @@ class Tilstand(object):
         G = mast.G  # [N / mm^2]
         C_w = mast.Cw
         I_T = mast.It
-        I_z = mast.Iz
+        I_z = mast.Iz(mast.h)
         fy = mast.fy
         my_vind = 2.05
         my_punkt = 1.28
@@ -103,7 +103,7 @@ class Tilstand(object):
         M_cr_punkt = my_punkt * E * I_z * C * (math.pi / L_e) ** 2
 
         # Kritisk moment
-        M_cr = A * M_cr_vind + B * M_cr_punkt
+        M_cr = A * M_cr_vind + B * M_cr_punkt  # [Nmm]
 
         # EC3, 6.3.2.3: Reduksjonsfaktor for vipping
         lam_LT = math.sqrt(abs(M_y_Rk / M_cr))
@@ -171,9 +171,11 @@ class Tilstand(object):
         u = self.N_kap + self.My_kap + self.Mz_kap
 
         # Last på mast
-        M_y_Ed = K[0]
-        M_z_Ed = K[2]
-        N_Ed = K[4]
+        M_y_Ed = abs(K[0]) * 1000  # [Nmm]
+        M_z_Ed = abs(K[2]) * 1000  # [Nmm]
+        V_y_Ed = abs(K[1])  # [N]
+        V_z_Ed = abs(K[3])  # [N]
+        N_Ed = abs(K[4])  # [N]
 
         if mast.type == "H":
             """LOKAL knekkapasitet for H-mast"""
@@ -181,7 +183,7 @@ class Tilstand(object):
 
             # DIAGONALSTAV
             # Trykkraft [N] i mest påkjente diagonal er den største av:
-            N_Ed_d = max(math.sqrt(2) / 2 * K[1], math.sqrt(2) / 2 * K[3])
+            N_Ed_d = max(math.sqrt(2) / 2 * V_y_Ed, math.sqrt(2) / 2 * V_z_Ed)
             N_Rk_d = mast.d_A * mast.fy  # [N] Aksialkraftkap diagonal
             L_d = mast.k_d * mast.d_L    # [mm] Lengde diagonal
             d_I = mast.d_I               # [mm^4] diagonal
@@ -192,9 +194,9 @@ class Tilstand(object):
             # GURT (Vinkelprofil)
             # Trykkraft i GURT (vinkelprofil) [N]:
             b = mast.bredde(mast.h - 1)
-            N_Ed_g = 0.5 * ((K[0] / b) + (K[2] / b) + K[1] + K[3]) + K[4] / 4
-            N_Rk_g = mast.A_profil * mast.fy    # [N]Aksialkraftkapasitet
-            L_g = mast.k_g * mast.h * 1000      # [mm] Mastehøyde
+            N_Ed_g = 0.5 * ((M_y_Ed / b) + (M_z_Ed / b) + V_y_Ed + V_z_Ed) + N_Ed / 4
+            N_Rk_g = mast.A_profil * mast.fy    # [N] Aksialkraftkapasitet
+            L_g = mast.k_g * 1000               # [mm] Knekklengde gurt
             I_g = mast.Iy_profil                # [mm^4] 2. arealmoment
             alpha_g = 0.34                      # [1] Imperfeksjonsfaktor
 
@@ -236,9 +238,8 @@ class Tilstand(object):
         elif mast.type == "B":
             """GLOBAL mastekontroll for B-mast"""
             # Inngangsparametre
-            I_z = mast.Iz_profil        # [mm^4] svak akse, profil
-            I_y = mast.Iy_profil        # [mm^4] sterk akse, profil
-            W_y_pl = mast.Wyp           # [mm^3]
+            W_y_pl = 2 * mast.A_profil *\
+                     0.9 * mast.bredde(mast.h)           # [mm^3]
             alpha_y = 0.49              # [1] knekkfaktor, y-akse
             alpha_z = 0.49              # [1] knekkfaktor, z-akse
 
@@ -246,10 +247,10 @@ class Tilstand(object):
             b_g = 0.9 * mast.bredde(mast.h)
 
             # 2. Arealmoment for B-masten om sterk akse [mm^4]
-            I_y_B = I_y + mast.A_profil * (b_g / 2) ** 2
+            I_y_B = mast.Iy(mast.h, 0.9)
 
             # 2. Arealmoment for B-masten om svak akse [mm^4]
-            I_z_B = 2 * I_z
+            I_z_B = mast.Iz(mast.h)
 
             # Kapasiteter, ganger med x2 for å ta med begge kanalprofilene
             M_y_Rk = 2 * mast.A_profil * b_g * mast.fy
@@ -257,20 +258,22 @@ class Tilstand(object):
             N_Rk = 2 * mast.A_profil * mast.fy
 
             # (1) Vind fra mast mot spor eller (2) fra spor mot mast
-            if self.vindretning == 1 or self.vindretning == 2:
+            if self.vindretning == 1 or 2:
                 # Beregner ekvivalent mastelengde
-                M_punkt = 0
-                M_fordelt = 0
+                M_punkt, M_fordelt, M_sum = 0, 0, 0
                 for j in F:
                     f = j.f
                     if not numpy.count_nonzero(j.q) == 0:
-                        f = numpy.array([0, 0, abs(j.q[2] * j.b)])
+                        if self.vindretning == 1 and j.type == 12:
+                            f = numpy.array([0, 0, abs(j.q[2] * j.b)])
+                        elif self.vindretning == 2 and j.type == 13:
+                            f = numpy.array([0, 0, abs(j.q[2] * j.b)])
                         M_fordelt += f[2] * (-j.e[0]) ** 2
                     else:
                         M_punkt += f[2] * (-j.e[0]) ** 2
-                M_sum = M_fordelt + M_punkt
+                    M_sum += f[2] * (-j.e[0])
 
-                L_e = (M_punkt + M_fordelt) / M_sum
+                L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
 
                 # Andel av vippemoment fra jevnt fordelt last.
                 A = abs(M_fordelt / M_sum)
@@ -302,8 +305,7 @@ class Tilstand(object):
             # (3) Vind parallelt spor
             elif self.vindretning == 3:
                 # Beregner ekvivalent mastelengde
-                M_punkt = 0
-                M_fordelt = 0
+                M_punkt, M_fordelt, M_sum = 0, 0, 0
                 for j in F:
                     f = j.f
                     if not numpy.count_nonzero(j.q) == 0:
@@ -311,9 +313,9 @@ class Tilstand(object):
                         M_fordelt += f[1] * (-j.e[0]) ** 2
                     else:
                         M_punkt += f[1] * (-j.e[0]) ** 2
-                M_sum = M_fordelt + M_punkt
+                    M_sum += f[1] * (-j.e[0])
 
-                L_e = (M_punkt + M_fordelt) / M_sum
+                L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
 
                 # Andel av vippemoment fra jevnt fordelt last.
                 A = abs(M_fordelt / M_sum)
@@ -345,11 +347,11 @@ class Tilstand(object):
             """GLOBAL mastekontroll av bjelkemast"""
 
             # Inngangsparametre
-            I_z = mast.Iz_profil  # [mm^4]
-            I_y = mast.Iy_profil  # [mm^4]
-            W_y_pl = mast.Wyp     # [mm^3]
-            alpha_y = 0.34        # [1] imperfeksjonsfaktor, knekk(y)
-            alpha_z = 0.49        # [1] imperfeksjonsfaktor, knekk(z)
+            I_z = mast.Iz_profil   # [mm^4]
+            I_y = mast.Iy_profil   # [mm^4]
+            W_y_pl = mast.Wyp      # [mm^3]
+            alpha_y = 0.34         # [1] imperfeksjonsfaktor, knekk(y)
+            alpha_z = 0.49         # [1] imperfeksjonsfaktor, knekk(z)
 
             # Kapasiteter
             M_y_Rk = mast.Wyp * mast.fy      # [Nmm] sterk akse
@@ -359,18 +361,20 @@ class Tilstand(object):
             # (1) Vind fra mast mot spor eller (2) fra spor mot mast
             if self.vindretning == 1 or 2:
                 # Beregner ekvivalent mastelengde
-                M_punkt = 0
-                M_fordelt = 0
+                M_punkt, M_fordelt, M_sum = 0, 0, 0
                 for j in F:
                     f = j.f
                     if not numpy.count_nonzero(j.q) == 0:
-                        f = numpy.array([0, 0, abs(j.q[2] * j.b)])
+                        if self.vindretning == 1 and j.type == 12:
+                            f = numpy.array([0, 0, abs(j.q[2] * j.b)])
+                        elif self.vindretning == 2 and j.type == 13:
+                            f = numpy.array([0, 0, abs(j.q[2] * j.b)])
                         M_fordelt += f[2] * (-j.e[0]) ** 2
                     else:
                         M_punkt += f[2] * (-j.e[0]) ** 2
-                M_sum = M_fordelt + M_punkt
+                    M_sum += f[2] * (-j.e[0])
 
-                L_e = (M_punkt + M_fordelt) / M_sum
+                L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
 
                 # Andel av vippemoment fra jevnt fordelt last.
                 A = abs(M_fordelt / M_sum)
@@ -401,8 +405,7 @@ class Tilstand(object):
             # (3) Vind parallelt spor
             elif self.vindretning == 3:
                 # Beregner ekvivalent mastelengde
-                M_punkt = 0
-                M_fordelt = 0
+                M_punkt, M_fordelt, M_sum = 0, 0, 0
                 for j in F:
                     f = j.f
                     if not numpy.count_nonzero(j.q) == 0:
@@ -410,9 +413,9 @@ class Tilstand(object):
                         M_fordelt += f[1] * (-j.e[0]) ** 2
                     else:
                         M_punkt += f[1] * (-j.e[0]) ** 2
-                M_sum = M_fordelt + M_punkt
+                    M_sum += f[1] * (-j.e[0])
 
-                L_e = (M_punkt + M_fordelt) / M_sum
+                L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
 
                 # Andel av vippemoment fra jevnt fordelt last.
                 A = abs(M_fordelt / M_sum)
