@@ -124,7 +124,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
                        f=[0, s, f_z], e=[-fh - sh, 0, 0]))
         # Avspenningsbardun
         if i.avspenningsbardun:
-            F.append(Kraft(navn="Fixavspenningsmast: Avspenningsbardun", type=3,
+            F.append(Kraft(navn="Fixavspenningsmast: Avspenningsbardun", type=0,
                            f=[s, - s, 0], e=[-fh - sh, 0, 0]))
         # Avspenningslodd
         utvekslingsforhold = 3
@@ -133,7 +133,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if i.fixavspenningsmast:
             s = sys.fixline["Strekk i ledning"]
             s_avsp = 1000 * s / utvekslingsforhold
-            F.append(Kraft(navn="Fixavspenningsmast: Avspenningslodd", type=1,
+            F.append(Kraft(navn="Fixavspenningsmast: Avspenningslodd", type=0,
                            f=[s_avsp, 0, 0], e=[-fh - sh, 0, 0]))
 
     # Avspenningsmast
@@ -159,14 +159,14 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
                        f=[0, s_kl, f_z_kl], e=[-fh, 0, 0]))
         # Avspenningsbardun
         if i.avspenningsbardun:
-            F.append(Kraft(navn="Avspenningsmast: Avspenningsbardun", type=4,
+            F.append(Kraft(navn="Avspenningsmast: Avspenningsbardun", type=0,
                            f=[s_b + s_kl, - s_b - s_kl, 0], e=[-fh - sh/2, 0, 0]))
         # Avspenningslodd
         utvekslingsforhold = 3
         if sys.navn == "35":
             utvekslingsforhold = 2
         s_avsp = (s_b + s_kl) / utvekslingsforhold
-        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=1,
+        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=0,
                        f=[s_avsp, 0, 0], e=[-fh - sh/2, 0, 0]))
 
     # Forbigangsledning (1 stk., inkl. isolator)

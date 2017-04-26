@@ -199,8 +199,8 @@ class Mast(object):
             if abs(t1.K[1]) > abs(t2.K[1]):
                 return True
             elif abs(t1.K[1]) == abs(t2.K[1]):
-                # Sammenligner phi
-                if abs(t1.K[2]) > abs(t2.K[2]):
+                # Sammenligner Dy
+                if abs(t1.K[0]) > abs(t2.K[0]):
                     return True
         return False
 
@@ -289,8 +289,7 @@ def hent_master(hoyde, s235, materialkoeff):
     master.extend([B2, B3, B4, B6, H3, H5, H6])
     master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
-    return [mast for mast in master if mast.navn == "B3"]
-    #return [mast for mast in master if mast.h_max >= hoyde]
+    return [mast for mast in master if mast.h_max >= hoyde]
 
 
 
