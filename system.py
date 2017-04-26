@@ -84,7 +84,7 @@ def hent_system(i):
     BLX_T_241_19_iso = {"Navn": "BLX-T 241-19 isolert", "Egenvekt": 8.13,
                          "Diameter": 26.10, "Tverrsnitt": 241.0,
                          "Max tillatt spenning": 80.0}
-    BLX_T_209_9_19_iso = {"Name": "BLX-T 209,9-19 isolert", "Egenvekt": 7.91,
+    BLX_T_209_9_19_iso = {"Navn": "BLX-T 209,9-19 isolert", "Egenvekt": 7.91,
                          "Diameter": 25.8, "Tverrsnitt": 209.0,
                          "Max tillatt spenning": 80.0}
     BLX_T_111_3_7_iso = {"Navn": "BLX-T 111,3-7 isolert", "Egenvekt": 4.71,
@@ -107,12 +107,16 @@ def hent_system(i):
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
 
+    print(i.at_type)
+    print(i.jord_type)
 
+    at_ledning = None
     # Setter AT-ledning
     for ledning in at_ledninger:
         if ledning["Navn"] == i.at_type:
             at_ledning = ledning
 
+    jordledning = None
     # Setter jordledning
     for ledning in jordledninger:
         if ledning["Navn"] == i.jord_type:
