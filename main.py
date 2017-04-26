@@ -17,8 +17,24 @@ with open("input.ini", "r") as ini:
     i = inndata.Inndata(ini)
     master = beregning.beregn(i)
 
-g, b = resultater.sorter_resultater(master)
-mast = master[b]  # g for gitter, b for bjelke
+
+master_sortert = sorted(master, key=lambda mast:mast.bruddgrense.utnyttelsesgrad, reverse=True)
+
+for mast in master_sortert:
+    print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense.utnyttelsesgrad))
+
+mastetype = "g"  # g for gitter, b for bjelke
+mast = None
+for m in master_sortert:
+    if mastetype == "g":
+        if (m.type == "B" or m.type == "H") and m.bruddgrense.utnyttelsesgrad <= 1.0:
+            mast = m
+            break
+    else:
+        if m.type == "bjelke" and m.bruddgrense.utnyttelsesgrad <= 1.0:
+            mast = m
+            break
+
 #resultater.skriv_bidrag(i, mast)
 
 print()
@@ -30,8 +46,6 @@ print("Beregningsmetode: {}".format(metode))
 mast.print_tilstander()
 print()
 print()
-print("Iy_13: {}".format(mast.Iy(mast.h * (2 / 3))))
-print("Iz_13: {}".format(mast.Iz(mast.h * (2 / 3))))
 
 UR = mast.bruddgrense.utnyttelsesgrad
 values = [UR, mast.bruddgrense.My_kap,

@@ -223,7 +223,7 @@ def skriv_bidrag(i, mast):
     # Torsjon (T)
     s.append(_tilpass("Torsjonsmoment i bruddgrensetilstand / ulykkestilstand", "T_max (kNm)"))
     s.append("\n")
-    F = mast.bruddgrense.R[1][7] / 1000
+    F = mast.bruddgrense.R[1][5] / 1000
     s.append(_tilpass("Fra KL", "{:.2f}".format(F)))
     F = numpy.sum(mast.bruddgrense.R[2:11][7], axis=0) / 1000
     s.append(_tilpass("Differansestrekk + vandringskrefter", "{:.2f}".format(F)))

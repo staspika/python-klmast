@@ -27,7 +27,6 @@ class System(object):
 def hent_system(i):
     """Returnerer navngitt system"""
 
-
     # Bære/fixliner
     Bz_II_50_19 = {"Egenvekt": 4.37, "Diameter": 9.0,
                    "Tverrsnitt": 48.35, "Strekk i ledning": 10.0}

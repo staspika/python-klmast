@@ -1,6 +1,6 @@
 import os
 import psutil
-import configparser
+import numpy
 
 """Funksjoner for testing av applikasjon"""
 
@@ -18,5 +18,8 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-
-
+    a = 1
+    b = 1
+    c = b
+    if c == a and b:
+        print("hei")
