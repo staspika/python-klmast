@@ -180,9 +180,24 @@ class Mast(object):
         Dersom t2 ikke har fått noen verdi enda, returneres True
         slik at t1 blir satt som dimensjonerende tilfelle.
         """
+
+        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
+
         if t2 == None:
             return True
-        if t1.navn == "bruddgrense":
+        if t1.navn == "bruddgrense" and kriterie == 0:
+            # Sammenligner My
+            if abs(t1.K[0]) > abs(t2.K[0]):
+                return True
+            elif abs(t1.K[0]) == abs(t2.K[0]):
+                # Sammenligner Mz
+                if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
+                    return True
+                elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
+                    # Sammenligner Mz
+                    if abs(t1.K[2]) > abs(t2.K[2]):
+                        return True
+        if t1.navn == "bruddgrense" and kriterie == 1:
             # Sammenligner Utnyttelsesgrad
             if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
                 return True
@@ -289,7 +304,7 @@ def hent_master(hoyde, s235, materialkoeff):
     master.extend([B2, B3, B4, B6, H3, H5, H6])
     master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
-    return [mast for mast in master if mast.h_max >= hoyde]
+    return master
 
 
 

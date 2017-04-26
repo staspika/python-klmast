@@ -27,11 +27,15 @@ mastetype = "g"  # g for gitter, b for bjelke
 mast = None
 for m in master_sortert:
     if mastetype == "g":
-        if (m.type == "B" or m.type == "H") and m.bruddgrense.utnyttelsesgrad <= 1.0:
+        if (m.type == "B" or m.type == "H") \
+                and m.h_max >= m.h \
+                and m.bruddgrense.utnyttelsesgrad <= 1.0:
             mast = m
             break
     else:
-        if m.type == "bjelke" and m.bruddgrense.utnyttelsesgrad <= 1.0:
+        if m.type == "bjelke" \
+                and m.h_max >= m.h \
+                and m.bruddgrense.utnyttelsesgrad <= 1.0:
             mast = m
             break
 

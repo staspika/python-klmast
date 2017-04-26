@@ -39,6 +39,9 @@ class Tilstand(object):
             # Max tillatt utblåsning av kontaktledning i [mm]
             self.utnyttelsesgrad = K[1]/63
 
+        if mast.navn == "B2":
+            print("My = {:.3g} kNm".format(K[0]/1000))
+
     def __repr__(self):
         if self.navn == "bruddgrense":
             K = self.K[:][0:6]/1000  # Konverterer krefter til [kNm] og [kN]
@@ -47,10 +50,10 @@ class Tilstand(object):
                 format(K[0],K[1], K[2],K[3], K[4], K[5])
             for key in self.faktorer:
                 rep += "{} = {}     ".format(key, self.faktorer[key])
-            rep += "\n"
+            rep += "\nVindretning = {}\n".format(self.vindretning)
             rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
                    "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
-            rep += "Sum = {} %\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
+            rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
             rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
         else:
             phi = self.K[2]*360/(2*math.pi)  # Torsjonsvinkel i grader

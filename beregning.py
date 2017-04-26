@@ -141,7 +141,7 @@ def beregn(i):
     F_generell.extend(klima.vindlast_ledninger(i, sys, q_p))
     #F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
 
-
+    # Sidekrefter til beregning av utliggerens deformasjonsbidrag
     sidekrefter = []
     for j in F_generell:
         if j.navn == "Sidekraft: Bæreline" or j.navn == "Sidekraft: Kontakttråd"\

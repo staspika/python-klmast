@@ -107,9 +107,6 @@ def hent_system(i):
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
 
-    print(i.at_type)
-    print(i.jord_type)
-
     at_ledning = None
     # Setter AT-ledning
     for ledning in at_ledninger:
