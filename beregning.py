@@ -123,18 +123,6 @@ def beregn(i):
     B1, B2, e_max = geometri.beregn_sikksakk(sys, i)
     a_T, a_T_dot = geometri.beregn_arm(i, B1)
 
-
-    # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
-    # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
-    bruddgrense = {"Navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
-                   "f": [0.0, 1.2], "k": [1.5]}
-    forskyvning_kl = {"Navn": "forskyvning_kl",
-                      "g": [0.0], "l": [0.0], "f": [-0.25, 0.7], "k": [1.0]}
-    forskyvning_tot = {"Navn": "forskyvning_tot",
-                       "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
-
-    grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
-
     # FELLES FOR ALLE MASTER
     F_generell = []
     F_generell.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
@@ -149,22 +137,32 @@ def beregn(i):
                 or j.navn == "Sidekraft: Avspenning kontakttråd":
             sidekrefter.append(j.f[2])
 
-    # UNIKT FOR HVER MAST
-    for mast in master:
+    if i.ec3:
+        # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-        F = []
-        F.extend(F_generell)
-        F.extend(laster.egenvekt_mast(mast))
-        F.extend(klima.vindlast_mast(mast, q_p))
+        # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
+        # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
+        bruddgrense = {"Navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
+                       "f": [0.0, 1.2], "k": [1.5]}
+        forskyvning_kl = {"Navn": "forskyvning_kl",
+                          "g": [0.0], "l": [0.0], "f": [-0.25, 0.7], "k": [1.0]}
+        forskyvning_tot = {"Navn": "forskyvning_tot",
+                           "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
 
+        grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
 
-        if mast.navn == "H5":
-            for j in F:
-                print(j)
+        # UNIKT FOR HVER MAST
+        for mast in master:
 
+            F = []
+            F.extend(F_generell)
+            F.extend(laster.egenvekt_mast(mast))
 
-        if i.ec3:
-            # Beregninger med lastfaktorkombinasjoner ihht. EC3
+            if mast.navn == "H5":
+                for j in F:
+                    print(j)
+
+            F.extend(klima.vindlast_mast(mast, q_p))
 
             R = _beregn_reaksjonskrefter(F)
             D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
@@ -229,15 +227,54 @@ def beregn(i):
                                         mast.lagre_tilstand(t2)
                                         mast.lagre_tilstand(t3)
 
-        else:
-            # Beregninger med lasttilfeller fra bransjestandard EN 50119
+    else:
+        # Beregninger med lasttilfeller fra bransjestandard EN 50119
 
-            GK = 1.2
-            QCK = 1.5
+        bruddgrense = {"Navn": "bruddgrense", "g": [1.0, 1.2], "l": [0.9, 1.2],
+                       "f": [0.0, 1.2], "k": [1.5]}
+        forskyvning_kl = {"Navn": "forskyvning_kl",
+                          "g": [0.0], "l": [0.0], "f": [-0.25, 0.7], "k": [1.0]}
+        forskyvning_tot = {"Navn": "forskyvning_tot",
+                           "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
 
-            R += klima.vindlast_ledninger_NEK(sys, mast, i, a)
-            R += klima.vindlast_mast_normalt_spor_NEK(mast, i)
-            R += klima.vindlast_mast_parallelt_spor_NEK(mast, i)
+        grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
+
+
+        F = []
+        F.extend(F_generell)
+        F.extend(laster.egenvekt_mast(mast))
+
+        if mast.navn == "H5":
+            for j in F:
+                print(j)
+
+        F.extend(klima.vindlast_mast(mast, q_p))
+
+
+        R = _beregn_reaksjonskrefter(F)
+        D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+
+        GK = 1.2
+        QCK = 1.5
+
+        g = GK
+        l, f1, f2, f3, k = QCK, QCK, QCK, QCK, QCK
+
+        # UNIKT FOR HVER MAST
+        for mast in master:
+
+            F = []
+            F.extend(F_generell)
+            F.extend(laster.egenvekt_mast(mast))
+
+            if mast.navn == "H5":
+                for j in F:
+                    print(j)
+
+
+
+            # Tilsvarende kode her som for EC3
+
 
             # Permanente laster (lastfaktor GK)
             permanente = R[0:11][:]
@@ -253,9 +290,18 @@ def beregn(i):
                 K1 = GK * permanente + QCK * (sno + vind_max)
                 K2 = GK * permanente + QCK * (sno + vind_min)
                 K3 = GK * permanente + QCK * (sno + vind_par)
-                t1 = tilstand.Tilstand(mast, i, R, K1, grensetilstand, 1)
-                t2 = tilstand.Tilstand(mast, i, R, K2, grensetilstand, 2)
-                t3 = tilstand.Tilstand(mast, i, R, K3, grensetilstand, 3)
+                t1 = tilstand.Tilstand(mast, i, R, K1, 1,
+                                       grensetilstand, F,
+                                       g, l, f1, f2,
+                                       f3, k)
+                t2 = tilstand.Tilstand(mast, i, R, K2, 2,
+                                       grensetilstand, F,
+                                       g, l, f1, f2,
+                                       f3, k)
+                t3 = tilstand.Tilstand(mast, i, R, K3, 3,
+                                       grensetilstand, F,
+                                       g, l, f1, f2,
+                                       f3, k)
                 mast.lagre_tilstand(t1)
                 mast.lagre_tilstand(t2)
                 mast.lagre_tilstand(t3)

@@ -119,9 +119,9 @@ class Mast(object):
             self.Cw = 0.5 * self.Iy_profil * 0.9 * self.bredde(h)
 
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
-        self.bruddgrense = None
-        self.forskyvning_kl = None
-        self.forskyvning_tot = None
+        self.bruddgrense = []
+        self.forskyvning_kl = []
+        self.forskyvning_tot = []
 
         self.F = []
 
@@ -185,62 +185,68 @@ class Mast(object):
 
         if t2 == None:
             return True
-        if t1.navn == "bruddgrense" and kriterie == 0:
-            # Sammenligner My
-            if abs(t1.K[0]) > abs(t2.K[0]):
-                return True
-            elif abs(t1.K[0]) == abs(t2.K[0]):
-                # Sammenligner Mz
-                if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
-                    return True
-                elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
-                    # Sammenligner Mz
-                    if abs(t1.K[2]) > abs(t2.K[2]):
-                        return True
-        if t1.navn == "bruddgrense" and kriterie == 1:
-            # Sammenligner Utnyttelsesgrad
-            if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
-                return True
-            elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
+        if t1.navn == "bruddgrense":
+            if kriterie == 0:
                 # Sammenligner My
                 if abs(t1.K[0]) > abs(t2.K[0]):
                     return True
                 elif abs(t1.K[0]) == abs(t2.K[0]):
                     # Sammenligner Mz
-                    if abs(t1.K[2]) > abs(t2.K[2]):
+                    if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
                         return True
+                    elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
+                        # Sammenligner Mz
+                        if abs(t1.K[2]) > abs(t2.K[2]):
+                            return True
+            elif kriterie == 1:
+                # Sammenligner Utnyttelsesgrad
+                if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
+                    return True
+                elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
+                    # Sammenligner My
+                    if abs(t1.K[0]) > abs(t2.K[0]):
+                        return True
+                    elif abs(t1.K[0]) == abs(t2.K[0]):
+                        # Sammenligner Mz
+                        if abs(t1.K[2]) > abs(t2.K[2]):
+                            return True
         else:
             # Sammenligner Dz
             if abs(t1.K[1]) > abs(t2.K[1]):
                 return True
             elif abs(t1.K[1]) == abs(t2.K[1]):
-                # Sammenligner Dy
-                if abs(t1.K[0]) > abs(t2.K[0]):
+                # Sammenligner phi
+                if abs(t1.K[2]) > abs(t2.K[2]):
                     return True
         return False
+
+    def sorter(self):
+        kriterie = 1  # 0 = My, 1 = utnyttelsesgrad
+
+        if kriterie == 0:
+            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.K[0], reverse=True)
+        elif kriterie == 1:
+            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
     def lagre_tilstand(self, tilstand):
         """Lagrer tilstand dersom dimensjonerende tilfelle"""
         if tilstand.navn == "bruddgrense":
-            if self._sammenlign_tilstander(tilstand, self.bruddgrense):
-                self.bruddgrense = tilstand
+            self.bruddgrense.append(tilstand)
         elif tilstand.navn == "forskyvning_kl":
-            if self._sammenlign_tilstander(tilstand, self.forskyvning_kl):
-                self.forskyvning_kl = tilstand
+            self.forskyvning_kl.append(tilstand)
         elif tilstand.navn == "forskyvning_tot":
-            if self._sammenlign_tilstander(tilstand, self.forskyvning_tot):
-                self.forskyvning_tot = tilstand
+            self.forskyvning_tot.append(tilstand)
 
     def print_tilstander(self):
         print()
         print("Bruddgrensetilstand:")
-        print(self.bruddgrense)
+        print(self.bruddgrense[0])
         print()
         print("Bruksgrensetilstand for forskyvning av kontakttråd:")
-        print(self.forskyvning_kl)
+        print(self.forskyvning_kl[0])
         print()
         print("Bruksgrensetilstand for total forskyvning:")
-        print(self.forskyvning_tot)
+        print(self.forskyvning_tot[0])
 
 def hent_master(hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning."""

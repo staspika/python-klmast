@@ -39,15 +39,18 @@ class Tilstand(object):
             # Max tillatt utblåsning av kontaktledning i [mm]
             self.utnyttelsesgrad = K[1]/63
 
-        if mast.navn == "B2":
+
+        if self.navn == "bruddgrense" and mast.navn == "HE200B":
             print("My = {:.3g} kNm".format(K[0]/1000))
+
+
 
     def __repr__(self):
         if self.navn == "bruddgrense":
             K = self.K[:][0:6]/1000  # Konverterer krefter til [kNm] og [kN]
             rep = "My = {:.3g}kNm    Vy = {:.3g}kN    Mz = {:.3g}kNm    " \
                   "Vz = {:.3g}kN    N = {:.3g}kN    T = {:.3g}kNm\n".\
-                format(K[0],K[1], K[2],K[3], K[4], K[5])
+                format(K[0], K[1], K[2], K[3], K[4], K[5])
             for key in self.faktorer:
                 rep += "{} = {}     ".format(key, self.faktorer[key])
             rep += "\nVindretning = {}\n".format(self.vindretning)

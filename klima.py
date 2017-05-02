@@ -195,9 +195,9 @@ def vindlast_ledninger(i, sys, q_p):
         q_Y = q_p * cf * d_Y  # [N/m]
         f_z = n * L_Y * q_Y
         F.append(Kraft(navn="Vindlast: Y-line", type=12,
-                       f=[0, 0, f_z], e=[-i.fh - i.sh/2, 0, 0]))
+                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
         F.append(Kraft(navn="Vindlast: Y-line", type=13,
-                       f=[0, 0, - f_z], e=[-i.fh - i.sh / 2, 0, 0]))
+                       f=[0, 0, - f_z], e=[-i.fh - i.sh, 0, 0]))
 
     # Fikspunktmast
     if i.fixpunktmast:
@@ -433,84 +433,8 @@ def _beregn_vindtrykk_NEK():
     return q_z
 
 
-def _beregn_deformasjon(mast, M, x, fh):
-    """Beregner deformasjon D_z i høyde fh som følge av
-    moment om y-aksen med angrepspunkt i høyde x.
-    Dersom fh > x interpoleres forskyvningen til høyde fh
-    ved hjelp av tangens til vinkelen theta i høyde x
-    ganget med høydedifferansen fh - x.
-    """
-    E = mast.E
-    Iy = mast.Iy(mast.h)
-    M = M * 1000  # Konverterer til [Nmm]
-    x = x * 1000  # Konverterer til [mm]
-    fh = fh * 1000  # Konverterer til [mm]
-    if fh > x:
-        theta = (M * x) / (E * Iy)
-        D_z = (M * x ** 2) / (2 * E * Iy) \
-              + numpy.tan(theta) * (fh - x)
-    else:
-        D_z = (M * fh ** 2) / (2 * E * Iy)
-    return D_z
 
-
-def _beregn_vindforskyvning_Dz(mast, i, EC3, q_p=0):
-    """Denne funksjonen beregner forskyvning Dz av masten på grunn av
-    vindlast på masten, normalt sporet.
-    """
-
-    # Inngangsparametre
-    E = mast.E                            # [N/mm^2] E-modul, stål
-    FH = i.fh * 1000                      # [mm] Høyde, KL
-    H = i.h * 1000                        # [mm] Høyde, mast
-    Iy_13 = mast.Iy(mast.h * (2 / 3))     # [mm^4] Iy i 1/3-punktet
-    q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
-
-    if EC3:
-        cf = 2.2
-        q_z = q_p * cf * mast.A_ref / 1000
-
-    # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
-    D_z = ((q_z * FH ** 2) / (24 * E * Iy_13)) * (6 * H ** 2 - 4 * H * FH + FH ** 2)
-
-    return D_z
-
-
-def _beregn_vindforskyvning_Dy(mast, i, EC3, q_p=0):
-    """Denne funksjonen beregner forskyvning Dz av masten på grunn av
-    vindlast på masten, parallelt med sporet.
-    """
-
-    # Inngangsparametre
-    E = mast.E                            # [N/mm^2] E-modul, stål
-    FH = i.fh * 1000                      # [mm] Høyde, KL
-    H = i.h * 1000                        # [mm] Høyde, mast
-    Iz_13 = mast.Iz(mast.h * (2 / 3))     # [mm^4] Iz i 1/3-punktet
-    q_z = _beregn_vindtrykk_NEK() / 1000  # [N / mm^2]
-
-    if EC3:
-        cf = 2.2
-        q_z = q_p * cf * mast.A_ref / 1000
-
-    # Forskyvning dz [mm] i høyde FH pga. vindlasten q_z på masten.
-    D_y = ((q_z * FH ** 2) / (24 * E * Iz_13)) * (6 * H ** 2 - 4 * H * FH + FH ** 2)
-
-    return D_y
-
-def _beregn_vindforskyvning_ledninger(V_z, mast, i):
-
-    FH = i.fh                          # [m] Kontaktledninshøyden
-    H = i.h                            # [m] Høyde, mast
-    E = mast.E                         # [N / mm^2] E-modul, stål
-    Iy_13 = mast.Iy(mast.h * (2 / 3))  # [mm^4] i 1/3 - pkt.
-
-    # Deformasjon D_z pga. vindlast på ledninger.
-    D_z = (V_z / (2 * E * Iy_13)) * (H * FH ** 2 - (1 / 3) * FH ** 2)
-
-    return D_z
-
-
-def vindlast_ledninger_NEK(sys, mast, i, a):
+def vindlast_ledninger_NEK(sys, mast, i):
     """Beregner reaksjonskrefter grunnet vind på ledninger {NEK EN 50119}.
     Kun gyldig for vindretning normalt spor.
     """
@@ -523,6 +447,7 @@ def vindlast_ledninger_NEK(sys, mast, i, a):
     Hr = i.hr                      # [m] Høyde, returledning
     Hfj = i.hfj                    # [m] Høyde, fjernledning
     r = i.radius                   # [m] kurveradius
+    a = (i.a1 + i.a2)/2
     G_C = 0.75                     # [1] Responsfaktor
     C_C = 1.0                      # [1] Drag-faktor
     q_z = _beregn_vindtrykk_NEK()  # [N / m^2]
@@ -592,9 +517,6 @@ def vindlast_ledninger_NEK(sys, mast, i, a):
             L = 18
         V_z += q_z * G_C * C_C * d * L                            # [N]
         M_y += q_z * G_C * C_C * d * L * (FH + SH / 2)            # [Nm]
-
-    # Deformasjon D_z pga. vindlast på ledninger.
-    D_z = _beregn_vindforskyvning_ledninger(V_z, mast, i)
 
     R = numpy.zeros((15, 9))
     R[12][0] = M_y
