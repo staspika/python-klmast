@@ -412,44 +412,37 @@ def isogsno_last(i, sys, a_T, a_T_dot):
 # ====================================================================#
 
 
-def _beregn_vindtrykk_NEK():
+def _beregn_vindtrykk_NEK(z):
     """Denne funksjonen beregner vindtrykket etter NEK EN 50119."""
 
+    """
     # Alternativ #1: NEK EN 50125-2
     # Inngangsparametre for referansehøyde 10m over bakkenivå
     z = 10              # [m] høyde over bakken
-    rho = 1.255         # [kg / m^3]
-    G_q = 2.05          # [1] Gust-respons faktor
-    G_t = 1.0           # [1] Terrengfaktor av typen åpent
     v_10 = 24           # [m / s] 10-min middelvindhastighet
     # Ruhetsparameteren for ulike terrengkategorier [1]
     alpha = [0.12, 0.16, 0.20, 0.28]
 
     # Vindhastigheten i høyden z over bakkenivå etter NEK EN 50125-2.
     v_z = v_10 * (z/10) ** alpha[3]
-
-    # Dynamisk vindtrykk [N / m^2]
-    q_K = 0.5 * rho * G_q * G_t * v_z ** 2
-
     """
-    # Alternativ #2: EC1 - terrengkategori II
-    # Inngangsparametre
+
+    # Alternativ 2: EC1
+    # Terrengkategori II velges
     v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
     c_dir = 1.0     # [1] Retningsfaktor
     c_season = 1.0  # [1] Årstidsfaktor
     c_alt = 1.0     # [1] Nivåfaktor
     c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
     c_0 = 1.0       # [1] Terrengformfaktoren
-    kategori = 2
+    k_r = 0.19      # [1]
+    z_0 = 0.05      # [m]
+    z_min = 4       # [m]
+    z_max = 200     # [m]
+    c_r = 0
 
     # Basisvindhastighet [m/s]
     v_b = c_dir * c_season * c_alt * c_prob * v_b_0
-
-    k_r = terrengkategorier[kategori]["k_r"]
-    z_0 = terrengkategorier[kategori]["z_0"]
-    z_min = terrengkategorier[kategori]["z_min"]
-    z_max = 200
-    c_r = 0
 
     if z <= z_min:
         c_r = k_r * math.log(z_min / z_0)
@@ -457,24 +450,14 @@ def _beregn_vindtrykk_NEK():
         c_r = k_r * math.log(z / z_0)
 
     # Stedets middelvindhastighet [m/s]
-    v_m = c_r * c_0 * v_b
+    v_z = c_r * c_0 * v_b
 
-    # Stedets vindhastighetstrykk [N/m^2]
-    rho = 1.25  # [kg/m^3] Luftens densitet
-    q_m = 0.5 * rho * v_m ** 2  # [N / m^2]
+    # Dynamisk vindtrykk [N / m^2]
+    rho = 1.255  # [kg / m^3]
+    G_q = 2.05   # [1] Gust-respons faktor
+    G_t = 1.0    # [1] Terrengfaktor av typen åpent
 
-    # Turbulensintensiteten
-    k_l = 1.0  # Turbulensintensiteten, anbefalt verdi er 1.0
-    k_p = 3.5
-    I_v = 0
-    if z <= z_min:
-        I_v = k_l / (c_0 * math.log(z_min / z_0))
-    elif z_min < z <= z_max:
-        I_v = k_l / (c_0 * math.log(z / z_0))
-
-    # Vindkasthastighetstrykket
-    q_K = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
-    """
+    q_K = 0.5 * rho * G_q * G_t * v_z ** 2
 
     return q_K
 
@@ -675,5 +658,3 @@ def vindlast_ledninger_NEK(i, q_K, sys):
                        f=[0, 0, - f_z], e=[-i.hj, 0, 0]))
 
     return F
-
-
