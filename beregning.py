@@ -161,6 +161,10 @@ def beregn(i):
             F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
             F.extend(klima.vindlast_mast_EC(mast, q_p))
 
+            if mast.navn == "H5":
+                for j in F:
+                    print(j)
+
             R = _beregn_reaksjonskrefter(F)
             D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 

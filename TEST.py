@@ -18,13 +18,13 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    a = "hei"
-    b = "nei"
+    a = []
+    b = [2]
+    c = []
+    c.extend(a)
+    c.extend(a)
+    c.extend(b)
+    c.extend(a)
+    c.extend(b)
 
-    F = [[] for i in range(7)]
-
-    y[0].append(a)
-    y[0].append(b)
-    y[1].append(a)
-
-    print(y)
+    print(c)

@@ -405,7 +405,8 @@ def isogsno_last(i, sys, a_T, a_T_dot):
     return F
 
 def vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot):
-    if (not i.siste_for_avspenning) and (not i.linjemast_utliggere == 2):
+    F = []
+    if not i.siste_for_avspenning and not i.linjemast_utliggere == 2:
         a1, a2 = i.a1, i.a2
         fh = i.fh
         sh = i.sh
@@ -420,7 +421,6 @@ def vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot):
         if i.strekkutligger:
             f_z_kurvatur, f_z_sikksakk = - f_z_kurvatur, - f_z_sikksakk
         dl = alpha * delta_t * i.avstand_fixpunkt
-        F = []
         F.append(Kraft(navn="Vandringskraft: Bæreline", type=1,
                        f=[0, f_z_kurvatur * (dl / i.sms), 0],
                        e=[-fh - sh, 0, mast.bredde(mast.h -(fh+sh))/2000]))
@@ -428,7 +428,8 @@ def vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot):
                        f=[0, (f_z_kurvatur + f_z_sikksakk) * (dl / arm), 0],
                        e=[-fh, 0, mast.bredde(mast.h - fh)/2000]))
 
-        return F
+    return F
+
 
 
 # ====================================================================#
