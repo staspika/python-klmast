@@ -112,18 +112,19 @@ def hent_system(i):
     for ledning in at_ledninger:
         if ledning["Navn"] == i.at_type:
             at_ledning = ledning
+            break
 
     jordledning = None
     # Setter jordledning
     for ledning in jordledninger:
         if ledning["Navn"] == i.jord_type:
             jordledning = ledning
+            break
 
     # Setter utligger
+    utligger = utligger_s2x
     if i.systemnavn=="35":
         utligger = utligger_s3x
-    else:
-        utligger = utligger_s2x
 
 
     if i.systemnavn == "20a":

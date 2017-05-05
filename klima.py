@@ -111,7 +111,7 @@ def q_KL(i, sys, q_p):
     return q
 
 
-def vindlast_mast(mast, q_p):
+def vindlast_mast_EC(mast, q_p):
     """Definerer vindlast på mast"""
 
     cf = 2.2                           # [1] Vindkraftfaktor mast
@@ -140,7 +140,7 @@ def vindlast_mast(mast, q_p):
     return F
 
 
-def vindlast_ledninger(i, sys, q_p):
+def vindlast_ledninger_EC(i, sys, q_p):
     """Her avledes krefter på mast på grunn av vindlast på
     ledninger."""
 
@@ -248,13 +248,14 @@ def vindlast_ledninger(i, sys, q_p):
         F.append(Kraft(navn="Vindlast: Fiberoptisk ledning", type=13,
                        f=[0, 0, - f_z], e=[-i.fh, 0, 0]))
 
-    # Mate-/fjernledning (2 stk.)
+    # Mate-/fjernledning(er) (n stk.)
     if i.matefjern_ledn:
         n = i.matefjern_antall
         f_z = n * a * q_p * cf * sys.matefjernledning["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: Mate-/fjernledning", type=12,
+        er = "er" if n > 1 else ""
+        F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=12,
                        f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Mate-/fjernledning", type=13,
+        F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=13,
                        f=[0, 0, - f_z], e=[-i.hfj, 0, 0]))
 
     # AT-ledning (2 stk.)
@@ -299,12 +300,12 @@ def isogsno_last(i, sys, a_T, a_T_dot):
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         n = 2
         F.append(Kraft(navn="Islast: Travers", type=11,
-                       f=[2 * i.traverslengde * (2.5 + 0.5 * 100), 0, 0],
+                       f=[2 * i.traverslengde * (2.5 + 0.5 * 50), 0, 0],
                        e=[-i.fh - i.sh/2, 0, 0]))
 
     # Utliggere
     F.append(Kraft(navn="Islast: Utligger", type=11,
-                   f=[n * i.sms * (2.5 + 0.5 * 50), 0, 0],
+                   f=[n * i.sms * (2.5 + 0.5 * 55), 0, 0],
                    e=[-i.fh - i.sh, 0, i.sms/2]))
 
     # Bæreline
@@ -333,37 +334,35 @@ def isogsno_last(i, sys, a_T, a_T_dot):
 
     # Fikspunktmast
     if i.fixpunktmast:
-        F.append(Kraft(navn="Islast: Fixpunktmast", type=11,
+        F.append(Kraft(navn="Islast: Fixline", type=11,
                        f=[a * (2.5 + 0.5 * sys.fixline["Diameter"]), 0, 0],
                        e=[-i.fh - i.sh, 0, i.sms]))
 
     # Fiksavspenningsmast
     if i.fixavspenningsmast:
-        F.append(Kraft(navn="Islast: Fixavspenningsmast", type=11,
+        F.append(Kraft(navn="Islast: Fixline", type=11,
                        f=[(a2 / 2) * (2.5 + 0.5 * sys.fixline["Diameter"]), 0, 0],
                        e=[-i.fh - i.sh, 0, 0]))
-        F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
-                       f=[50, 0, 0], e=[-i.fh - i.sh, 0, 0]))
 
     # Avspenningsmast
     if i.avspenningsmast:
         F.append(Kraft(navn="Islast: Avspenningsmast", type=11,
                        f=[(a2 / 2) * (2.5 + 0.5 * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000)), 0, 0],
                        e=[-i.fh - i.sh/2, 0, 0]))
-    F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
-                   f=[50, 0, 0], e=[-i.fh - i.sh/2, 0, 0]))
+        # Antar 100 N snølast på lodd
+        F.append(Kraft(navn="Islast: Avspenningslodd", type=11,
+                   f=[100, 0, 0], e=[-i.fh - i.sh/2, 0, 0]))
 
     # Forbigangsledning
     if i.forbigang_ledn:
         # Snølast på isolator antas lik 30 N.
-        F.append(Kraft(navn="Islast: Forbigangsledning", type=11,
-                       f=[30 + a * (2.5 + 0.5 * sys.forbigangsledning["Diameter"]), 0, 0],
-                       e=[-i.hf, 0, 0]))
+        e_z = 0
         if i.matefjern_ledn or i.at_ledn or i.jord_ledn:
             # Forbigangsledning montert på baksiden av mast
-            F.append(Kraft(navn="Islast: Forbigangsledning", type=11,
-                           f=[30 + a * (2.5 + 0.5 * sys.forbigangsledning["Diameter"]), 0, 0],
-                           e=[-i.hf, 0, -0.3]))
+            e_z = -0.3
+        F.append(Kraft(navn="Islast: Forbigangsledning", type=11,
+                       f=[30 + a * (2.5 + 0.5 * sys.forbigangsledning["Diameter"]), 0, 0],
+                       e=[-i.hf, 0, e_z]))
 
     # Returledninger (2 stk.)
     if i.retur_ledn:
@@ -372,11 +371,12 @@ def isogsno_last(i, sys, a_T, a_T_dot):
                        f=[2 * (20 + a * (2.5 + 0.5 * sys.returledning["Diameter"])), 0, 0],
                        e=[-i.hr, 0, -0.5]))
 
-    # Mate-/fjernledning (n stk.)
+    # Mate-/fjernledning(er) (n stk.)
     if i.matefjern_ledn:
         # Snølast på isolator for mate-/fjernledning antas lik 220 N
         n = i.matefjern_antall
-        F.append(Kraft(navn="Islast: Mate-/fjernledning", type=11,
+        er = "er" if n > 1 else ""
+        F.append(Kraft(navn="Islast: Mate-/fjernledning{}".format(er), type=11,
                        f=[n * a * (220 + (2.5 + 0.5 * sys.matefjernledning["Diameter"])), 0, 0],
                        e=[-i.hfj, 0, 0]))
 
@@ -404,6 +404,32 @@ def isogsno_last(i, sys, a_T, a_T_dot):
 
     return F
 
+def vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot):
+    if (not i.siste_for_avspenning) and (not i.linjemast_utliggere == 2):
+        a1, a2 = i.a1, i.a2
+        fh = i.fh
+        sh = i.sh
+        alpha = 1.7 * 10 ** (-5)
+        delta_t = 45
+        arm = a_T_dot
+        if i.strekkutligger:
+            arm = a_T
+        s = 1000 * sys.kontakttraad["Strekk i ledning"]
+        f_z_kurvatur = - s * (a1 + a2) / (2 * i.radius)
+        f_z_sikksakk = - s * ((B2 - B1) / a1 + (B2 - B1) / a2)
+        if i.strekkutligger:
+            f_z_kurvatur, f_z_sikksakk = - f_z_kurvatur, - f_z_sikksakk
+        dl = alpha * delta_t * i.avstand_fixpunkt
+        F = []
+        F.append(Kraft(navn="Vandringskraft: Bæreline", type=1,
+                       f=[0, f_z_kurvatur * (dl / i.sms), 0],
+                       e=[-fh - sh, 0, mast.bredde(mast.h -(fh+sh))/2000]))
+        F.append(Kraft(navn="Vandringskraft: Kontakttråd", type=1,
+                       f=[0, (f_z_kurvatur + f_z_sikksakk) * (dl / arm), 0],
+                       e=[-fh, 0, mast.bredde(mast.h - fh)/2000]))
+
+        return F
+
 
 # ====================================================================#
 #                                                                     #
@@ -412,7 +438,7 @@ def isogsno_last(i, sys, a_T, a_T_dot):
 # ====================================================================#
 
 
-def _beregn_vindtrykk_NEK(z):
+def _beregn_vindtrykk_NEK():
     """Denne funksjonen beregner vindtrykket etter NEK EN 50119."""
 
     """
@@ -430,44 +456,24 @@ def _beregn_vindtrykk_NEK(z):
     # Alternativ 2: EC1
     # Terrengkategori II velges
     v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
-    c_dir = 1.0     # [1] Retningsfaktor
-    c_season = 1.0  # [1] Årstidsfaktor
-    c_alt = 1.0     # [1] Nivåfaktor
-    c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
-    c_0 = 1.0       # [1] Terrengformfaktoren
-    k_r = 0.19      # [1]
-    z_0 = 0.05      # [m]
-    z_min = 4       # [m]
-    z_max = 200     # [m]
-    c_r = 0
-
-    # Basisvindhastighet [m/s]
-    v_b = c_dir * c_season * c_alt * c_prob * v_b_0
-
-    if z <= z_min:
-        c_r = k_r * math.log(z_min / z_0)
-    elif z_min < z <= z_max:
-        c_r = k_r * math.log(z / z_0)
-
-    # Stedets middelvindhastighet [m/s]
-    v_z = c_r * c_0 * v_b
 
     # Dynamisk vindtrykk [N / m^2]
     rho = 1.255  # [kg / m^3]
     G_q = 2.05   # [1] Gust-respons faktor
     G_t = 1.0    # [1] Terrengfaktor av typen åpent
 
-    q_K = 0.5 * rho * G_q * G_t * v_z ** 2
+    q_K = 0.5 * rho * G_q * G_t * v_b_0 ** 2
 
     return q_K
 
 
-def vindlast_mast_NEK(mast, q_K):
+def vindlast_mast_NEK(mast):
     """Vindlast på mast etter NEK EN 50119. Antar en 
     firkantet jevnt fordelt vindlast på masten.
     """
 
     h = mast.h  # [m] Mastens høyde
+    q_K = _beregn_vindtrykk_NEK()
 
     # Liste over krefter som skal returneres
     F = []
@@ -525,13 +531,14 @@ def vindlast_mast_NEK(mast, q_K):
     return F
 
 
-def vindlast_ledninger_NEK(i, q_K, sys):
+def vindlast_ledninger_NEK(i, sys):
     """Beregner reaksjonskrefter grunnet vind på ledninger NEK EN 50119.
     Kun gyldig for vindretning vinkelrett på sporet.
     """
 
+    q_K = _beregn_vindtrykk_NEK()
+
     # Inngangsparametre
-    r = i.radius                 # [m] kurveradius
     a = (i.a1 + i.a2)/2          # [m] masteavstand
     a2 = i.a2                    # [m] Avstand til neste mast
     G_C = 0.75                   # [1] Respons faktor
@@ -586,33 +593,33 @@ def vindlast_ledninger_NEK(i, q_K, sys):
     # Fikspunktmast
     if i.fixpunktmast:
         f_z = q_K * G_C * sys.fixline["Diameter"] / 1000 * C_C * a
-        F.append(Kraft(navn="Vindlast: Fixpunktmast", type=12,
+        F.append(Kraft(navn="Vindlast: Fixline", type=12,
                        f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Fixpunktmast", type=13,
+        F.append(Kraft(navn="Vindlast: Fixline", type=13,
                        f=[0, 0, - f_z], e=[-i.fh - i.sh, 0, 0]))
 
     # Fiksavspenningsmast
     if i.fixavspenningsmast:
         f_z = q_K * G_C * sys.fixline["Diameter"] / 1000 * C_C * (a2 / 2)
-        F.append(Kraft(navn="Vindlast: Fixavspenningsmast", type=12,
+        F.append(Kraft(navn="Vindlast: Fixline", type=12,
                        f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Fixavspenningsmast", type=13,
+        F.append(Kraft(navn="Vindlast: Fixline", type=13,
                        f=[0, 0, - f_z], e=[-i.fh - i.sh, 0, 0]))
 
     # Avspenningsmast
     if i.avspenningsmast:
         f_z = q_K * G_C * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000) * C_C * (a2 / 2)
-        F.append(Kraft(navn="Vindlast: Avspenningsmast", type=12,
+        F.append(Kraft(navn="Vindlast: KL til avspenning", type=12,
                        f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Avspenningsmast", type=13,
+        F.append(Kraft(navn="Vindlast: KL til avspenning", type=13,
                        f=[0, 0, - f_z], e=[-i.fh - i.sh, 0, 0]))
 
     # Forbigangsledning
     if i.forbigang_ledn:
         f_z = q_K * G_C * sys.forbigangsledning["Diameter"] / 1000 * C_C * a
-        F.append(Kraft(navn="Vindlast: Forbigangsledn", type=12,
+        F.append(Kraft(navn="Vindlast: Forbigangsledning", type=12,
                        f=[0, 0, f_z], e=[-i.hf, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Forbigangsledn", type=13,
+        F.append(Kraft(navn="Vindlast: Forbigangsledning", type=13,
                        f=[0, 0, - f_z], e=[-i.hf, 0, 0]))
 
     # Returledning (2 stk.)
@@ -632,13 +639,14 @@ def vindlast_ledninger_NEK(i, q_K, sys):
         F.append(Kraft(navn="Vindlast: Fiberoptisk ledning", type=13,
                        f=[0, 0, - f_z], e=[-i.fh, 0, 0]))
 
-    # Mate-/fjernledning (2 stk.)
+    # Mate-/fjernledning(er) (n stk.)
     if i.matefjern_ledn:
         n = i.matefjern_antall
         f_z = n * q_K * G_C * sys.matefjernledning["Diameter"] / 1000 * C_C * a
-        F.append(Kraft(navn="Vindlast: Mate-/fjernledning", type=12,
+        er = "er" if n > 1 else ""
+        F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=12,
                        f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
-        F.append(Kraft(navn="Vindlast: Mate-/fjernledning", type=13,
+        F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=13,
                        f=[0, 0, - f_z], e=[-i.hfj, 0, 0]))
 
     # AT-ledning (2 stk.)
@@ -652,9 +660,9 @@ def vindlast_ledninger_NEK(i, q_K, sys):
     # Jordledning
     if i.jord_ledn:
         f_z = q_K * G_C * sys.jordledning["Diameter"] / 1000 * C_C * a
-        F.append(Kraft(navn="Vindlast: AT-ledning", type=12,
+        F.append(Kraft(navn="Vindlast: Jordledning", type=12,
                        f=[0, 0, f_z], e=[-i.hj, 0, 0]))
-        F.append(Kraft(navn="Vindlast: AT-ledning", type=13,
+        F.append(Kraft(navn="Vindlast: Jordledning", type=13,
                        f=[0, 0, - f_z], e=[-i.hj, 0, 0]))
 
     return F

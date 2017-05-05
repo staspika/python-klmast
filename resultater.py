@@ -40,20 +40,25 @@ def sorter_resultater(master):
     return g, b
 
 def barplot(values):
-    colors = []
-    for v in values:
-        if v > 1.0:
-            colors.append("r")
-        elif v > 0.8:
-            colors.append("y")
-        else:
-            colors.append("g")
-    N = numpy.arange(4)
-    plt.bar(N, values, color=colors)
-    plt.title("Utnyttelsesgrad")
-    plt.xticks(N + 0.5, ("UR", "My", "Mz", "N"))
-    plt.yticks(numpy.arange(0, max(values) + 0.1, 0.1))
-    plt.show()
+    teller = 0
+    for current_values in values:
+        plt.figure(teller)
+        colors = []
+        for v in current_values:
+            if v > 1.0:
+                colors.append("r")
+            elif v > 0.8:
+                colors.append("y")
+            else:
+                colors.append("g")
+        N = numpy.arange(4)
+        plt.bar(N, current_values, color=colors)
+        plt.title("Utnyttelsesgrad")
+        plt.xticks(N + 0.5, ("UR", "My", "Mz", "N"))
+        plt.yticks(numpy.arange(0, max(current_values) + 0.1, 0.1))
+        teller += 1
+    plt.show(True)
+
 
 def skriv_bidrag(i, mast):
     """Skriver bidrag fra dimensjonerende tilfelle for aktuell mast

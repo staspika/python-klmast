@@ -4,7 +4,7 @@ from kraft import *
 def beregn(sys, i, a_T, a_T_dot, B1, B2):
     """Beregner krefter fra egenvekt av og strekk i samtlige ledninger,
     vekt av isolatorer, krefter grunnet ledningsføringens geometri, 
-    vandringskrefter, fix- og avspenningskrefter samt tilhørende
+    fix- og avspenningskrefter samt tilhørende
     lodd og eventuell bardunering.
     """
 
@@ -16,8 +16,6 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     sms = i.sms
     fh = i.fh
     sh = i.sh
-    alpha = 1.7 * 10 ** (-5)
-    delta_t = 45
 
     # Eksentrisitet i z-retning for KL.
     arm = a_T_dot
@@ -71,32 +69,19 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     f_z_kurvatur = - n * s * (a1 + a2) / (2 * r)
     f_z_sikksakk = - n * s * ((B2 - B1) / a1 + (B2 - B1) / a2)
     if i.strekkutligger:
-        f_z_kurvatur = n * s * (a1 + a2) / (2 * r)
-        f_z_sikksakk = n * s * 2 * ((B2 - B1) / a1)
-    f_z_avsp_b = 0
-    f_z_avsp_kl = 0
+        f_z_kurvatur, f_z_sikksakk = - f_z_kurvatur, - f_z_sikksakk
+    f_z_avsp_b, f_z_avsp_kl = 0, 0
     if i.siste_for_avspenning:
         f_z_avsp_b = - s * (sms / a2)
         f_z_avsp_kl = - s * (arm / a2)
         if i.master_bytter_side:
-            f_z_avsp_b = s * (sms / a2)
-            f_z_avsp_kl = s * (arm / a2)
+            f_z_avsp_b, f_z_avsp_kl = - f_z_avsp_b, -f_z_avsp_kl
     F.append(Kraft(navn="Sidekraft: Bæreline", type=1,
                    f=[0, 0, f_z_kurvatur + f_z_avsp_b],
                    e=[-fh - sh, 0, sms]))
     F.append(Kraft(navn="Sidekraft: Kontakttråd", type=1,
                    f=[0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk],
                    e=[-fh, 0, arm]))
-
-    # Vandringskraft
-    dl = alpha * delta_t * i.avstand_fixpunkt
-    if not n == 2:
-        F.append(Kraft(navn="Vandringskraft: Bæreline", type=1,
-                       f=[0, f_z_kurvatur * (dl / sms), 0],
-                       e=[-fh - sh, 0, sms]))
-        F.append(Kraft(navn="Vandringskraft: Kontakttråd", type=1,
-                       f=[0, (f_z_kurvatur + f_z_sikksakk) * (dl / arm), 0],
-                       e=[-fh - sh, 0, arm]))
 
     # Fixpunktmast
     if i.fixpunktmast:
@@ -178,6 +163,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
             e_z = 0
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
         F.append(Kraft(navn="Egenvekt: Forbigangsledning", type=0,
                        f=[g * a + 150, 0, 0], e=[-i.hf, 0, e_z]))
         F.append(Kraft(navn="Fastavspent: Forbigangsledning", type=5,
@@ -190,6 +176,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
                  sys.returledning["Tverrsnitt"])
         e_z = -0.5
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += 2 * s * a / r
         F.append(Kraft(navn="Egenvekt: Returledninger", type=0,
                        f=[2 * (g * a + 100), 0, 0], e=[-i.hr, 0, e_z]))
         F.append(Kraft(navn="Fastavspent: Returledninger", type=6,
@@ -202,6 +189,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
              sys.fiberoptisk["Tverrsnitt"])
         e_z = -0.3
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
         F.append(Kraft(navn="Egenvekt: Fiberoptisk", type=0,
                        f=[g * a, 0, 0], e=[-i.fh, 0, e_z]))
         F.append(Kraft(navn="Fastavspent: Fiberoptisk ledning", type=7,
@@ -214,6 +202,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         s = n * (sys.matefjernledning["Max tillatt spenning"] *
                  sys.matefjernledning["Tverrsnitt"])
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
+        f_z += n * s * a / r
         er = "er" if n > 1 else ""
         F.append(Kraft(navn="Egenvekt: Mate-/fjernledning{}".format(er),
                        type=0, f=[g * a + 220, 0, 0], e=[-i.hfj, 0, 0]))
@@ -226,6 +215,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         s = 2 * (sys.at_ledning["Max tillatt spenning"] *
                  sys.at_ledning["Tverrsnitt"])
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
+        f_z += 2 * s * a / r
         F.append(Kraft(navn="Egenvekt: AT-ledning", type=0,
                        f=[g * a, 0, 0], e=[-i.hfj, 0, 0]))
         F.append(Kraft(navn="Fastavspent: AT-ledninger", type=9,
@@ -240,6 +230,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
             e_z = 0
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
         F.append(Kraft(navn="Egenvekt: Jordledning", type=0,
                        f=[g * a, 0, 0], e=[-i.hj, 0, e_z]))
         F.append(Kraft(navn="Fastavspent: Jordledning", type=10,

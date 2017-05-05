@@ -221,7 +221,7 @@ class Mast(object):
         return False
 
     def sorter(self):
-        kriterie = 1  # 0 = My, 1 = utnyttelsesgrad
+        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
 
         if kriterie == 0:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.K[0], reverse=True)

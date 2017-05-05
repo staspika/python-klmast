@@ -7,22 +7,27 @@ class Tilstand(object):
      """
 
     def __init__(self, mast, i, R, K, vindretning, grensetilstand, F,
-                 g=0, l=0, f1=0, f2=0, f3=0, k=0):
+                 g=0, l=0, f1=0, f2=0, f3=0, k=0, G=0, Q=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
          """
-        self.R = R
-        self.g = g
-        self.l = l
-        self.f1 = f1
-        self.f2 = f2
-        self.f3 = f3
-        self.k = k
-
-        self.K = K
         self.navn = grensetilstand["Navn"]
+        self.R = R
+        self.K = K
         self.F = F
-        self.faktorer = {"g": g, "l": l, "f1": f1, "f2": f2, "f3": f3, "k": k}
+
+        if i.ec3:
+            self.g = g
+            self.l = l
+            self.f1 = f1
+            self.f2 = f2
+            self.f3 = f3
+            self.k = k
+            self.faktorer = {"g": g, "l": l, "f1": f1, "f2": f2, "f3": f3, "k": k}
+        else:
+            self.G = G
+            self.Q = Q
+            self.faktorer = {"G": G, "Q": Q}
 
         self.vindretning = vindretning
         # 1: Vind fra mast mot spor
@@ -34,14 +39,10 @@ class Tilstand(object):
             # Ganger med 1000 for å få momenter i [Nmm]
             self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
-            self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K, F)
+            self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K)
         else:
             # Max tillatt utblåsning av kontaktledning i [mm]
             self.utnyttelsesgrad = K[1]/63
-
-
-        if self.navn == "bruddgrense" and mast.navn == "HE200B":
-            print("My = {:.3g} kNm".format(K[0]/1000))
 
 
 
@@ -213,7 +214,7 @@ class Tilstand(object):
 
         return L_e, A, B
 
-    def _beregn_utnyttelsesgrad(self, mast, i, K, F):
+    def _beregn_utnyttelsesgrad(self, mast, i, K):
         """Beregner dimensjonerende utnyttelsesgrad u i bruddgrensetilstand"""
 
         # Standard kapasitetssjekk ihht. EC3 og EN 50119
