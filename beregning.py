@@ -97,6 +97,7 @@ def beregn(i):
     # |             | 6  Fastavspente (toppmontert)
     # |             | 7  Brukerdefinert last
     #  -------------
+    #
 
 
 
