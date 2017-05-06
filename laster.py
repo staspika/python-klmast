@@ -111,15 +111,6 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if i.avspenningsbardun:
             F.append(Kraft(navn="Fixavspenningsmast: Avspenningsbardun", type=0,
                            f=[s, - s, 0], e=[-fh - sh, 0, 0]))
-        # Avspenningslodd
-        utvekslingsforhold = 3
-        if sys.navn == "35":
-            utvekslingsforhold = 2
-        if i.fixavspenningsmast:
-            s = sys.fixline["Strekk i ledning"]
-            s_avsp = 1000 * s / utvekslingsforhold
-            F.append(Kraft(navn="Fixavspenningsmast: Avspenningslodd", type=0,
-                           f=[s_avsp, 0, 0], e=[-fh - sh, 0, 0]))
 
     # Avspenningsmast
     if i.avspenningsmast:
@@ -151,7 +142,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
         if sys.navn == "35":
             utvekslingsforhold = 2
         s_avsp = (s_b + s_kl) / utvekslingsforhold
-        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=0,
+        F.append(Kraft(navn="Avspenningsmast: Avspenningslodd", type=1,
                        f=[s_avsp, 0, 0], e=[-fh - sh/2, 0, 0]))
 
     # Forbigangsledning (1 stk., inkl. isolator)
