@@ -61,6 +61,10 @@ def _beregn_deformasjoner(i, sys, mast, F, sidekrefter):
 def beregn(i):
     import mast
 
+    # Indeksering av 3D-matriser:
+    # [rad][kolonne][etasje]
+    #
+    #
     # R = reaksjonskrefter ved mastens innspenning
     #
     #              R
@@ -78,6 +82,9 @@ def beregn(i):
     # |                        | 6  Fastavspente (toppmontert)
     # |                        | 7  Brukerdefinert last
     #  ------------------------
+    #
+    # Etasjer: 0 = egenvekt, 1 = strekk,
+    #          2 = temperatur, 3 = snø, 4 = vind
     #
     #
     # D = forskyvning av mast i kontakttrådhøyde FH
@@ -97,6 +104,8 @@ def beregn(i):
     # |             | 6  Fastavspente (toppmontert)
     # |             | 7  Brukerdefinert last
     #  -------------
+    #
+    # Etasjer: 0 = statisk, 1 = dynamisk
     #
 
 
