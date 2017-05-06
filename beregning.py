@@ -13,21 +13,21 @@ def _beregn_reaksjonskrefter(F):
     og kolonne i R-matrisen."""
 
     # Initierer R-matrisen for reaksjonskrefter
-    R = numpy.zeros((15, 6))
+    R = numpy.zeros((6, 8, 5))
 
     for j in F:
-        R_0 = numpy.zeros((15, 6))
+        R_0 = numpy.zeros((6, 8, 5))
         f = j.f
         if not numpy.count_nonzero(j.q) == 0:
             f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
 
         # Sorterer bidrag til reaksjonskrefter
-        R_0[j.type][0] = (f[0] * j.e[2]) + (f[2] * -j.e[0])
-        R_0[j.type][1] = f[1]
-        R_0[j.type][2] = (f[0] * -j.e[1]) + (f[1] * j.e[0])
-        R_0[j.type][3] = f[2]
-        R_0[j.type][4] = f[0]
-        R_0[j.type][5] = abs(f[1] * -j.e[2]) + abs(f[2] * j.e[1])
+        R_0[j.type(0)][0][j.type(1)] = (f[0] * j.e[2]) + (f[2] * -j.e[0])
+        R_0[j.type(0)][1][j.type(1)] = f[1]
+        R_0[j.type(0)][2][j.type(1)] = (f[0] * -j.e[1]) + (f[1] * j.e[0])
+        R_0[j.type(0)][3][j.type(1)] = f[2]
+        R_0[j.type(0)][4][j.type(1)] = f[0]
+        R_0[j.type(0)][5][j.type(1)] = abs(f[1] * -j.e[2]) + abs(f[2] * j.e[1])
         R += R_0
 
     return R
@@ -38,15 +38,15 @@ def _beregn_deformasjoner(i, sys, mast, F, sidekrefter):
      i riktig rad og kolonne i D-matrisen.
     """
 
-    # Initerer deformasjonsmatrisen, D
-    D = numpy.zeros((15, 3))
+    # Initierer deformasjonsmatrisen, D
+    D = numpy.zeros((6, 8, 2))
 
     for j in F:
-        D_0 = numpy.zeros((15, 3))
+        D_0 = numpy.zeros((6, 8, 2))
 
         D_0 += deformasjon.bjelkeformel_M(mast, j, i.fh) \
-            + deformasjon.bjelkeformel_P(mast, j, i.fh) \
-            + deformasjon.bjelkeformel_q(mast, j, i.fh)
+             + deformasjon.bjelkeformel_P(mast, j, i.fh) \
+             + deformasjon.bjelkeformel_q(mast, j, i.fh)
 
         if mast.type == "bjelke":
             D_0 += deformasjon.torsjonsvinkel(mast, j, i)
@@ -69,25 +69,18 @@ def beregn(i):
     #   0   1   2   3   4   5
     #   My  Vy  Mz  Vz  N   T
     #  ________________________
-    # |                        | 0  Egenvekt (mast, utligger, ledninger)
+    # |                        | 0  Mast + utligger
     # |                        | 1  Kontaktledning
-    # |                        | 2  Fixpunkt
-    # |                        | 3  Fixavspenning
-    # |                        | 4  Avspenning
-    # |                        | 5  Forbigangsledning
-    # |                        | 6  Returledning
-    # |                        | 7  Fiberoptisk ledning
-    # |                        | 8  Mate-/fjernledning
-    # |                        | 9  AT-ledning
-    # |                        | 10 Jordledning
-    # |                        | 11 Snø og is
-    # |                        | 12 Vind (fra mast, mot spor)
-    # |                        | 13 Vind (fra spor, mot mast)
-    # |                        | 14 Vind (parallelt spor)
+    # |                        | 2  Fixline
+    # |                        | 3  Avspenning
+    # |                        | 4  Bardunering
+    # |                        | 5  Fastavspente (sidemontert)
+    # |                        | 6  Fastavspente (toppmontert)
+    # |                        | 7  Brukerdefinert last
     #  ------------------------
     #
     #
-    # D = forskyvning av mast i kontakttradhøyde FH
+    # D = forskyvning av mast i kontakttrådhøyde FH
     #
     #       D
     #
@@ -95,21 +88,14 @@ def beregn(i):
     #   0   1   2
     #   Dy  Dz  phi
     #  _____________
-    # |             | 0  Egenvekt (mast, utligger, ledninger)
+    # |             | 0  Mast + utligger
     # |             | 1  Kontaktledning
-    # |             | 2  Fixpunkt
-    # |             | 3  Fixavspenning
-    # |             | 4  Avspenning
-    # |             | 5  Forbigangsledning
-    # |             | 6  Returledning
-    # |             | 7  Fiberoptisk ledning
-    # |             | 8  Mate-/fjernledning
-    # |             | 9  AT-ledning
-    # |             | 10 Jordledning
-    # |             | 11 Snø og is
-    # |             | 12 Vind (fra mast, mot spor)
-    # |             | 13 Vind (fra spor, mot mast)
-    # |             | 14 Vind (parallelt spor)
+    # |             | 2  Fixline
+    # |             | 3  Avspenning
+    # |             | 4  Bardunering
+    # |             | 5  Fastavspente (sidemontert)
+    # |             | 6  Fastavspente (toppmontert)
+    # |             | 7  Brukerdefinert last
     #  -------------
 
 
@@ -126,7 +112,7 @@ def beregn(i):
     # FELLES FOR ALLE MASTER
     F_generell = []
     F_generell.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
-    #F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
+    F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
 
     # Sidekrefter til beregning av utliggerens deformasjonsbidrag
     sidekrefter = []
@@ -139,7 +125,6 @@ def beregn(i):
     if i.ec3:
         # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-        F_generell.extend(klima.vindlast_ledninger_EC(i, sys, q_p))
 
         # Definerer grensetilstander inkl. lastfaktorer for ulike lastfaktorer i EC3
         # g = egenvekt, l = loddavspente, f = fastavspente/fix, k = klima
@@ -149,8 +134,10 @@ def beregn(i):
                           "g": [0.0], "l": [0.0], "f": [-0.25, 0.7], "k": [1.0]}
         forskyvning_tot = {"Navn": "forskyvning_tot",
                            "g": [1.0], "l": [1.0], "f": [0.0, 1.0], "k": [1.0]}
-
         grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
+
+
+        F_generell.extend(klima.vindlast_ledninger_EC(i, sys, q_p))
 
         # UNIKT FOR HVER MAST
         for mast in master:
@@ -159,79 +146,57 @@ def beregn(i):
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
             F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
-            F.extend(klima.vindlast_mast_EC(mast, q_p))
+            F.extend(klima.vindlast_mast_normalt_EC(mast, q_p))
 
             if mast.navn == "H5":
                 for j in F:
                     print(j)
 
-            R = _beregn_reaksjonskrefter(F)
-            D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+            # Vindretning 0 = Vind fra mast, mot spor
+            for vindretning in range(3):
+                if vindretning == 1:
+                    # Vind fra spor, mot mast
+                    for j in F:
+                        # Snur kraftretningen dersom vindlast
+                        j.f = -j.f if j.type(1) == 4 else j.f
+                if vindretning == 2:
+                    # Vind parallelt spor
+                    for j in F:
+                        # Nullstiller vindlast
+                        j.f = 0 if j.type(1) == 4 else j.f
+                        # Påfører vindlast mast parallelt spor
+                        F.extend(klima.vindlast_mast_par_EC(mast, q_p))
 
 
-            # Samler laster med lastfaktor g
-            gravitasjonslast = [R[0][:], D[0][:]]
+                R = _beregn_reaksjonskrefter(F)
+                D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
-            # Samler laster med lastfaktor l
-            loddavspente = [R[1][:], D[1][:]]
 
-            # Samler laster med lastfaktor f (f1)
-            fix = [numpy.sum(R[2:4][:], axis=0), numpy.sum(D[2:4][:], axis=0)]
-
-            # Samler laster med lastfaktor f (f2)
-            fastavspente = [numpy.sum(R[4:8][:], axis=0), numpy.sum(D[4:8][:], axis=0)]
-
-            # Samler laster med lastfaktor f (f3)
-            toppmonterte = [numpy.sum(R[8:11][:], axis=0), numpy.sum(D[8:11][:], axis=0)]
-
-            # Faktor k brukes for beregning av klimalaster
-            sno = [R[11][:], D[11][:]]
-            vind_max = [R[12][:], D[12][:]]  # Vind fra mast, mot spor
-            vind_min = [R[13][:], D[13][:]]  # Vind fra spor, mot mast
-            vind_par = [R[14][:], D[14][:]]  # Vind parallelt spor
-
-            """Sammenligner alle mulige kombinasjoner av lastfaktorer
-            for hver enkelt grensetilstand og lagrer resultat av hver enkelt
-            sammenligning i sitt respektive masteobjekt
-            """
-            for grensetilstand in grensetilstander:
-                index = 1
-                if grensetilstand["Navn"] == "bruddgrense":
-                    index = 0
-                for g in grensetilstand["g"]:
-                    for l in grensetilstand["l"]:
-                        for f1 in grensetilstand["f"]:
-                            for f2 in grensetilstand["f"]:
-                                for f3 in grensetilstand["f"]:
-                                    for k in grensetilstand["k"]:
-                                        K = (g * gravitasjonslast[index]
-                                            + l * loddavspente[index]
-                                            + f1 * fix[index]
-                                            + f2 * fastavspente[index]
-                                            + f3 * toppmonterte[index])
-                                        K1 = K + k * (sno[index] + vind_max[index])
-                                        K2 = K + k * (sno[index] + vind_min[index])
-                                        K3 = K + k * (sno[index] + vind_par[index])
-                                        t1 = tilstand.Tilstand(mast, i, R, K1, 1,
-                                                              grensetilstand, F,
-                                                              g, l, f1, f2,
-                                                              f3, k)
-                                        t2 = tilstand.Tilstand(mast, i, R, K2, 2,
-                                                               grensetilstand, F,
-                                                               g, l, f1, f2,
-                                                               f3, k)
-                                        t3 = tilstand.Tilstand(mast, i, R, K3, 3,
-                                                               grensetilstand, F,
-                                                               g, l, f1, f2,
-                                                               f3, k)
-                                        mast.lagre_tilstand(t1)
-                                        mast.lagre_tilstand(t2)
-                                        mast.lagre_tilstand(t3)
+                for grensetilstand in grensetilstander:
+                    index = 1
+                    if grensetilstand["Navn"] == "bruddgrense":
+                        index = 0
+                    for g in grensetilstand["g"]:
+                        for l in grensetilstand["l"]:
+                            for f1 in grensetilstand["f"]:
+                                for f2 in grensetilstand["f"]:
+                                    for f3 in grensetilstand["f"]:
+                                        for k in grensetilstand["k"]:
+                                            K = (g * gravitasjonslast[index]
+                                                + l * loddavspente[index]
+                                                + f1 * fix[index]
+                                                + f2 * fastavspente[index]
+                                                + f3 * toppmonterte[index])
+                                            K = K + k * (sno[index] + vind_max[index])
+                                            t = tilstand.Tilstand(mast, i, R, K, vindretning,
+                                                                  grensetilstand, F,
+                                                                  g, l, f1, f2,
+                                                                  f3, k)
+                                            mast.lagre_tilstand(t)
 
     else:
         # Beregninger med lasttilfeller fra bransjestandard EN 50119
 
-        F_generell.extend(klima.vindlast_ledninger_NEK(i, sys))
 
         bruddgrense = {"Navn": "bruddgrense", "G": [1.3], "Q": [1.3]}
         forskyvning_kl = {"Navn": "forskyvning_kl", "G": [0], "Q": [1.0]}
@@ -240,6 +205,8 @@ def beregn(i):
         grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
 
 
+        F_generell.extend(klima.vindlast_ledninger_NEK(i, sys))
+
         # UNIKT FOR HVER MAST
         for mast in master:
 
@@ -247,47 +214,43 @@ def beregn(i):
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
             F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
-            F.extend(klima.vindlast_mast_NEK(mast))
-
-            R = _beregn_reaksjonskrefter(F)
-            D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
-
-            # Permanente laster (lastfaktor G)
-            permanente = [numpy.sum(R[0:11][:], axis=0), numpy.sum(D[0:11][:], axis=0)]
-
-            # Variable laster (lastfaktor Q)
-            sno = [R[11][:], D[11][:]]
-            vind_max = [R[12][:], D[12][:]]  # Vind fra mast, mot spor
-            vind_min = [R[13][:], D[13][:]]  # Vind fra spor, mot mast
-            vind_par = [R[14][:], D[14][:]]  # Vind parallelt sor
+            F.extend(klima.vindlast_mast_normalt_NEK(mast))
 
             if mast.navn == "H5":
-                print("T fra sno = {} kNm".format(sno[0][5]/1000))
-                print("T fra vind_1 = {} kNm".format(vind_max[0][5] / 1000))
-                print("T fra vind_2 = {} kNm".format(vind_min[0][5] / 1000))
-                print("T fra vind_3 = {} kNm".format(vind_par[0][5] / 1000))
+                for j in F:
+                    print(j)
 
-            for grensetilstand in grensetilstander:
-                G = grensetilstand["G"]
-                Q = grensetilstand["Q"]
-                index = 1
-                if grensetilstand["Navn"] == "bruddgrense":
-                    index = 0
-                K1 = G * permanente[index] + Q * (sno[index] + vind_max[index])
-                K2 = G * permanente[index] + Q * (sno[index] + vind_min[index])
-                K3 = G * permanente[index] + Q * (sno[index] + vind_par[index])
-                t1 = tilstand.Tilstand(mast, i, R, K1, 1,
-                                       grensetilstand, F,
-                                       G=G, Q=Q)
-                t2 = tilstand.Tilstand(mast, i, R, K2, 2,
-                                       grensetilstand, F,
-                                       G=G, Q=Q)
-                t3 = tilstand.Tilstand(mast, i, R, K3, 3,
-                                       grensetilstand, F,
-                                       G=G, Q=Q)
-                mast.lagre_tilstand(t1)
-                mast.lagre_tilstand(t2)
-                mast.lagre_tilstand(t3)
+            # Vindretning 0 = Vind fra mast, mot spor
+            for vindretning in range(3):
+                if vindretning == 1:
+                    # Vind fra spor, mot mast
+                    for j in F:
+                        # Snur kraftretningen dersom vindlast
+                        j.f = -j.f if j.type(1) == 4 else j.f
+                if vindretning == 2:
+                    # Vind parallelt spor
+                    for j in F:
+                        # Nullstiller vindlast
+                        j.f = 0 if j.type(1) == 4 else j.f
+                        # Påfører vindlast mast parallelt spor
+                        F.extend(klima.vindlast_mast_par_NEK(mast, q_p))
+
+
+                R = _beregn_reaksjonskrefter(F)
+                D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+
+
+                for grensetilstand in grensetilstander:
+                    G = grensetilstand["G"]
+                    Q = grensetilstand["Q"]
+                    index = 1
+                    if grensetilstand["Navn"] == "bruddgrense":
+                        index = 0
+                    K = G * permanente[index] + Q * (sno[index] + vind_max[index])
+                    t = tilstand.Tilstand(mast, i, R, K, vindretning,
+                                           grensetilstand, F,
+                                           G=G, Q=Q)
+                    mast.lagre_tilstand(t)
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()

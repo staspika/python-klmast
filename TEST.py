@@ -18,10 +18,5 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    a = np.zeros((15,9,4))
-    b = np.zeros((15,9))
-    c = np.zeros((15))
-
-    c[2] = 2
-    b[2][3] = 3
-    a[2][3][4] = 4
+    a = tuple(range(1,10))
+    print(a)

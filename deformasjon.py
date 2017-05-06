@@ -19,15 +19,15 @@ def bjelkeformel_M(mast, j, fh):
     x = -j.e[0] * 1000
     fh = fh * 1000
 
-    D = numpy.zeros((15, 3))
+    D = numpy.zeros((6, 8, 2))
     if fh > x:
         theta_y = (M_y * x) / (E * I_y)
         theta_z = (M_z * x) / (E * I_z)
-        D[j.type][1] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
-        D[j.type][0] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
+        D[j.type(0)][1][j.type(1)] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
+        D[j.type(0)][0][j.type(1)] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
     else:
-        D[j.type][1] = (M_y * fh ** 2) / (2 * E * I_y)
-        D[j.type][0] = (M_z * fh ** 2) / (2 * E * I_z)
+        D[j.type(0)][1][j.type(1)] = (M_y * fh ** 2) / (2 * E * I_y)
+        D[j.type(0)][0][j.type(1)] = (M_z * fh ** 2) / (2 * E * I_z)
 
     return D
 
@@ -45,10 +45,9 @@ def bjelkeformel_P(mast, j, fh):
     e_x = -j.e[0] * 1000
     fh *= 1000
 
-    D = numpy.zeros((15, 3))
-    if not j.navn.split(":")[0] == "Vandringskraft":
-        D[j.type][1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
-        D[j.type][0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D = numpy.zeros((6, 8, 2))
+    D[j.type][1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D[j.type][0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
 
     return D
 
@@ -66,10 +65,10 @@ def bjelkeformel_q(mast, j, fh):
     b = j.b * 1000
     fh *= 1000
 
-    D = numpy.zeros((15, 3))
+    D = numpy.zeros((6, 8, 2))
 
-    D[j.type][1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
-    D[j.type][0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    D[j.type(0)][1][j.type(1)] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    D[j.type(0)][0][j.type(1)] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
 
     return D
 
@@ -88,22 +87,22 @@ def torsjonsvinkel(mast, j, i):
     x = (i.fh + i.sh/2) * 1000
     e_x = -j.e[0] * 1000
 
-    D = numpy.zeros((15, 3))
+    D = numpy.zeros((6, 8, 2))
 
-    D[j.type][2] = abs(alpha * (T / (G * I_T)) * \
+    D[j.type(0)][2][j.type(1)] = abs(alpha * (T / (G * I_T)) * \
                    ((math.tanh(e_x / alpha) * (math.cosh((x / alpha) - 1)) - math.sinh(x / alpha) + x / alpha)))
 
     return D
 
 def utliggerbidrag(sys, sidekrefter):
-    D = numpy.zeros((15, 3))
+    D = numpy.zeros((6, 8, 2))
 
     if sys.navn == "20a" or sys.navn == "20b":
         for s in sidekrefter:
-            D[1][1] += 20/2500 * s
+            D[0][0][1] += 20/2500 * s
     elif sys.navn == "25":
         for s in sidekrefter:
-            D[1][1] += 4/2500 * s
+            D[0][0][1] += 4/2500 * s
 
     return D
 
