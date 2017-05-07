@@ -6,65 +6,50 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, R, K, vindretning, grensetilstand, F,
-                 g=0, l=0, f1=0, f2=0, f3=0, k=0, G=0, Q=0):
+    def __init__(self, mast, i, R, K, F, lastsituasjon, vindretning,
+                 G=0, L=0, T=0, S=0, V=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
          """
-        self.navn = grensetilstand["Navn"]
+        self.lastsituasjon = lastsituasjon
         self.R = R
         self.K = K
         self.F = F
 
-        if i.ec3:
-            self.g = g
-            self.l = l
-            self.f1 = f1
-            self.f2 = f2
-            self.f3 = f3
-            self.k = k
-            self.faktorer = {"g": g, "l": l, "f1": f1, "f2": f2, "f3": f3, "k": k}
-        else:
-            self.G = G
-            self.Q = Q
-            self.faktorer = {"G": G, "Q": Q}
+        self.G = G
+        self.L = G
+        self.T = T
+        self.S = S
+        self.V = V
+        self.faktorer = {"G": G, "L": L, "T": T, "S": S, "V": V}
 
         self.vindretning = vindretning
         # 1: Vind fra mast mot spor
         # 2: Vind fra spor mot mast
         # 3: Vind parallelt spor
 
-        if self.navn == "bruddgrense":
-            self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
-            # Ganger med 1000 for å få momenter i [Nmm]
-            self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
-            self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
-            self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K)
-        else:
-            # Max tillatt utblåsning av kontaktledning i [mm]
-            self.utnyttelsesgrad = K[1]/63
-
+        self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
+        # Ganger med 1000 for å få momenter i [Nmm]
+        self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
+        self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
+        self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K)
 
 
     def __repr__(self):
-        if self.navn == "bruddgrense":
-            K = self.K[:][0:6]/1000  # Konverterer krefter til [kNm] og [kN]
-            rep = "My = {:.3g}kNm    Vy = {:.3g}kN    Mz = {:.3g}kNm    " \
-                  "Vz = {:.3g}kN    N = {:.3g}kN    T = {:.3g}kNm\n".\
-                format(K[0], K[1], K[2], K[3], K[4], K[5])
-            for key in self.faktorer:
-                rep += "{} = {}     ".format(key, self.faktorer[key])
-            rep += "\nVindretning = {}\n".format(self.vindretning)
-            rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
-                   "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
-            rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
-            rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
-        else:
-            phi = self.K[2]*360/(2*math.pi)  # Torsjonsvinkel i grader
-            rep = "Dy = {:.3g}mm    Dz = {:.3g}mm   " \
-                "Torsjonsvinkel: {:.3g} grader\n".format(self.K[0], self.K[1], phi)
-            rep += "Utnyttelsesgrad: {:.3g}%".format(self.utnyttelsesgrad * 100)
+        K = self.K[:][0:6]/1000  # Konverterer krefter til [kNm] og [kN]
+        rep = "My = {:.3g}kNm    Vy = {:.3g}kN    Mz = {:.3g}kNm    " \
+              "Vz = {:.3g}kN    N = {:.3g}kN    T = {:.3g}kNm\n".\
+            format(K[0], K[1], K[2], K[3], K[4], K[5])
+        rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
+        for key in self.faktorer:
+            rep += "{} = {}     ".format(key, self.faktorer[key])
+        rep += "\nVindretning = {}\n".format(self.vindretning)
+        rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
+               "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
+        rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
+        rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
         return rep
+
 
     def _trykkapasitet(self, mast, I, L, N_Ed, N_Rk, alpha):
         """Beregner aksialkraftkapasitet etter EC3, 6.3.1.2"""

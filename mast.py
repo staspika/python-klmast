@@ -13,7 +13,7 @@ class Mast(object):
                  k_g=0, k_d=0, A_ref=0, A_ref_par=0, h_max=0, h=0,
                  s235=False, materialkoeff=1.05):
         """Oppretter nytt masteobjekt"""
-        self.navn = navn  # Mastens navn
+        self.navn = navn  # Mastens lastsituasjon
         self.type = type  # Støttede mastetyper: B, H, bjelke
         self.egenvekt = egenvekt  # Egenvekt [N/m]
         self.A_profil = A_profil  # Profilets areal [mm]
@@ -221,7 +221,7 @@ class Mast(object):
         return False
 
     def sorter(self):
-        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
+        kriterie = 1  # 0 = My, 1 = utnyttelsesgrad
 
         if kriterie == 0:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.K[0], reverse=True)
@@ -229,24 +229,12 @@ class Mast(object):
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
     def lagre_tilstand(self, tilstand):
-        """Lagrer tilstand dersom dimensjonerende tilfelle"""
-        if tilstand.navn == "bruddgrense":
-            self.bruddgrense.append(tilstand)
-        elif tilstand.navn == "forskyvning_kl":
-            self.forskyvning_kl.append(tilstand)
-        elif tilstand.navn == "forskyvning_tot":
-            self.forskyvning_tot.append(tilstand)
+        self.bruddgrense.append(tilstand)
 
     def print_tilstander(self):
         print()
         print("Bruddgrensetilstand:")
         print(self.bruddgrense[0])
-        print()
-        print("Bruksgrensetilstand for forskyvning av kontakttråd:")
-        print(self.forskyvning_kl[0])
-        print()
-        print("Bruksgrensetilstand for total forskyvning:")
-        print(self.forskyvning_tot[0])
 
 def hent_master(hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning."""

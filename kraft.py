@@ -7,7 +7,7 @@ class Kraft(object):
                  q=[0,0,0], b=0, e=[0,0,0]):
         """
         Initierer kraft/moment-objekt.
-        :param navn: Lastens navn
+        :param navn: Lastens lastsituasjon
         :param type: (Rad, etasje) i R og D-matrise
         :param f: Kraftkomponenter [x, y, z]  [N]
         :param q: Kraftkomponenter for fordelt last [x, y, z]  [N/m]
@@ -29,7 +29,7 @@ class Kraft(object):
         else:
             rep += "f = {}\n".format(self.f)
         return rep
-    
+
 
 
 
