@@ -122,7 +122,7 @@ def vindlast_mast_normalt_EC(mast, q_p):
     # Liste over krefter som skal returneres
     F = []
 
-    F.append(Kraft(navn="Vindlast: Mast (fra mast mot spor)", type=(0, 4),
+    F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                    q=[0, 0, q_normalt],
                    b=mast.h,
                    e=[-mast.h/2, 0, 0]))
@@ -141,7 +141,7 @@ def vindlast_mast_par_EC(mast, q_p):
     # Liste over krefter som skal returneres
     F = []
 
-    F.append(Kraft(navn="Vindlast: Mast (parallelt spor)", type=(0, 4),
+    F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                    q=[0, q_par, 0],
                    b=mast.h,
                    e=[-mast.h / 2, 0, 0]))
@@ -485,7 +485,7 @@ def vindlast_mast_normalt_NEK(mast):
         A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
         q_normalt = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
 
-        F.append(Kraft(navn="Vindlast: Mast (fra mast mot spor)", type=(0, 4),
+        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                        q=[0, 0, q_normalt],
                        b=mast.h,
                        e=[-mast.h/2, 0, 0]))
@@ -495,7 +495,7 @@ def vindlast_mast_normalt_NEK(mast):
             C_str = 1.4
         q_normalt = q_K * C_str * mast.A_ref
 
-        F.append(Kraft(navn="Vindlast: Mast (fra mast mot spor)", type=(0, 4),
+        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                        q=[0, 0, q_normalt],
                        b=mast.h,
                        e=[-mast.h / 2, 0, 0]))
@@ -526,7 +526,7 @@ def vindlast_mast_par_NEK(mast):
         A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
         q_par = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
 
-        F.append(Kraft(navn="Vindlast: Mast (parallelt spor)", type=(0, 4),
+        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                        q=[0, q_par + q_ins, 0],
                        b=mast.h,
                        e=[-mast.h/2, 0, 0]))
@@ -535,7 +535,7 @@ def vindlast_mast_par_NEK(mast):
         C_str = 1.4  # [1] Drag faktor
         q_par = q_K * C_str * mast.A_ref_par
 
-        F.append(Kraft(navn="Vindlast: Mast (parallelt spor)", type=(0, 4),
+        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                        q=[0, q_par + q_ins, 0],
                        b=mast.h,
                        e=[-mast.h / 2, 0, 0]))

@@ -65,7 +65,7 @@ def beregn(i):
     import mast
 
     # Indeksering av 3D-matriser:
-    # [etasje][rad][kolonne]
+    # [etasje, rad, kolonne]
     #
     #
     # R = reaksjonskrefter ved mastens innspenning
@@ -149,9 +149,13 @@ def beregn(i):
             F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
             F.extend(klima.vindlast_mast_normalt_EC(mast, q_p))
 
+
+
             if mast.navn == "H5":
                 for j in F:
                     print(j)
+
+
 
             # Vindretning 0 = Vind fra mast, mot spor
             for vindretning in range(3):
