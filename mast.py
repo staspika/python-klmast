@@ -236,6 +236,11 @@ class Mast(object):
         print("Bruddgrensetilstand:")
         print(self.bruddgrense[0])
 
+    def print_krefter(self):
+        print()
+        for j in self.bruddgrense[0].F:
+            print(j)
+
 def hent_master(hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning."""
 

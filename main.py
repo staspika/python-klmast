@@ -46,13 +46,12 @@ for iterasjon in range(1):
     #resultater.skriv_bidrag(i, mast)
 
     print()
+    mast.print_krefter()
+    print()
     print(mast)
     metode = "EC3" if i.ec3 else "NEK"
     print("Beregningsmetode: {}".format(metode))
     mast.print_tilstander()
-    print()
-    print(mast.bruddgrense[0].R[3, :, :])
-    print()
     print()
 
     UR = mast.bruddgrense[0].utnyttelsesgrad
@@ -60,6 +59,15 @@ for iterasjon in range(1):
               mast.bruddgrense[0].Mz_kap, mast.bruddgrense[0].N_kap]
     values.append(current_values)
 
+    """
+    print()
+    for m in mast.bruddgrense:
+        for j in m.F:
+            if j.type[1]==4 and j.navn=="Vindlast: Mast":
+                print("Vindretning = {}".format(m.vindretning))
+                print(j)
+                print()
+    """
 
 #resultater.barplot(values)
 

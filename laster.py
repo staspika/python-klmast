@@ -85,10 +85,11 @@ def beregn(i, sys):
                    e=[-fh, 0, arm]))
 
     # Bidrag til normalkraft dersom ulik høyde mellom nabomaster
-    s = 1000 * (sys.baereline["Strekk i ledning"] + sys.kontakttraad["Strekk i ledning"])
-    f_x = s * (i.delta_h1 / a1 + i.delta_h2 / a2)
-    F.append(Kraft(navn="Geometri: Ulik høyde mellom master", type=(1, 1),
-                   f=[f_x, 0, 0], e=[-fh - sh / 2, 0, (sms + arm) / 2]))
+    if not i.delta_h1 == 0 and not i.delta_h2 == 0:
+        s = 1000 * (sys.baereline["Strekk i ledning"] + sys.kontakttraad["Strekk i ledning"])
+        f_x = s * (i.delta_h1 / a1 + i.delta_h2 / a2)
+        F.append(Kraft(navn="Geometri: Ulik høyde mellom master", type=(1, 1),
+                       f=[f_x, 0, 0], e=[-fh - sh / 2, 0, (sms + arm) / 2]))
 
     # Fixpunktmast
     if i.fixpunktmast:

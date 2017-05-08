@@ -18,28 +18,21 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    x = 3
-    y = 3
-    z = 3
-    R = numpy.zeros((x,y,z))
-    for a in range(x):
-        for b in range(y):
-            for c in range(z):
-                R[a][b][c] = 1
 
-    print(R)
-    R[:, 1, :] = 0
-    print("\n\n\n\n")
-    print(R)
+    F = []
 
-    k = numpy.sum(R, axis=0)
-    K = numpy.sum(k, axis=0)
+    a = numpy.ones((2,2))
 
+    F.extend([a])
 
-    print(k)
-    print("\n\n\n\n")
-    R[:][:][2] = 0
-    print(R)
+    print(F)
+
+    F[0] = -F[0]
+
+    print(F)
+    print()
+    print(a)
+
 
 
 

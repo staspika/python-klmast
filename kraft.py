@@ -1,4 +1,4 @@
-from numpy import array, count_nonzero
+from numpy import array, zeros, count_nonzero
 
 class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster og momenter"""
@@ -8,7 +8,7 @@ class Kraft(object):
         """
         Initierer kraft/moment-objekt.
         :param navn: Identifikasjonstag for kraftens opphav
-        :param type: (Rad, etasje) i R og D-matrise
+        :param type: (Rad, etasje) for plassering i R-matrise
         :param f: Kraftkomponenter [x, y, z]  [N]
         :param q: Kraftkomponenter for fordelt last [x, y, z]  [N/m]
         :param b: Utstrekning av fordelt last [m]
@@ -29,6 +29,14 @@ class Kraft(object):
         else:
             rep += "f = {}\n".format(self.f)
         return rep
+
+    def snu_lastretning(self):
+        self.f = -self.f
+        self.q = -self.q
+
+    def nullstill(self):
+        self.f = zeros((3))
+        self.q = zeros((3))
 
 
 

@@ -114,42 +114,28 @@ def beregn(i):
 
     # Oppretter masteobjekt med brukerdefinert høyde
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
-    # Oppretter systemobjekt med data for ledninger og utliggere
+    # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
-
-
-    # FELLES FOR ALLE MASTER
-    F_generell = []
-    F_generell.extend(laster.beregn(i, sys))
-    F_generell.extend(klima.isogsno_last(i, sys))
-    F_generell.extend(klima.vindlast_ledninger(i, sys))
-
-    # Sidekrefter til beregning av utliggerens deformasjonsbidrag
-    sidekrefter = []
-    for j in F_generell:
-        if j.navn == "Sidekraft: Bæreline" or j.navn == "Sidekraft: Kontakttråd"\
-                or j.navn == "Sidekraft: Avspenning bæreline" \
-                or j.navn == "Sidekraft: Avspenning kontakttråd":
-            sidekrefter.append(j.f[2])
 
 
     # UNIKT FOR HVER MAST
     for mast in master:
 
         F = []
-        F.extend(F_generell)
+        F.extend(laster.beregn(i, sys))
+        F.extend(klima.isogsno_last(i, sys))
+        F.extend(klima.vindlast_ledninger(i, sys))
         F.extend(laster.egenvekt_mast(mast))
         F.extend(klima.vandringskraft(i, sys, mast))
         F.extend(klima.vindlast_mast_normalt(i, mast))
 
-
-
-        # Debug-print for krefter i systemet
-        if mast.navn == "H5":
-            for j in F:
-                print(j)
-
-
+        # Sidekrefter til beregning av utliggerens deformasjonsbidrag
+        sidekrefter = []
+        for j in F:
+            if j.navn == "Sidekraft: Bæreline" or j.navn == "Sidekraft: Kontakttråd" \
+                    or j.navn == "Sidekraft: Avspenning bæreline" \
+                    or j.navn == "Sidekraft: Avspenning kontakttråd":
+                sidekrefter.append(j.f[2])
 
         # Vindretning 0 = Vind fra mast, mot spor
         for vindretning in range(3):
@@ -157,15 +143,20 @@ def beregn(i):
                 # Vind fra spor, mot mast
                 for j in F:
                     # Snur kraftretningen dersom vindlast
-                    j.f = -j.f if j.type[1] == 4 else j.f
+                    if j.type[1] == 4:
+                        j.snu_lastretning()
             elif vindretning == 2:
                 # Vind parallelt spor
                 for j in F:
                     # Nullstiller vindlast
                     if j.type[1] == 4:
-                        F.remove(j)
+                        j.nullstill()
                     # Påfører vindlast mast parallelt spor
                 F.extend(klima.vindlast_mast_par(i, mast))
+
+            if mast.navn == "HE200B":
+                print("Vindretning = {}      F = {}".format(vindretning, F))
+                print("\n\n\n")
 
             R_0 = _beregn_reaksjonskrefter(F)
 

@@ -219,6 +219,7 @@ def vindlast_ledninger(i, sys):
     a2 = i.a2  # [m] Avstand til neste mast
     d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetråd, Y-line
 
+    q = 0
     if i.ec3:
         q_p = i.vindkasthastighetstrykk  # [N/m^2]
         cf = 1.1                         # [1] Vindkraftfaktor ledning
