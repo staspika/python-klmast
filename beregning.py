@@ -117,8 +117,6 @@ def beregn(i):
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger og utliggere
     sys = system.hent_system(i)
-    # q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
-    q_p = i.vindkasthastighetstrykk * 1000  # [N/m^2]
 
 
     # FELLES FOR ALLE MASTER
@@ -137,7 +135,7 @@ def beregn(i):
     if i.ec3:
         # Beregninger med lastfaktorkombinasjoner ihht. EC3
 
-        F_generell.extend(klima.vindlast_ledninger_EC(i, sys, q_p))
+        F_generell.extend(klima.vindlast_ledninger_EC(i, sys))
 
         # UNIKT FOR HVER MAST
         for mast in master:
@@ -146,7 +144,7 @@ def beregn(i):
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
             F.extend(klima.vandringskraft(i, sys, mast))
-            F.extend(klima.vindlast_mast_normalt_EC(mast, q_p))
+            F.extend(klima.vindlast_mast_normalt_EC(i, mast))
 
 
 
@@ -170,10 +168,9 @@ def beregn(i):
                         if j.type[1] == 4:
                             F.remove(j)
                         # Påfører vindlast mast parallelt spor
-                    F.extend(klima.vindlast_mast_par_EC(mast, q_p))
+                    F.extend(klima.vindlast_mast_par_EC(i, mast))
 
                 R = _beregn_reaksjonskrefter(F)
-                D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
                 lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6},
                                    "Snølast dominerende": {"psi_T": 0.6, "psi_S": 1.0, "psi_V": 0.6},
@@ -207,20 +204,12 @@ def beregn(i):
                                         mast.lagre_tilstand(t)
 
                 # Regner deformasjoner
-
+                # D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
 
 
     else:
         # Beregninger med lasttilfeller fra bransjestandard EN 50119
-
-
-        bruddgrense = {"Navn": "bruddgrense", "G": [1.3], "Q": [1.3]}
-        forskyvning_kl = {"Navn": "forskyvning_kl", "G": [0], "Q": [1.0]}
-        forskyvning_tot = {"Navn": "forskyvning_tot", "G": [1.0], "Q": [1.0]}
-
-        grensetilstander = [bruddgrense, forskyvning_kl, forskyvning_tot]
-
 
         F_generell.extend(klima.vindlast_ledninger_NEK(i, sys))
 
@@ -231,7 +220,7 @@ def beregn(i):
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
             F.extend(klima.vandringskraft(i, sys, mast))
-            F.extend(klima.vindlast_mast_normalt_NEK(mast))
+            F.extend(klima.vindlast_mast_normalt_NEK(i, mast))
 
             if mast.navn == "H5":
                 for j in F:
@@ -251,7 +240,7 @@ def beregn(i):
                         if j.type[1] == 4:
                             F.remove(j)
                         # Påfører vindlast mast parallelt spor
-                    F.extend(klima.vindlast_mast_par_NEK(mast, q_p))
+                    F.extend(klima.vindlast_mast_par_NEK(i, mast))
 
                 R = _beregn_reaksjonskrefter(F)
                 D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)

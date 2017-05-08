@@ -95,7 +95,7 @@ def torsjonsvinkel(mast, j, i, etasje):
     return D
 
 def utliggerbidrag(sys, sidekrefter):
-    D = numpy.zeros((8, 6, 2))
+    D = numpy.zeros((2, 8, 6))
 
     if sys.navn == "20a" or sys.navn == "20b":
         for s in sidekrefter:

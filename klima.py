@@ -13,18 +13,18 @@ kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
 terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 
 
-def beregn_vindkasthastighetstrykk_EC(z):
+def beregn_vindkasthastighetstrykk_EC(i, z):
     """Beregner dimensjonerende vindkasthastighetstrykk [kN/m^2]
     med bruk av Eurokode 1 (EC1).
     """
 
     # Inngangsparametre
-    v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
-    c_dir = 1.0     # [1] Retningsfaktor
-    c_season = 1.0  # [1] Årstidsfaktor
-    c_alt = 1.0     # [1] Nivåfaktor
-    c_prob = 1.0    # [1] Faktor dersom returperioden er mer enn 50 år
-    c_0 = 1.0       # [1] Terrengformfaktoren
+    v_b_0 = i.referansevindhastighet  # [m/s] Referansevindhastighet for aktuell kommune
+    c_dir = 1.0                       # [1] Retningsfaktor
+    c_season = 1.0                    # [1] Årstidsfaktor
+    c_alt = 1.0                       # [1] Nivåfaktor
+    c_prob = 1.0                      # [1] Faktor dersom returperioden er mer enn 50 år
+    c_0 = 1.0                         # [1] Terrengformfaktoren
     kategori = 2
 
     # Basisvindhastighet [m/s]
@@ -117,7 +117,7 @@ def vindlast_mast_normalt_EC(i, mast):
     vinden blåser normalt sporet
     """
 
-    q_p = i.vindkasthasstighetstrykk   # [N/m^2]
+    q_p = i.vindkasthastighetstrykk   # [N/m^2]
     cf = 2.2                           # [1] Vindkraftfaktor mast
     q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
@@ -137,7 +137,7 @@ def vindlast_mast_par_EC(i, mast):
     vinden blåser parallelt sporet
     """
 
-    q_p = i.vindkasthasstighetstrykk   # [N/m^2]
+    q_p = i.vindkasthastighetstrykk   # [N/m^2]
     cf = 2.2                           # [1] Vindkraftfaktor mast
     q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
 
@@ -446,7 +446,7 @@ def vandringskraft(i, sys, mast):
 # ====================================================================#
 
 
-def _beregn_vindtrykk_NEK():
+def _beregn_vindtrykk_NEK(i):
     """Denne funksjonen beregner 
     vindtrykket etter NEK EN 50119.
     """
@@ -465,7 +465,7 @@ def _beregn_vindtrykk_NEK():
 
     # Alternativ 2: EC1
     # Terrengkategori II velges
-    v_b_0 = 22      # [m/s] Referansevindhastighet for aktuell kommune
+    v_b_0 = i.referansevindhastighet  # [m/s] Referansevindhastighet for aktuell kommune
 
     # Dynamisk vindtrykk [N / m^2]
     rho = 1.255  # [kg / m^3]
@@ -477,12 +477,12 @@ def _beregn_vindtrykk_NEK():
     return q_K
 
 
-def vindlast_mast_normalt_NEK(mast):
+def vindlast_mast_normalt_NEK(i, mast):
     """Vindlast på mast etter NEK EN 50119. Antar en 
     firkantet jevnt fordelt vindlast på masten.
     """
 
-    q_K = _beregn_vindtrykk_NEK()
+    q_K = _beregn_vindtrykk_NEK(i)
 
     # Liste over krefter som skal returneres
     F = []
@@ -512,12 +512,12 @@ def vindlast_mast_normalt_NEK(mast):
     return F
 
 
-def vindlast_mast_par_NEK(mast):
+def vindlast_mast_par_NEK(i, mast):
     """Vindlast på mast når vinden blåser parallelt spor. 
     Antar en firkantet jevnt fordelt vindlast på masten.
     """
 
-    q_K = _beregn_vindtrykk_NEK()
+    q_K = _beregn_vindtrykk_NEK(i)
 
     # Liste over krefter som skal returneres
     F = []
@@ -557,7 +557,7 @@ def vindlast_ledninger_NEK(i, sys):
     Kun gyldig for vindretning vinkelrett på sporet.
     """
 
-    q_K = _beregn_vindtrykk_NEK()
+    q_K = _beregn_vindtrykk_NEK(i)
 
     # Inngangsparametre
     a = (i.a1 + i.a2)/2          # [m] masteavstand

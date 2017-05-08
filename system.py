@@ -139,7 +139,7 @@ def hent_system(i):
                       y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger,
-                      radius=i.r, sms=i.sms, fh=i.fh)
+                      radius=i.radius, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "20b":
         return System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
@@ -147,7 +147,7 @@ def hent_system(i):
                       y_line=None, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger,
-                      radius=i.r, sms=i.sms, fh=i.fh)
+                      radius=i.radius, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "25":
         return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
                      fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
@@ -155,7 +155,7 @@ def hent_system(i):
                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                      jordledning=jordledning, utligger=utligger,
-                      radius=i.r, sms=i.sms, fh=i.fh)
+                      radius=i.radius, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "35":
         return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
@@ -163,7 +163,7 @@ def hent_system(i):
                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                      jordledning=jordledning, utligger=utligger,
-                      radius=i.r, sms=i.sms, fh=i.fh)
+                      radius=i.radius, sms=i.sms, fh=i.fh)
 
 
 
