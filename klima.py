@@ -67,12 +67,13 @@ def beregn_vindkasthastighetstrykk_EC(z):
     return q_p
 
 
-def q_KL(i, sys, q_p):
+def q_KL(i, sys):
     """Beregner vindlast på kontaktledningen. Denne verdien brukes til
     å beregne masteavstanden, a.
     """
 
     # Inngangsparametre
+    q_p = i.vindkasthasstighetstrykk
     cf = 1.1             # [1] Vindkraftfaktor ledning
     d_henge, d_Y = 0, 0  # [m] Diameter hengetraad, lengde Y-line
     q = 0                # [N/m] Brukes til å beregne masteavstand, a
@@ -111,11 +112,12 @@ def q_KL(i, sys, q_p):
     return q
 
 
-def vindlast_mast_normalt_EC(mast, q_p):
+def vindlast_mast_normalt_EC(i, mast):
     """Definerer vindlast på mast når
     vinden blåser normalt sporet
     """
 
+    q_p = i.vindkasthasstighetstrykk   # [N/m^2]
     cf = 2.2                           # [1] Vindkraftfaktor mast
     q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
@@ -130,11 +132,12 @@ def vindlast_mast_normalt_EC(mast, q_p):
     return F
 
 
-def vindlast_mast_par_EC(mast, q_p):
+def vindlast_mast_par_EC(i, mast):
     """Definerer vindlast på mast når
     vinden blåser parallelt sporet
     """
 
+    q_p = i.vindkasthasstighetstrykk   # [N/m^2]
     cf = 2.2                           # [1] Vindkraftfaktor mast
     q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
 
@@ -149,16 +152,17 @@ def vindlast_mast_par_EC(mast, q_p):
     return F
 
 
-def vindlast_ledninger_EC(i, sys, q_p):
+def vindlast_ledninger_EC(i, sys):
     """I denne funksjonen avledes krefter på 
     mast på grunn av vindlast på ledninger.
     """
 
     # Inngangsparametre
-    a = (i.a2 + i.a1) / 2        # [m] Midlere masteavstand
-    a2 = i.a2                    # [m] Avstand til nest mast
-    cf = 1.1                     # [1] Vindkraftfaktor ledning
-    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetraad, Y-line
+    q_p = i.vindkasthastighetstrykk  # [N/m^2]
+    a = (i.a2 + i.a1) / 2            # [m] Midlere masteavstand
+    a2 = i.a2                        # [m] Avstand til nest mast
+    cf = 1.1                         # [1] Vindkraftfaktor ledning
+    d_henge, d_Y, L_Y = 0, 0, 0      # [m] Diameter hengetraad, Y-line
 
     # F = liste over krefter som skal returneres
     F = []
@@ -268,13 +272,14 @@ def vindlast_ledninger_EC(i, sys, q_p):
     return F
 
 
-def isogsno_last(i, sys, a_T, a_T_dot):
+def isogsno_last(i, sys):
     """Beregner krefter på mast på grunn av is- og snølast på
     ledninger.
     """
 
     a = (i.a2 + i.a1) / 2  # [m] Midlere masteavstand
     a2 = i.a2              # [m] Avstand til neste mast
+    a_T, a_T_dot = sys.a_T, sys.a_T_dot
 
     # Snø- og islast pr. meter ledning [N/m].
     # q = (2.5 + 0.5 * d)
@@ -399,10 +404,14 @@ def isogsno_last(i, sys, a_T, a_T_dot):
     return F
 
 
-def vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot):
+def vandringskraft(i, sys, mast):
     """Kraft i sporets lengderetning fordi utliggeren
     ikke står normalt på masten.
     """
+
+    # Inngangsparametre
+    B1, B2 = sys.B1, sys.B2
+    a_T, a_T_dot = sys.a_T, sys.a_T_dot
 
     # Liste over krefter som returneres
     F = []

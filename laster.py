@@ -1,7 +1,7 @@
 from kraft import *
 
 
-def beregn(sys, i, a_T, a_T_dot, B1, B2):
+def beregn(i, sys):
     """Beregner krefter fra egenvekt av og strekk i samtlige ledninger,
     vekt av isolatorer, krefter grunnet ledningsføringens geometri, 
     fix- og avspenningskrefter samt tilhørende
@@ -11,8 +11,9 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     f_diff = i.differansestrekk * 1000  # Differansestrekk [N]
     r = i.radius
     a = (i.a1 + i.a2) / 2
-    a1 = i.a1
-    a2 = i.a2
+    a1, a2 = i.a1, i.a2
+    B1, B2 = sys.B1, sys.B2
+    a_T, a_T_dot = sys.a_T, sys.a_T_dot
     sms = i.sms
     fh = i.fh
     sh = i.sh
@@ -30,7 +31,7 @@ def beregn(sys, i, a_T, a_T_dot, B1, B2):
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         n = 2
         F.append(Kraft(navn="Egenvekt: Traverser", type=(0, 0),
-                       f=[220, 0, 0], e=[-fh -sh/2, 0, 0]))
+                       f=[220, 0, 0], e=[-fh - sh/2, 0, 0]))
 
     # Utligger(e)
     F.append(Kraft(navn="Egenvekt: Utligger", type=(0, 0),
