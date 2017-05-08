@@ -6,15 +6,16 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, R, K, F, lastsituasjon, vindretning,
+    def __init__(self, mast, i, R, F, lastsituasjon, vindretning,
                  G=0, L=0, T=0, S=0, V=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
          """
         self.lastsituasjon = lastsituasjon
         self.R = R
-        self.K = K
         self.F = F
+        self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
+        K = self.K
 
         self.G = G
         self.L = G

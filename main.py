@@ -18,9 +18,6 @@ for iterasjon in range(1):
     with open("input.ini", "r") as ini:
         # Oppretter inndataobjekt med data fra .ini-fil
         i = inndata.Inndata(ini)
-        i.ec3 = True
-        if iterasjon == 1:
-            i.ec3 = False
         master = beregning.beregn(i)
 
     for mast in master:
@@ -53,6 +50,8 @@ for iterasjon in range(1):
     metode = "EC3" if i.ec3 else "NEK"
     print("Beregningsmetode: {}".format(metode))
     mast.print_tilstander()
+    print()
+    print(mast.bruddgrense[0].R[3, :, :])
     print()
     print()
 

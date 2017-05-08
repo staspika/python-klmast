@@ -172,3 +172,24 @@ for s in sikksakk_20:
 radius_list.sort(key=_hent_tall)
 
 
+def hent_lastkombinasjoner(eurokode):
+    if eurokode:
+        # Lastsituasjoner og faktorer ihht. EC3
+        lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6},
+                           "Snølast dominerende": {"psi_T": 0.6, "psi_S": 1.0, "psi_V": 0.6},
+                           "Vind dominerende": {"psi_T": 0.6, "psi_S": 0.7, "psi_V": 1.0}}
+        lastfaktorer = {"G": (1.2, 1.0), "L": (1.2, 1.0), "T": (1.5, 0),
+                        "S": (1.5, 0), "V": (1.5, 0)}
+    else:
+        # Lastsituasjoner og faktorer ihht. NEK (bransjestandard)
+        lastsituasjoner = {"Maksimal temperaturlast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0},
+                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0},
+                           "Maksimal snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0},
+                           "Kombinert vind- og snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0.5}}
+        lastfaktorer = {"G": (1.3, 1.0), "L": (1.3, 0), "T": (1.3, 0),
+                        "S": (1.3, 0), "V": (1.3, 0)}
+
+    return lastsituasjoner, lastfaktorer
+
+
+
