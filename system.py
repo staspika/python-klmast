@@ -1,10 +1,12 @@
+import geometri
+
 class System(object):
     """Parent class for alle systemteyper"""
 
     def __init__(self, navn, baereline, kontakttraad, fixline,
                  forbigangsledning, returledning, matefjernledning,
-                 y_line, hengetraad, fiberoptisk,
-                 at_ledning, jordledning, utligger):
+                 y_line, hengetraad, fiberoptisk, at_ledning,
+                 jordledning, utligger, radius, sms, fh):
         """Initierer objekt med dictionaries som inngangsparametre"""
         self.navn = navn
         self.baereline = baereline
@@ -19,6 +21,9 @@ class System(object):
         self.at_ledning = at_ledning
         self.jordledning = jordledning
         self.utligger = utligger
+        self.B1, self.B2, self.e_max = geometri.beregn_sikksakk(self, radius)
+        self.a_T, self.a_T_dot = geometri.beregn_arm(radius, sms, fh, self.B1)
+
 
     def __repr__(self):
         return "System {}".format(self.navn)
@@ -133,28 +138,34 @@ def hent_system(i):
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                      jordledning=jordledning, utligger=utligger)
+                      jordledning=jordledning, utligger=utligger,
+                      radius=i.r, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "20b":
         return System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=None, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                      jordledning=jordledning, utligger=utligger)
+                      jordledning=jordledning, utligger=utligger,
+                      radius=i.r, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "25":
         return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
                      fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                     jordledning=jordledning, utligger=utligger)
+                     jordledning=jordledning, utligger=utligger,
+                      radius=i.r, sms=i.sms, fh=i.fh)
     elif i.systemnavn == "35":
         return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                     jordledning=jordledning, utligger=utligger)
+                     jordledning=jordledning, utligger=utligger,
+                      radius=i.r, sms=i.sms, fh=i.fh)
+
+
 
 
 

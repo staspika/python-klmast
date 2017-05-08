@@ -2,10 +2,10 @@ import math
 import lister
 
 
-def beregn_sikksakk(sys, i):
+def beregn_sikksakk(sys, radius):
     """Beregning av KL sikksakk, B1 og B2, samt max forskyvning, e."""
 
-    r = i.radius
+    r = radius
     sikksakk, e_max = 0, 0
 
     # Systemavhengige sikksakk-verdier til input i max masteavstand.
@@ -48,10 +48,10 @@ def beregn_sikksakk(sys, i):
     return B1, B2, e_max
 
 
-def beregn_masteavstand(sys, i, B1, B2, e_max, q):
+def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
     """Beregning av tillatt masteavstand, a, mht utblåsning av KL."""
 
-    r = i.radius                                        # [m]
+    r = radius                                          # [m]
     s_kl = sys.kontakttraad["Strekk i ledning"] * 1000  # [N]
 
     # KL blåser UT fra kurven
@@ -77,11 +77,11 @@ def beregn_masteavstand(sys, i, B1, B2, e_max, q):
     return a
 
 
-def beregn_arm(i, B1):
+def beregn_arm(radius, sms, fh, B1):
     """Beregner momentarm a_T for strekkutligger og momentarm
     a_T_dot for trykkutligger."""
 
-    r = i.radius
+    r = radius
     b = abs(B1)
 
     # Overhøyde, UE i [m], pga kurveradius i [m]
@@ -96,10 +96,10 @@ def beregn_arm(i, B1):
     # ----------------------------------------------------------------#
 
     # Momentarm [m] for strekkutligger.
-    a_T = i.sms + i.fh * (ue[str(r)] / 1.435) - b
+    a_T = sms + fh * (ue[str(r)] / 1.435) - b
 
     # Momentarm [m] for trykkutligger.
-    a_T_dot = i.sms - i.fh * (ue[str(r)] / 1.435) + b
+    a_T_dot = sms - fh * (ue[str(r)] / 1.435) + b
 
     return a_T, a_T_dot
 

@@ -119,13 +119,12 @@ def beregn(i):
     sys = system.hent_system(i)
     # q_p = klima.beregn_vindkasthastighetstrykk_EC(i.h)
     q_p = i.vindkasthastighetstrykk * 1000  # [N/m^2]
-    B1, B2, e_max = geometri.beregn_sikksakk(sys, i)
-    a_T, a_T_dot = geometri.beregn_arm(i, B1)
+
 
     # FELLES FOR ALLE MASTER
     F_generell = []
-    F_generell.extend(laster.beregn(sys, i, a_T, a_T_dot, B1, B2))
-    F_generell.extend(klima.isogsno_last(i, sys, a_T, a_T_dot))
+    F_generell.extend(laster.beregn(i, sys))
+    F_generell.extend(klima.isogsno_last(i, sys))
 
     # Sidekrefter til beregning av utliggerens deformasjonsbidrag
     sidekrefter = []
@@ -146,7 +145,7 @@ def beregn(i):
             F = []
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
-            F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
+            F.extend(klima.vandringskraft(i, sys, mast))
             F.extend(klima.vindlast_mast_normalt_EC(mast, q_p))
 
 
@@ -174,7 +173,7 @@ def beregn(i):
                     F.extend(klima.vindlast_mast_par_EC(mast, q_p))
 
                 R = _beregn_reaksjonskrefter(F)
-                #D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+                D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
                 lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6},
                                    "Snølast dominerende": {"psi_T": 0.6, "psi_S": 1.0, "psi_V": 0.6},
@@ -184,32 +183,31 @@ def beregn(i):
                                 "S": (1.5, 0), "V": (1.5, 0)}
 
                 for lastsituasjon in lastsituasjoner:
+                    R_0 = numpy.zeros((5, 8, 6))
                     for G in lastfaktorer["G"]:
+                        # Egenvekt
+                        R_0[0, :, :] = R[0, :, :] * G
                         for L in lastfaktorer["L"]:
+                            # Strekk
+                            R_0[1, :, :] = R[1, :, :] * L
                             for T in lastfaktorer["T"]:
+                                # Temperatur
+                                R_0[2, :, :] = R[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"] * T
                                 for S in lastfaktorer["S"]:
+                                    # Snø
+                                    R_0[3, :, :] = R[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"] * S
                                     for V in lastfaktorer["V"]:
-
-                                        R_0 = numpy.zeros((5, 8, 6))
-
-                                        # Egenvekt
-                                        R_0[0, :, :] = R[0, :, :] * G
-                                        # Strekk
-                                        R_0[1, :, :] = R[1, :, :] * L
-                                        # Temperatur
-                                        R_0[2, :, :] = R[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"] * T
-                                        # Snø
-                                        R_0[3, :, :] = R[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"] * S
                                         # Vind
                                         R_0[4, :, :] = R[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
 
-                                        # Nullstiller fixline (rad 2)
-                                        R_0[:, 2, :] = 0
 
                                         K = numpy.sum(numpy.sum(R_0, axis=0), axis=0)
                                         t = tilstand.Tilstand(mast, i, R_0, K, F, lastsituasjon,
                                                               vindretning, G, L, T, S, V)
                                         mast.lagre_tilstand(t)
+
+                # Regner deformasjoner
+
 
 
 
@@ -232,7 +230,7 @@ def beregn(i):
             F = []
             F.extend(F_generell)
             F.extend(laster.egenvekt_mast(mast))
-            F.extend(klima.vandringskraft(i, sys, mast, B1, B2, a_T, a_T_dot))
+            F.extend(klima.vandringskraft(i, sys, mast))
             F.extend(klima.vindlast_mast_normalt_NEK(mast))
 
             if mast.navn == "H5":
