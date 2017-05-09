@@ -118,7 +118,7 @@ def beregn(i, sys):
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=[s, - s, 0], e=[-fh - sh, 0, 0]))
+                           f=[s, - s, -f_z], e=[-fh - sh, 0, 0]))
 
     # Avspenningsmast
     if i.avspenningsmast:
@@ -144,7 +144,7 @@ def beregn(i, sys):
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=[s_b + s_kl, - s_b - s_kl, 0], e=[-fh - sh/2, 0, 0]))
+                           f=[s_b + s_kl, - s_b - s_kl, -f_z_b -f_z_kl], e=[-fh - sh/2, 0, 0]))
         # Avspenningslodd
         utvekslingsforhold = 3
         if sys.navn == "35":

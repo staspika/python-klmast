@@ -39,20 +39,19 @@ def _beregn_deformasjoner(i, sys, mast, F, sidekrefter):
     """
 
     # Initierer deformasjonsmatrisen, D
-    D = numpy.zeros((2, 8, 6))
+    D = numpy.zeros((5, 8, 3))
 
     for j in F:
-        D_0 = numpy.zeros((2, 8, 6))
+        D_0 = numpy.zeros((5, 8, 3))
 
         # Egenvekt og strekk statiske laster, resten dynamiske
-        etasje = 0 if j.type[1] < 2 else 1
 
-        D_0 += deformasjon.bjelkeformel_M(mast, j, i.fh, etasje) \
-             + deformasjon.bjelkeformel_P(mast, j, i.fh, etasje) \
-             + deformasjon.bjelkeformel_q(mast, j, i.fh, etasje)
+        D_0 += deformasjon.bjelkeformel_M(mast, j, i.fh) \
+             + deformasjon.bjelkeformel_P(mast, j, i.fh) \
+             + deformasjon.bjelkeformel_q(mast, j, i.fh)
 
         if mast.type == "bjelke":
-            D_0 += deformasjon.torsjonsvinkel(mast, j, i, etasje)
+            D_0 += deformasjon.torsjonsvinkel(mast, j, i)
 
         D += D_0
 
@@ -122,12 +121,11 @@ def beregn(i):
     for mast in master:
 
         F = []
+        F.extend(laster.egenvekt_mast(mast))
         F.extend(laster.beregn(i, sys))
+        F.extend(klima.vandringskraft(i, sys, mast))
         F.extend(klima.isogsno_last(i, sys))
         F.extend(klima.vindlast_ledninger(i, sys))
-        F.extend(laster.egenvekt_mast(mast))
-        F.extend(klima.vandringskraft(i, sys, mast))
-        F.extend(klima.vindlast_mast_normalt(i, mast))
 
         # Sidekrefter til beregning av utliggerens deformasjonsbidrag
         sidekrefter = []
@@ -139,6 +137,7 @@ def beregn(i):
 
         # Vindretning 0 = Vind fra mast, mot spor
         for vindretning in range(3):
+            F.extend(klima.vindlast_mast(i, mast, vindretning))
             if vindretning == 1:
                 # Vind fra spor, mot mast
                 for j in F:
@@ -151,18 +150,14 @@ def beregn(i):
                     # Nullstiller vindlast
                     if j.type[1] == 4:
                         j.nullstill()
-                    # Påfører vindlast mast parallelt spor
-                F.extend(klima.vindlast_mast_par(i, mast))
-
-            if mast.navn == "HE200B":
-                print("Vindretning = {}      F = {}".format(vindretning, F))
-                print("\n\n\n")
 
             R_0 = _beregn_reaksjonskrefter(F)
+            D_0 = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
             lastsituasjoner, lastfaktorer = lister.hent_lastkombinasjoner(i.ec3)
 
             for lastsituasjon in lastsituasjoner:
+                # Dimensjonerende krefter i bruddgrensetilstand
                 R = numpy.zeros((5, 8, 6))
                 for G in lastfaktorer["G"]:
                     # Egenvekt
@@ -180,16 +175,44 @@ def beregn(i):
                                     # Vind
                                     R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
 
-                                    t = tilstand.Tilstand(mast, i, R, F, lastsituasjon,
-                                                          vindretning, G, L, T, S, V)
+                                    t = tilstand.Tilstand(mast, i,lastsituasjon, vindretning,
+                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V)
                                     mast.lagre_tilstand(t)
+
+                # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit
+                #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
+                #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
+                #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
+
+
+
+                D = numpy.zeros((5, 8, 3))
+                D[0, :, :] = D_0[0, :, :]
+                D[1, :, :] = D_0[1, :, :]
+                D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
+                D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
+                D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, D=D)
+                mast.lagre_tilstand(t)
+
 
 
             # Regner ulykkeslast
             # pass
 
-            # Regner deformasjoner
-            # D = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+
+
+
+
+
+
+
+
+
+            for j in F:
+                if j.navn == "Vindlast: Mast":
+                    F.remove(j)
+                    break
 
 
     # Sjekker minnebruk (TEST)

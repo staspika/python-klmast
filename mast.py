@@ -120,10 +120,8 @@ class Mast(object):
 
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
         self.bruddgrense = []
-        self.forskyvning_kl = []
-        self.forskyvning_tot = []
+        self.bruksgrense = []
 
-        self.F = []
 
     def __repr__(self):
         Iy = self.Iy(self.h)/10**8
@@ -134,6 +132,10 @@ class Mast(object):
         rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
               "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
+        rep += "\nDimensjonerende lasttilfelle:\n\n"
+        rep += self.bruddgrense[0].rep()
+        rep += "\n\nStørste totale forskyvning av kontakttråd:\n\n"
+        rep += self.bruksgrense[0].rep()
         return rep
 
     def bredde(self, x):
@@ -175,11 +177,12 @@ class Mast(object):
             Iz = self.Iz_profil
         return Iz
 
+    """
     def _sammenlign_tilstander(self, t1, t2):
-        """Sjekker om t1 er dimensjonerende framfor t2.
+        Sjekker om t1 er dimensjonerende framfor t2.
         Dersom t2 ikke har fått noen verdi enda, returneres True
         slik at t1 blir satt som dimensjonerende tilfelle.
-        """
+        
 
         kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
 
@@ -219,6 +222,7 @@ class Mast(object):
                 if abs(t1.K[2]) > abs(t2.K[2]):
                     return True
         return False
+    """
 
     def sorter(self):
         kriterie = 1  # 0 = My, 1 = utnyttelsesgrad
@@ -228,18 +232,15 @@ class Mast(object):
         elif kriterie == 1:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
+        self.bruksgrense = sorted(self.bruksgrense, key=lambda tilstand: tilstand.K[1], reverse=True)
+
+
     def lagre_tilstand(self, tilstand):
-        self.bruddgrense.append(tilstand)
+        if tilstand.type == 0:
+            self.bruddgrense.append(tilstand)
+        else:
+            self.bruksgrense.append(tilstand)
 
-    def print_tilstander(self):
-        print()
-        print("Bruddgrensetilstand:")
-        print(self.bruddgrense[0])
-
-    def print_krefter(self):
-        print()
-        for j in self.bruddgrense[0].F:
-            print(j)
 
 def hent_master(hoyde, s235, materialkoeff):
     """Returnerer liste med master til beregning."""

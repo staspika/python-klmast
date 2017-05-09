@@ -22,10 +22,14 @@ class Kraft(object):
         self.b = b
         self.e = array(e)
 
+
     def __repr__(self):
-        rep = "\n{}   type={}\n".format(self.navn, self.type)
+        return self.rep()
+
+    def rep(self):
+        rep = "{}   type={}\n".format(self.navn, self.type)
         if not count_nonzero(self.q) == 0:
-            rep += "q*b = {}\n".format(self.q*self.b)
+            rep += "q*b = {}\n".format(self.q * self.b)
         else:
             rep += "f = {}\n".format(self.f)
         return rep

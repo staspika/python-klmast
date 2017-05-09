@@ -2,7 +2,7 @@ import numpy
 import math
 
 
-def bjelkeformel_M(mast, j, fh, etasje):
+def bjelkeformel_M(mast, j, fh):
     """Beregner deformasjon D_z i kontakttrådhøyde som følge av moment
     om  y-aksen med angrepspunkt i høyde x. Dersom FH > x interpoleres
     forskyvningen til høyde FH ved hjelp av tangens til vinkelen theta
@@ -19,20 +19,21 @@ def bjelkeformel_M(mast, j, fh, etasje):
     x = -j.e[0] * 1000
     fh = fh * 1000
 
-    D = numpy.zeros((2, 8, 6))
+    D = numpy.zeros((5, 8, 3))
+
     if fh > x:
         theta_y = (M_y * x) / (E * I_y)
         theta_z = (M_z * x) / (E * I_z)
-        D[etasje, j.type[0], 1] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
-        D[etasje, j.type[0], 0] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
+        D[j.type[1], j.type[0], 1] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
+        D[j.type[1], j.type[0], 0] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
     else:
-        D[etasje, j.type[0], 1] = (M_y * fh ** 2) / (2 * E * I_y)
-        D[etasje, j.type[0], 0] = (M_z * fh ** 2) / (2 * E * I_z)
+        D[j.type[1], j.type[0], 1] = (M_y * fh ** 2) / (2 * E * I_y)
+        D[j.type[1], j.type[0], 0] = (M_z * fh ** 2) / (2 * E * I_z)
 
     return D
 
 
-def bjelkeformel_P(mast, j, fh, etasje):
+def bjelkeformel_P(mast, j, fh):
     """Beregner derformasjon i kontakttrådhøyde
     pga. en generell horisontal last
     """
@@ -45,14 +46,15 @@ def bjelkeformel_P(mast, j, fh, etasje):
     e_x = -j.e[0] * 1000
     fh *= 1000
 
-    D = numpy.zeros((2, 8, 6))
-    D[etasje, j.type[0], 1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
-    D[etasje, j.type[0], 0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D = numpy.zeros((5, 8, 3))
+
+    D[j.type[1], j.type[0], 1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    D[j.type[1], j.type[0], 0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
 
     return D
 
 
-def bjelkeformel_q(mast, j, fh, etasje):
+def bjelkeformel_q(mast, j, fh):
     """Beregner derformasjon i kontakttrådhøyde
     pga. en generell jevnt fordelt horisontal last
     """
@@ -65,16 +67,16 @@ def bjelkeformel_q(mast, j, fh, etasje):
     b = j.b * 1000
     fh *= 1000
 
-    D = numpy.zeros((2, 8, 6))
+    D = numpy.zeros((5, 8, 3))
 
-    D[etasje, j.type[0], 1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
-    D[etasje, j.type[0], 0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    D[j.type[1], j.type[0], 1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    D[j.type[1], j.type[0], 0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
 
     return D
 
 
-def torsjonsvinkel(mast, j, i, etasje):
-    """Beregner torsjonsvinkelen phi i radianer i kontakttrådhøyde FH
+def torsjonsvinkel(mast, j, i):
+    """Beregner torsjonsvinkelen phi i grader i kontakttrådhøyde FH
     for en fast innspent mast pga. tosjonsmoment i en avstand x fra
     fundamentet."""
 
@@ -87,22 +89,23 @@ def torsjonsvinkel(mast, j, i, etasje):
     x = (i.fh + i.sh/2) * 1000
     e_x = -j.e[0] * 1000
 
-    D = numpy.zeros((2, 8, 6))
+    D = numpy.zeros((5, 8, 3))
 
-    D[etasje, j.type[0], 2] = abs(alpha * (T / (G * I_T)) * \
-                   ((math.tanh(e_x / alpha) * (math.cosh((x / alpha) - 1)) - math.sinh(x / alpha) + x / alpha)))
+    D[j.type[1], j.type[0], 2] = (180 / math.pi) * abs(alpha * (T / (G * I_T)) *
+                   (math.tanh(e_x / alpha) * (math.cosh((x / alpha) - 1)) - math.sinh(x / alpha) + x / alpha))
 
     return D
 
 def utliggerbidrag(sys, sidekrefter):
-    D = numpy.zeros((2, 8, 6))
+
+    D = numpy.zeros((5, 8, 3))
 
     if sys.navn == "20a" or sys.navn == "20b":
         for s in sidekrefter:
-            D[1, 0, 0] += 20/2500 * s
+            D[1, 0, 1] += 20/2500 * s
     elif sys.navn == "25":
         for s in sidekrefter:
-            D[1, 0, 0] += 4/2500 * s
+            D[1, 0, 1] += 4/2500 * s
 
     return D
 

@@ -46,13 +46,11 @@ for iterasjon in range(1):
     #resultater.skriv_bidrag(i, mast)
 
     print()
-    mast.print_krefter()
+    print("Anbefalt mast:")
     print()
     print(mast)
-    metode = "EC3" if i.ec3 else "NEK"
-    print("Beregningsmetode: {}".format(metode))
-    mast.print_tilstander()
     print()
+
 
     UR = mast.bruddgrense[0].utnyttelsesgrad
     current_values = [UR, mast.bruddgrense[0].My_kap,

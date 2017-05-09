@@ -6,49 +6,67 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, R, F, lastsituasjon, vindretning,
+    def __init__(self, mast, i, lastsituasjon, vindretning, F=None, R=None, D=None,
                  G=0, L=0, T=0, S=0, V=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
          """
+        self.metode = "EC3" if i.ec3 else "NEK"
         self.lastsituasjon = lastsituasjon
-        self.R = R
-        self.F = F
-        self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
-        K = self.K
-
-        self.G = G
-        self.L = G
-        self.T = T
-        self.S = S
-        self.V = V
-        self.faktorer = {"G": G, "L": L, "T": T, "S": S, "V": V}
-
         self.vindretning = vindretning
-        # 1: Vind fra mast mot spor
-        # 2: Vind fra spor mot mast
-        # 3: Vind parallelt spor
+        # 0: Vind fra mast mot spor
+        # 1: Vind fra spor mot mast
+        # 2: Vind parallelt spor
 
-        self.N_kap = abs(K[4] * mast.materialkoeff / (mast.fy * mast.A))
-        # Ganger med 1000 for å få momenter i [Nmm]
-        self.My_kap = abs(1000 * K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
-        self.Mz_kap = abs(1000 * K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
-        self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, K)
+        if R is not None:
+            self.type = 0  # Bruddgrensetilstand
+            self.F = F
+            self.R = R
+            self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
+            self.G = G
+            self.L = L
+            self.T = T
+            self.S = S
+            self.V = V
+            self.faktorer = {"G": G, "L": L, "T": T, "S": S, "V": V}
+            self.N_kap = abs(self.K[4] * mast.materialkoeff / (mast.fy * mast.A))
+            self.My_kap = abs(1000 * self.K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
+            self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
+            self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, self.K)
+        else:
+            self.type = 1  # Bruksgrensetilstand
+            self.D = D
+            self.K = numpy.sum(numpy.sum(D, axis=0), axis=0)
 
 
     def __repr__(self):
-        K = self.K[:][0:6]/1000  # Konverterer krefter til [kNm] og [kN]
-        rep = "My = {:.3g}kNm    Vy = {:.3g}kN    Mz = {:.3g}kNm    " \
-              "Vz = {:.3g}kN    N = {:.3g}kN    T = {:.3g}kNm\n".\
-            format(K[0], K[1], K[2], K[3], K[4], K[5])
-        rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
-        for key in self.faktorer:
-            rep += "{} = {}     ".format(key, self.faktorer[key])
-        rep += "\nVindretning = {}\n".format(self.vindretning)
-        rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
-               "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
-        rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
-        rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
+        return self.rep()
+
+    def rep(self):
+        if self.type == 0:
+            K = self.K/1000  # Konverterer krefter til [kNm] og [kN]
+            rep = ""
+            for j in self.F:
+                rep += j.rep()
+            rep += "\nBeregningsmetode: {}\n".format(self.metode)
+            rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
+                  "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n".\
+                format(K[0], K[1], K[2], K[3], K[4], K[5])
+            rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
+            for key in self.faktorer:
+                rep += "{} = {}     ".format(key, self.faktorer[key])
+            rep += "\nVindretning = {}\n".format(self.vindretning)
+            rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
+                   "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
+            rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
+            rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
+        else:
+            rep = ""
+            rep += "Dy = {:.3g} mm    Dz = {:.3g} mm    phi = {:.3g}\n".\
+                format(self.K[0], self.K[1], self.K[2])
+            rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
+            rep += "Vindretning = {}\n".format(self.vindretning)
+
         return rep
 
 
@@ -151,7 +169,7 @@ class Tilstand(object):
         k_yz = 0.6 * k_zz
 
         # EC3, 6.3.3, kapasitet om y-aksen, lign (6.61):
-        if self.vindretning == 1 or self.vindretning == 2:
+        if self.vindretning == 0 or self.vindretning == 1:
             UR = UR_Ny + k_yy * ((M_y_Ed * gamma) / M_y_Rk) + k_yz * ((M_z_Ed * gamma) / M_z_Rk)
         else:
             # Vinden blåser parallelt sporet (Alternativ 3)
@@ -167,22 +185,22 @@ class Tilstand(object):
 
         M_punkt, M_fordelt, M_sum = 0, 0, 0
 
-        # (1) Vind fra mast mot spor eller (2) fra spor mot mast
-        if self.vindretning == 1 or 2:
+        # (0) Vind fra mast mot spor eller (1) fra spor mot mast
+        if self.vindretning == 0 or 1:
             for j in self.F:
                 f = j.f
                 if not numpy.count_nonzero(j.q) == 0:
-                    if self.vindretning == 1 and j.type == 12:
+                    if self.vindretning == 0:
                         f = numpy.array([0, 0, j.q[2] * j.b])
-                    elif self.vindretning == 2 and j.type == 13:
+                    elif self.vindretning == 1:
                         f = numpy.array([0, 0, j.q[2] * j.b])
                     M_fordelt += abs(f[2] *j.e[0] ** 2)
                 else:
                     M_punkt += abs(f[2] * j.e[0] ** 2)
                 M_sum += abs(f[2] * j.e[0])
 
-        # (3) Vind parallelt spor
-        elif self.vindretning == 3:
+        # (2) Vind parallelt spor
+        elif self.vindretning == 2:
             # Beregner ekvivalent mastelengde
             for j in self.F:
                 f = j.f
@@ -310,8 +328,8 @@ class Tilstand(object):
             # Aksialkraftkapasitet om svak akse (z-aksen)
             UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha_z)
 
-            # (1) Vind fra mast mot spor eller (2) fra spor mot mast
-            if self.vindretning == 1 or 2:
+            # (0) Vind fra mast mot spor eller (1) fra spor mot mast
+            if self.vindretning == 0 or 1:
 
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
                 UR_y_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
@@ -321,8 +339,8 @@ class Tilstand(object):
 
                 return u
 
-            # (3) Vind parallelt spor
-            elif self.vindretning == 3:
+            # (2) Vind parallelt spor
+            elif self.vindretning == 2:
                 # Ulogisk å beregne vipping når belastningen er om svak akse???????????????
 
                 # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
@@ -361,8 +379,8 @@ class Tilstand(object):
             # Aksialkraftkapasitet om svak akse (z-aksen)
             UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z, L_cr, N_Ed, N_Rk, alpha_z)
 
-            # (1) Vind fra mast mot spor eller (2) fra spor mot mast
-            if self.vindretning == 1 or 2:
+            # (0) Vind fra mast mot spor eller (1) fra spor mot mast
+            if self.vindretning == 0 or 1:
 
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
                 UR_y_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
@@ -372,8 +390,8 @@ class Tilstand(object):
 
                 return u
 
-            # (3) Vind parallelt spor
-            elif self.vindretning == 3:
+            # (2) Vind parallelt spor
+            elif self.vindretning == 2:
                 # Ulogisk å beregne vipping når belastningen er om svak akse???????????????
 
                 # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)

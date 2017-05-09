@@ -20,17 +20,11 @@ def print_memory_info():
 if __name__ == "__main__":
 
     F = []
-
-    a = numpy.ones((2,2))
-
-    F.extend([a])
-
+    a = 5
+    F.append(a)
     print(F)
-
-    F[0] = -F[0]
-
+    a = 3
     print(F)
-    print()
     print(a)
 
 

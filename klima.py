@@ -112,7 +112,7 @@ def q_KL(i, sys):
     return q
 
 
-def vindlast_mast_normalt(i, mast):
+def vindlast_mast(i, mast, vindretning):
     """Definerer vindlast på mast når
     vinden blåser normalt sporet
     """
@@ -120,89 +120,87 @@ def vindlast_mast_normalt(i, mast):
     # Liste over krefter som skal returneres
     F = []
 
-    if i.ec3:
-        q_p = i.vindkasthastighetstrykk   # [N/m^2]
-        cf = 2.2                           # [1] Vindkraftfaktor mast
-        q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
+    # Vind normalt spor
+    if vindretning < 2:
 
-        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                       q=[0, 0, q_normalt],
-                       b=mast.h,
-                       e=[-mast.h/2, 0, 0]))
-    else:
-        q_K = _beregn_vindtrykk_NEK(i)
-
-        if mast.type == "H":
-            # Inngangsparametre
-            G_lat = 1.05  # [1] Resonans faktor
-            C_lat = 2.80  # [1] Drag faktor
-            A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
-            q_normalt = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
+        if i.ec3:
+            q_p = i.vindkasthastighetstrykk   # [N/m^2]
+            cf = 2.2                           # [1] Vindkraftfaktor mast
+            q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                            q=[0, 0, q_normalt],
                            b=mast.h,
-                           e=[-mast.h / 2, 0, 0]))
+                           e=[-mast.h/2, 0, 0]))
         else:
-            C_str = 2.0
-            if mast.type == "B":
-                C_str = 1.4
-            q_normalt = q_K * C_str * mast.A_ref
+            q_K = _beregn_vindtrykk_NEK(i)
 
-            F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                           q=[0, 0, q_normalt],
-                           b=mast.h,
-                           e=[-mast.h / 2, 0, 0]))
+            if mast.type == "H":
+                # Inngangsparametre
+                G_lat = 1.05  # [1] Resonans faktor
+                C_lat = 2.80  # [1] Drag faktor
+                A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
+                q_normalt = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
 
-    return F
+                F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
+                               q=[0, 0, q_normalt],
+                               b=mast.h,
+                               e=[-mast.h / 2, 0, 0]))
+            else:
+                C_str = 2.0
+                if mast.type == "B":
+                    C_str = 1.4
+                q_normalt = q_K * C_str * mast.A_ref
 
+                F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
+                               q=[0, 0, q_normalt],
+                               b=mast.h,
+                               e=[-mast.h / 2, 0, 0]))
 
-def vindlast_mast_par(i, mast):
-    """Definerer vindlast på mast når
-    vinden blåser parallelt sporet
-    """
+        # Snur lastretningen dersom vind fra spor mot mast
+        if vindretning == 1:
+            F[0].snu_lastretning()
 
-    # Liste over krefter som skal returneres
-    F = []
-
-    if i.ec3:
-        q_p = i.vindkasthastighetstrykk   # [N/m^2]
-        cf = 2.2                           # [1] Vindkraftfaktor mast
-        q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
-
-        F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                       q=[0, q_par, 0],
-                       b=mast.h,
-                       e=[-mast.h / 2, 0, 0]))
+    # Vind parallelt spor
     else:
-        q_K = _beregn_vindtrykk_NEK(i)
-
-        # Vindlast på isolator når vinden blåser parallelt sporet.
-        A_ins = 0.001  # [m^2] ????????????????????????????????????????????
-        G_ins = 1.05  # [1] Resonans faktor
-        C_ins = 1.20  # [1] Drag faktor
-        q_ins = q_K * G_ins * C_ins * A_ins
-
-        if mast.type == "H":
-            # Inngangsparametre
-            G_lat = 1.05  # [1] Resonans faktor
-            C_lat = 2.80  # [1] Drag faktor
-            A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
-            q_par = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
+        if i.ec3:
+            q_p = i.vindkasthastighetstrykk  # [N/m^2]
+            cf = 2.2  # [1] Vindkraftfaktor mast
+            q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
 
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                           q=[0, q_par + q_ins, 0],
+                           q=[0, q_par, 0],
                            b=mast.h,
                            e=[-mast.h / 2, 0, 0]))
         else:
-            # Inngangsparametre
-            C_str = 1.4  # [1] Drag faktor
-            q_par = q_K * C_str * mast.A_ref_par
+            q_K = _beregn_vindtrykk_NEK(i)
 
-            F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                           q=[0, q_par + q_ins, 0],
-                           b=mast.h,
-                           e=[-mast.h / 2, 0, 0]))
+            # Vindlast på isolator når vinden blåser parallelt sporet.
+            A_ins = 0.001  # [m^2] ????????????????????????????????????????????
+            G_ins = 1.05  # [1] Resonans faktor
+            C_ins = 1.20  # [1] Drag faktor
+            q_ins = q_K * G_ins * C_ins * A_ins
+
+            if mast.type == "H":
+                # Inngangsparametre
+                G_lat = 1.05  # [1] Resonans faktor
+                C_lat = 2.80  # [1] Drag faktor
+                A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
+                q_par = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
+
+                F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
+                               q=[0, q_par + q_ins, 0],
+                               b=mast.h,
+                               e=[-mast.h / 2, 0, 0]))
+            else:
+                # Inngangsparametre
+                C_str = 1.4  # [1] Drag faktor
+                q_par = q_K * C_str * mast.A_ref_par
+
+                F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
+                               q=[0, q_par + q_ins, 0],
+                               b=mast.h,
+                               e=[-mast.h / 2, 0, 0]))
 
     return F
 
