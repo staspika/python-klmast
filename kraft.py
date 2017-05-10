@@ -1,4 +1,4 @@
-from numpy import array, zeros, count_nonzero
+from numpy import array, zeros, count_nonzero, double
 
 class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster og momenter"""
@@ -39,8 +39,8 @@ class Kraft(object):
         self.q = -self.q
 
     def nullstill(self):
-        self.f = zeros((3))
-        self.q = zeros((3))
+        self.f = zeros(3,dtype=double)
+        self.q = zeros(3,dtype=double)
 
 
 

@@ -120,6 +120,7 @@ class Mast(object):
 
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
         self.bruddgrense = []
+        self.ulykkeslast = None
         self.bruksgrense = []
 
 
@@ -134,6 +135,9 @@ class Mast(object):
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
         rep += "\nDimensjonerende lasttilfelle:\n\n"
         rep += self.bruddgrense[0].rep()
+        if self.ulykkeslast is not None:
+            rep += "\nUlykkeslast:\n\n"
+            rep += self.ulykkeslast.rep()
         rep += "\n\nStørste totale forskyvning av kontakttråd:\n\n"
         rep += self.bruksgrense[0].rep()
         return rep
@@ -225,7 +229,7 @@ class Mast(object):
     """
 
     def sorter(self):
-        kriterie = 1  # 0 = My, 1 = utnyttelsesgrad
+        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
 
         if kriterie == 0:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.K[0], reverse=True)
@@ -237,7 +241,10 @@ class Mast(object):
 
     def lagre_tilstand(self, tilstand):
         if tilstand.type == 0:
-            self.bruddgrense.append(tilstand)
+            if not tilstand.lastsituasjon == "Ulykkeslast":
+                self.bruddgrense.append(tilstand)
+            else:
+                self.ulykkeslast = tilstand
         else:
             self.bruksgrense.append(tilstand)
 

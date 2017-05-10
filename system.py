@@ -32,6 +32,8 @@ class System(object):
 def hent_system(i):
     """Returnerer navngitt system"""
 
+    a = (i.a1 + i.a2)/2
+
     # Bære/fixliner
     Bz_II_50_19 = {"Egenvekt": 4.37, "Diameter": 9.0,
                    "Tverrsnitt": 48.35, "Strekk i ledning": 10.0}
@@ -53,23 +55,30 @@ def hent_system(i):
     Ri_100_Cu_s35 = {"Egenvekt": 8.9, "Diameter": 12.0,
                      "Tverrsnitt": 100.0, "Strekk i ledning": 7.1}
 
-    # Forbigangsledninger
-    Al_240_61 = {"Egenvekt": 6.7, "Diameter": 20.3,
-                 "Tverrsnitt": 222.35, "Max tillatt spenning": 50.0}
-
-    # Returledninger
-    Al_240_61_iso = {"Egenvekt": 9.2, "Diameter": 25.0,
-                     "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0}
-
-    # Mate-/fjernledninger
-    SAHF_120_26_7 = {"Egenvekt": 7.77, "Diameter": 19.38,
-                     "Tverrsnitt": 222.35, "Max tillatt spenning": 95.0}
-
-    # Y-lineer
+    # Y-liner
     Bz_II_35_7 = {"Egenvekt": 3.10, "Diameter": 7.5, "Tverrsnitt": 34.36}
 
     # Hengetråder
     Bz_II_10_49 = {"Egenvekt": 0.53, "Diameter": 4.5, "Tverrsnitt": 9.6}
+
+
+    # Forbigangsledninger
+    Al_240_61 = {"Egenvekt": 6.7, "Diameter": 20.3,
+                 "Tverrsnitt": 222.35, "Max tillatt spenning": 50.0,
+                 "Strekk 5C": _strekkraft(2.48, 2.78, a),
+                 "Strekk -40C": _strekkraft(10.22, 5.21, a)}
+
+    # Returledninger
+    Al_240_61_iso = {"Egenvekt": 9.2, "Diameter": 25.0,
+                     "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0,
+                     "Strekk 5C": _strekkraft(2.95, 3.28, a),
+                     "Strekk -40C": _strekkraft(10.74, 5.87, a)}
+
+    # Mate-/fjernledninger
+    SAHF_120_26_7 = {"Egenvekt": 7.77, "Diameter": 19.38,
+                     "Tverrsnitt": 222.35, "Max tillatt spenning": 95.0,
+                     "Strekk 5C": _strekkraft(2.77, 3.06, a),
+                     "Strekk -40C": _strekkraft(10.70, 4.73, a)}
 
     # Fiberoptiske kabler
     ADSS_GRHSLLDV_9_125 = {"Egenvekt": 2.6, "Diameter": 18.5,
@@ -164,6 +173,19 @@ def hent_system(i):
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                      jordledning=jordledning, utligger=utligger,
                       radius=i.radius, sms=i.sms, fh=i.fh)
+
+def _strekkraft(a, b, masteavstand):
+    """
+    Beregner strekkraft i [N] mhp. masteavstand.
+    
+    :param a: Strekk ved 30m masteavstand [kN]
+    :param b: Strekk ved 70m masteavstand [kN]
+    :param masteavstand: Faktisk masteavstand [m]
+    :return: Strekkraft ved faktisk masteavstand [N]
+    """
+
+    s = 1000 * (a + (masteavstand-30) * (b - a)/40)
+    return s
 
 
 

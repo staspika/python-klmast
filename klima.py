@@ -128,12 +128,17 @@ def vindlast_mast(i, mast, vindretning):
             cf = 2.2                           # [1] Vindkraftfaktor mast
             q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
+            if vindretning == 1:
+                q_normalt = -q_normalt
+
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                            q=[0, 0, q_normalt],
                            b=mast.h,
                            e=[-mast.h/2, 0, 0]))
         else:
             q_K = _beregn_vindtrykk_NEK(i)
+            if vindretning == 1:
+                q_K = -q_K
 
             if mast.type == "H":
                 # Inngangsparametre
@@ -157,9 +162,6 @@ def vindlast_mast(i, mast, vindretning):
                                b=mast.h,
                                e=[-mast.h / 2, 0, 0]))
 
-        # Snur lastretningen dersom vind fra spor mot mast
-        if vindretning == 1:
-            F[0].snu_lastretning()
 
     # Vind parallelt spor
     else:
@@ -205,7 +207,7 @@ def vindlast_mast(i, mast, vindretning):
     return F
 
 
-def vindlast_ledninger(i, sys):
+def vindlast_ledninger(i, sys, vindretning):
     """I denne funksjonen avledes krefter på 
     mast på grunn av vindlast på ledninger.
     """
@@ -213,123 +215,128 @@ def vindlast_ledninger(i, sys):
     # Liste over krefter som skal returneres
     F = []
 
-    a = (i.a1 + i.a2) / 2  # [m] masteavstand
-    a2 = i.a2  # [m] Avstand til neste mast
-    d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetråd, Y-line
+    # Ingen vindlast på ledninger med vind parallelet spor
+    if vindretning < 2:
 
-    q = 0
-    if i.ec3:
-        q_p = i.vindkasthastighetstrykk  # [N/m^2]
-        cf = 1.1                         # [1] Vindkraftfaktor ledning
-        q = q_p * cf
+        a = (i.a1 + i.a2) / 2  # [m] masteavstand
+        a2 = i.a2  # [m] Avstand til neste mast
+        d_henge, d_Y, L_Y = 0, 0, 0  # [m] Diameter hengetråd, Y-line
 
-    else:
-        q_K = _beregn_vindtrykk_NEK(i)
-        G_C = 0.75  # [1] Respons faktor
-        C_C = 1.0  # [1] Drag faktor
-        q = q_K * G_C * C_C
+        if i.ec3:
+            q_p = i.vindkasthastighetstrykk  # [N/m^2]
+            cf = 1.1                         # [1] Vindkraftfaktor ledning
+            q = q_p * cf
 
-    # Antall utliggere
-    n = 1
-    if i.siste_for_avspenning or i.linjemast_utliggere == 2:
-        n = 2
+        else:
+            q_K = _beregn_vindtrykk_NEK(i)
+            G_C = 0.75  # [1] Respons faktor
+            C_C = 1.0  # [1] Drag faktor
+            q = q_K * G_C * C_C
 
-    # Kontakttråd
-    f_z = n * a * q * sys.kontakttraad["Diameter"] / 1000
-    F.append(Kraft(navn="Vindlast: Kontakttråd", type=(1, 4),
-                   f=[0, 0, f_z], e=[-i.fh, 0, 0]))
+        if vindretning == 1:
+            q = -q
 
-    # Bæreline
-    f_z = n * a * q * sys.baereline["Diameter"] / 1000
-    F.append(Kraft(navn="Vindlast: Bæreline", type=(1, 4),
-                   f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
+        # Antall utliggere
+        n = 1
+        if i.siste_for_avspenning or i.linjemast_utliggere == 2:
+            n = 2
 
-    # Hengetråd
-    d_henge = sys.hengetraad["Diameter"] / 1000  # [m]
-    # Bruker lineær interpolasjon for å finne lengde av hengetråd
-    L_henge = 8 * a / 60
-    q_henge = q * d_henge  # [N/m]
-    f_z = n * L_henge * q_henge
-    F.append(Kraft(navn="Vindlast: Hengetråd", type=(1, 4),
-                   f=[0, 0, f_z], e=[-i.fh - i.sh/2, 0, 0]))
-
-    # Y-line
-    if not sys.y_line == None:  # Sjekker at systemet har Y-line
-        d_Y += sys.y_line["Diameter"] / 1000  # [m]
-        # L_Y = lengde Y-line
-        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
-            L_Y = 14
-        elif sys.navn == "25" and i.radius >= 1200:
-            L_Y = 18
-        q_Y = q * d_Y  # [N/m]
-        f_z = n * L_Y * q_Y
-        F.append(Kraft(navn="Vindlast: Y-line", type=(1, 4),
-                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-
-    # Fikspunktmast
-    if i.fixpunktmast:
-        f_z = a * q * sys.fixline["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: Fixpunktmast", type=(2, 4),
-                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-
-    # Fiksavspenningsmast
-    if i.fixavspenningsmast:
-        f_z = (a2 / 2) * q * sys.fixline["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: Fixavspenningsmast", type=(2, 4),
-                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-
-    # Avspenningsmast
-    if i.avspenningsmast:
-        f_z = (a2 / 2) * q * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000)
-        F.append(Kraft(navn="Vindlast: Avspenningsmast", type=(3, 4),
-                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
-
-    # Forbigangsledning
-    if i.forbigang_ledn:
-        f_z = a * q * sys.forbigangsledning["Diameter"] / 1000
-        kategori = 5  # Fastavspent, side
-        if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
-            kategori = 6  # Fastavspent, topp
-        F.append(Kraft(navn="Vindlast: Forbigangsledn", type=(kategori, 4),
-                       f=[0, 0, f_z], e=[-i.hf, 0, 0]))
-
-    # Returledning (2 stk.)
-    if i.retur_ledn:
-        f_z = 2 * a * q * sys.returledning["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: Returledning", type=(5, 4),
-                       f=[0, 0, f_z], e=[-i.hr, 0, 0]))
-
-
-    # Fiberoptisk ledning
-    if i.fiberoptisk_ledn:
-        f_z = a * q * sys.fiberoptisk["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: Fiberoptisk ledning", type=(5, 4),
+        # Kontakttråd
+        f_z = n * a * q * sys.kontakttraad["Diameter"] / 1000
+        F.append(Kraft(navn="Vindlast: Kontakttråd", type=(1, 4),
                        f=[0, 0, f_z], e=[-i.fh, 0, 0]))
 
-    # Mate-/fjernledning(er) (n stk.)
-    if i.matefjern_ledn:
-        n = i.matefjern_antall
-        f_z = n * a * q * sys.matefjernledning["Diameter"] / 1000
-        er = "er" if n > 1 else ""
-        F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=(6, 4),
-                       f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
+        # Bæreline
+        f_z = n * a * q * sys.baereline["Diameter"] / 1000
+        F.append(Kraft(navn="Vindlast: Bæreline", type=(1, 4),
+                       f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
 
-    # AT-ledning (2 stk.)
-    if i.at_ledn:
-        f_z = 2 * a * q * sys.at_ledning["Diameter"] / 1000
-        F.append(Kraft(navn="Vindlast: AT-ledning", type=(6, 4),
-                       f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
+        # Hengetråd
+        d_henge = sys.hengetraad["Diameter"] / 1000  # [m]
+        # Bruker lineær interpolasjon for å finne lengde av hengetråd
+        L_henge = 8 * a / 60
+        q_henge = q * d_henge  # [N/m]
+        f_z = n * L_henge * q_henge
+        F.append(Kraft(navn="Vindlast: Hengetråd", type=(1, 4),
+                       f=[0, 0, f_z], e=[-i.fh - i.sh/2, 0, 0]))
 
-    # Jordledning
-    if i.jord_ledn:
-        f_z = a * (q * sys.jordledning["Diameter"] / 1000)
-        kategori = 5  # Fastavspent, side
-        e_z = -0.3
-        if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
-            kategori = 6  # Fastavspent, topp
-            e_z = 0
-        F.append(Kraft(navn="Vindlast: AT-ledning", type=(kategori, 4),
-                       f=[0, 0, f_z], e=[-i.hj, 0, e_z]))
+        # Y-line
+        if not sys.y_line == None:  # Sjekker at systemet har Y-line
+            d_Y += sys.y_line["Diameter"] / 1000  # [m]
+            # L_Y = lengde Y-line
+            if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+                L_Y = 14
+            elif sys.navn == "25" and i.radius >= 1200:
+                L_Y = 18
+            q_Y = q * d_Y  # [N/m]
+            f_z = n * L_Y * q_Y
+            F.append(Kraft(navn="Vindlast: Y-line", type=(1, 4),
+                           f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
+
+        # Fikspunktmast
+        if i.fixpunktmast:
+            f_z = a * q * sys.fixline["Diameter"] / 1000
+            F.append(Kraft(navn="Vindlast: Fixpunktmast", type=(2, 4),
+                           f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
+
+        # Fiksavspenningsmast
+        if i.fixavspenningsmast:
+            f_z = (a2 / 2) * q * sys.fixline["Diameter"] / 1000
+            F.append(Kraft(navn="Vindlast: Fixavspenningsmast", type=(2, 4),
+                           f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
+
+        # Avspenningsmast
+        if i.avspenningsmast:
+            f_z = (a2 / 2) * q * ((sys.baereline["Diameter"] + sys.kontakttraad["Diameter"]) / 1000)
+            F.append(Kraft(navn="Vindlast: Avspenningsmast", type=(3, 4),
+                           f=[0, 0, f_z], e=[-i.fh - i.sh, 0, 0]))
+
+        # Forbigangsledning
+        if i.forbigang_ledn:
+            f_z = a * q * sys.forbigangsledning["Diameter"] / 1000
+            kategori = 5  # Fastavspent, side
+            if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
+                kategori = 6  # Fastavspent, topp
+            F.append(Kraft(navn="Vindlast: Forbigangsledn", type=(kategori, 4),
+                           f=[0, 0, f_z], e=[-i.hf, 0, 0]))
+
+        # Returledning (2 stk.)
+        if i.retur_ledn:
+            f_z = 2 * a * q * sys.returledning["Diameter"] / 1000
+            F.append(Kraft(navn="Vindlast: Returledning", type=(5, 4),
+                           f=[0, 0, f_z], e=[-i.hr, 0, 0]))
+
+
+        # Fiberoptisk ledning
+        if i.fiberoptisk_ledn:
+            f_z = a * q * sys.fiberoptisk["Diameter"] / 1000
+            F.append(Kraft(navn="Vindlast: Fiberoptisk ledning", type=(5, 4),
+                           f=[0, 0, f_z], e=[-i.fh, 0, 0]))
+
+        # Mate-/fjernledning(er) (n stk.)
+        if i.matefjern_ledn:
+            n = i.matefjern_antall
+            f_z = n * a * q * sys.matefjernledning["Diameter"] / 1000
+            er = "er" if n > 1 else ""
+            F.append(Kraft(navn="Vindlast: Mate-/fjernledning{}".format(er), type=(6, 4),
+                           f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
+
+        # AT-ledning (2 stk.)
+        if i.at_ledn:
+            f_z = 2 * a * q * sys.at_ledning["Diameter"] / 1000
+            F.append(Kraft(navn="Vindlast: AT-ledning", type=(6, 4),
+                           f=[0, 0, f_z], e=[-i.hfj, 0, 0]))
+
+        # Jordledning
+        if i.jord_ledn:
+            f_z = a * (q * sys.jordledning["Diameter"] / 1000)
+            kategori = 5  # Fastavspent, side
+            e_z = -0.3
+            if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
+                kategori = 6  # Fastavspent, topp
+                e_z = 0
+            F.append(Kraft(navn="Vindlast: AT-ledning", type=(kategori, 4),
+                           f=[0, 0, f_z], e=[-i.hj, 0, e_z]))
 
     return F
 

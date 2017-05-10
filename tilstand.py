@@ -1,5 +1,6 @@
 import math
 import numpy
+import copy
 
 class Tilstand(object):
     """Objekt med informasjon om lasttilstand fra lastfaktoranalyse.
@@ -20,7 +21,7 @@ class Tilstand(object):
 
         if R is not None:
             self.type = 0  # Bruddgrensetilstand
-            self.F = F
+            self.F = copy.copy(F)
             self.R = R
             self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
             self.G = G
@@ -46,8 +47,8 @@ class Tilstand(object):
         if self.type == 0:
             K = self.K/1000  # Konverterer krefter til [kNm] og [kN]
             rep = ""
-            for j in self.F:
-                rep += j.rep()
+            #for j in self.F:
+            #    rep += j.rep()
             rep += "\nBeregningsmetode: {}\n".format(self.metode)
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
                   "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n".\
@@ -62,10 +63,12 @@ class Tilstand(object):
             rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
         else:
             rep = ""
-            rep += "Dy = {:.3g} mm    Dz = {:.3g} mm    phi = {:.3g}\n".\
+            rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n".\
                 format(self.K[0], self.K[1], self.K[2])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
             rep += "Vindretning = {}\n".format(self.vindretning)
+
+
 
         return rep
 

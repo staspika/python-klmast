@@ -116,6 +116,7 @@ def beregn(i):
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
 
+    teller = 0
 
     # UNIKT FOR HVER MAST
     for mast in master:
@@ -125,7 +126,6 @@ def beregn(i):
         F.extend(laster.beregn(i, sys))
         F.extend(klima.vandringskraft(i, sys, mast))
         F.extend(klima.isogsno_last(i, sys))
-        F.extend(klima.vindlast_ledninger(i, sys))
 
         # Sidekrefter til beregning av utliggerens deformasjonsbidrag
         sidekrefter = []
@@ -137,19 +137,10 @@ def beregn(i):
 
         # Vindretning 0 = Vind fra mast, mot spor
         for vindretning in range(3):
+
+            # Setter på vindlast med korrekt lastretning ift. vindretning
             F.extend(klima.vindlast_mast(i, mast, vindretning))
-            if vindretning == 1:
-                # Vind fra spor, mot mast
-                for j in F:
-                    # Snur kraftretningen dersom vindlast
-                    if j.type[1] == 4:
-                        j.snu_lastretning()
-            elif vindretning == 2:
-                # Vind parallelt spor
-                for j in F:
-                    # Nullstiller vindlast
-                    if j.type[1] == 4:
-                        j.nullstill()
+            F.extend(klima.vindlast_ledninger(i, sys, vindretning))
 
             R_0 = _beregn_reaksjonskrefter(F)
             D_0 = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
@@ -179,7 +170,11 @@ def beregn(i):
                                                           F=F, R=R, G=G, L=L, T=T, S=S, V=V)
                                     mast.lagre_tilstand(t)
 
-                # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit
+
+                                    teller += 1
+
+
+                # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit (mangler noen ledninger)
                 #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
                 #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
                 #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
@@ -196,24 +191,33 @@ def beregn(i):
                 mast.lagre_tilstand(t)
 
 
+            # Fjerner vindlaster fra systemet
 
-            # Regner ulykkeslast
-            # pass
+            F[:] = [j for j in F if not j.navn.startswith("Vindlast:")]
+
+        # Regner ulykkeslast
+        if i.siste_for_avspenning or i.linjemast_utliggere == 2:
+            lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
+            R = numpy.zeros((5, 8, 6))
+            R[0, :, :] = R_0[0, :, :]
+            R[1, :, :] = R_0[1, :, :]
+            R[2, :, :] = R_0[2, :, :] * lastsituasjon["Ulykkeslast"]["psi_T"]
+            R[3, :, :] = R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
+            R[4, :, :] = R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
+
+            t = tilstand.Tilstand(mast, i, lastsituasjon, 0,
+                                  F=F, R=R, G=G, L=L, T=T, S=S, V=V)
+            mast.lagre_tilstand(t)
+
+            teller += 1
 
 
 
 
 
 
-
-
-
-
-            for j in F:
-                if j.navn == "Vindlast: Mast":
-                    F.remove(j)
-                    break
-
+    # Antall gjennomkjøringer
+    print("\nAntall total iterasjoner: {}\nIterasjoner per mast: {}".format(teller,teller/len(master)))
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()

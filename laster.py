@@ -156,8 +156,7 @@ def beregn(i, sys):
     # Forbigangsledning (1 stk., inkl. isolator)
     if i.forbigang_ledn:
         g = sys.forbigangsledning["Egenvekt"]
-        s = (sys.forbigangsledning["Max tillatt spenning"] *
-             sys.forbigangsledning["Tverrsnitt"])
+        s = sys.forbigangsledning["Strekk 5C"]
         e_z = -0.3
         kategori = 5  # Fastavspent, side
         if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
@@ -170,19 +169,32 @@ def beregn(i, sys):
         F.append(Kraft(navn="Strekk: Forbigangsledning", type=(kategori, 1),
                        f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), f_diff, f_z],
                        e=[-i.hf, 0, e_z]))
+        # Tilleggsbidrag grunnet temperatur -40C
+        s = sys.forbigangsledning["Strekk -40C"] - sys.forbigangsledning["Strekk 5C"]
+        f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
+        F.append(Kraft(navn="Temperatur: Forbigangsledning", type=(kategori, 2),
+                       f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), 0, f_z],
+                       e=[-i.hf, 0, e_z]))
 
     # Returledninger (2 stk., inkl. 2 stk. isolatorer)
     if i.retur_ledn:
         g = sys.returledning["Egenvekt"]
-        s = 2 * (sys.returledning["Max tillatt spenning"] *
-                 sys.returledning["Tverrsnitt"])
+        s = 2 * sys.returledning["Strekk 5C"]
         e_z = -0.5
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
-        f_z += 2 * s * a / r
+        f_z += s * a / r
         F.append(Kraft(navn="Egenvekt: Returledninger", type=(5, 0),
                        f=[2 * (g * a + 100), 0, 0], e=[-i.hr, 0, e_z]))
         F.append(Kraft(navn="Strekk: Returledninger", type=(5, 1),
                        f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), 2 * f_diff, f_z],
+                       e=[-i.hr, 0, e_z]))
+        # Tilleggsbidrag grunnet temperatur -40C
+        s = 2 * (sys.returledning["Strekk -40C"] - sys.returledning["Strekk 5C"])
+        f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
+        F.append(Kraft(navn="Temperatur: Returledninger", type=(5, 2),
+                       f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), 0, f_z],
                        e=[-i.hr, 0, e_z]))
 
     # Fiberoptisk ledning (1 stk.)
@@ -203,15 +215,21 @@ def beregn(i, sys):
     if i.matefjern_ledn:
         n = i.matefjern_antall
         g = n * sys.matefjernledning["Egenvekt"]
-        s = n * (sys.matefjernledning["Max tillatt spenning"] *
-                 sys.matefjernledning["Tverrsnitt"])
+        s = n * sys.matefjernledning["Strekk 5C"]
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
-        f_z += n * s * a / r
+        f_z += s * a / r
         er = "er" if n > 1 else ""
         F.append(Kraft(navn="Egenvekt: Mate-/fjernledning{}".format(er),
                        type=(6, 0), f=[g * a + 220, 0, 0], e=[-i.hfj, 0, 0]))
         F.append(Kraft(navn="Strekk: Mate-/fjernledning{}".format(er), type=(6, 1),
                        f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), n * f_diff, f_z],
+                       e=[-i.hfj, 0, 0]))
+        # Tilleggsbidrag grunnet temperatur -40C
+        s = n * (sys.matefjernledning["Strekk -40C"] - sys.matefjernledning["Strekk 5C"])
+        f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
+        f_z += s * a / r
+        F.append(Kraft(navn="Temperatur: Mate-/fjernledning{}".format(er), type=(6, 2),
+                       f=[s * (i.delta_h1 / a1 + i.delta_h2 / a2), 0, f_z],
                        e=[-i.hfj, 0, 0]))
 
     # AT-ledninger (2 stk.)
@@ -220,7 +238,7 @@ def beregn(i, sys):
         s = 2 * (sys.at_ledning["Max tillatt spenning"] *
                  sys.at_ledning["Tverrsnitt"])
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
-        f_z += 2 * s * a / r
+        f_z += s * a / r
         F.append(Kraft(navn="Egenvekt: AT-ledning", type=(6, 0),
                        f=[g * a, 0, 0], e=[-i.hfj, 0, 0]))
         F.append(Kraft(navn="Strekk: AT-ledninger", type=(6, 1),
