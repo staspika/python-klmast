@@ -178,6 +178,12 @@ def beregn(i):
                 #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
                 #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
                 #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
+                #        * VALIDERE BEREGNING AV UTNYTTELSESGRAD!
+                #        * Validere forskyvninger
+                #        * Legge inn relevante ulykkessituasjoner
+                #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
+                #        * Implementere snø/islast for NEK
+                #        ( * Implementere snlastens innvirkning på kabelstrekk )
 
 
 
@@ -210,6 +216,9 @@ def beregn(i):
             mast.lagre_tilstand(t)
 
             teller += 1
+
+
+
 
 
 

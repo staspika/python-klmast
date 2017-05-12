@@ -186,7 +186,7 @@ class Tilstand(object):
          samt momentandelene A og B
          """
 
-        M_punkt, M_fordelt, M_sum = 0, 0, 0
+        M_punkt, M_fordelt, M_fordelt_0, M_sum = 0, 0, 0, 0
 
         # (0) Vind fra mast mot spor eller (1) fra spor mot mast
         if self.vindretning == 0 or 1:
@@ -197,6 +197,7 @@ class Tilstand(object):
                         f = numpy.array([0, 0, j.q[2] * j.b])
                     elif self.vindretning == 1:
                         f = numpy.array([0, 0, j.q[2] * j.b])
+                    M_fordelt_0 += abs(f[2] * j.e[0])
                     M_fordelt += abs(f[2] *j.e[0] ** 2)
                 else:
                     M_punkt += abs(f[2] * j.e[0] ** 2)
@@ -209,6 +210,7 @@ class Tilstand(object):
                 f = j.f
                 if not numpy.count_nonzero(j.q) == 0:
                     f = numpy.array([0, j.q[1] * j.b, 0])
+                    M_fordelt_0 += abs(f[2] * j.e[0])
                     M_fordelt += abs(f[1] * j.e[0] ** 2)
                 else:
                     M_punkt += abs(f[1] * j.e[0] ** 2)
@@ -216,7 +218,7 @@ class Tilstand(object):
 
         L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
         # A = andel av vippemoment fra jevnt fordelt last.
-        A = abs(M_fordelt / M_sum)
+        A = abs(M_fordelt_0 / M_sum)
         B = 1 - A
 
         return L_e, A, B
