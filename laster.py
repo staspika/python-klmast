@@ -131,8 +131,8 @@ def beregn(i, sys):
         f_z_b = s_b * (0.5 * (a / r) + (z_b / a))
         f_z_kl = s_kl * (0.5 * (a / r) + (z_kl / a))
         if (not i.strekkutligger) and r <= 1200:
-            f_z_b = s_b * (0.5 * (a / r) + (z_b / a))
-            f_z_kl = s_kl * (0.5 * (a / r) + (z_kl / a))
+            f_z_b = s_b * (-0.5 * (a / r) + (z_b / a))
+            f_z_kl = s_kl * (-0.5 * (a / r) + (z_kl / a))
         F.append(Kraft(navn="Egenvekt: Bæreline til avspenning", type=(3, 0),
                        f=[g_b * a1 / 2, 0, 0], e=[-fh - sh, 0, 0]))
         F.append(Kraft(navn="Egenvekt: Kontakttråd til avspenning", type=(3, 0),
