@@ -111,12 +111,11 @@ class Mast(object):
 
         self.It = It  # St. Venants torsjonskonstant [mm^4]
         if type == "B":
-            self.It = 2 * It + 1 / 3 * 0.9 * \
-                               (self.bredde(h) * (
+            self.It = 2 * It + 1 / 3 * 0.9 * (self.bredde(h) * (
                                (self.E * 1000 * 0.9 * self.bredde(h) * self.d_A) / (self.G * self.d_L ** 3)))
         self.Cw = Cw  # Hvelvingskonstant [mm^6]
         if type == "B":
-            self.Cw = 0.5 * self.Iy_profil * 0.9 * self.bredde(h)
+            self.Cw = 0.5 * self.Iy_profil * (0.9 * self.bredde(h)) ** 2
 
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
         self.bruddgrense = []

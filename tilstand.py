@@ -94,30 +94,28 @@ class Tilstand(object):
 
         return UR_aksial, X, lam_knekk
 
-    def _beregn_vipping(self, mast, L_e, A, B, M_y_Rk, W_y_pl):
+    def _beregn_vipping(self, mast, L_e, A, B, M_y_Rk):
         """Beregner kritisk moment for vipping av bjelkesøyler."""
 
         # Konstanter
-        E = mast.E  # [N / mm^2]
-        G = mast.G  # [N / mm^2]
-        C_w = mast.Cw
-        I_T = mast.It
-        I_z = mast.Iz(mast.h)
-        fy = mast.fy
-        my_vind = 2.05
-        my_punkt = 1.28
+        E, G, fy = mast.E, mast.G, mast.fy  # [N / mm^2]
+        C_w = mast.Cw  # [mm^6]
+        I_T = mast.It  # [mm^4]
+        I_z = mast.Iz(mast.h)  # [mm^4]
+        W_y_p = mast.A * 0.9 * mast.bredde(mast.h)  # [mm^3]
+        if mast.type == "bjelke":
+            W_y_p = mast.Wyp
+        my_vind, my_punkt = 2.05, 1.28
         alpha_LT = 0.76
         if mast.type == "bjelke":
             alpha_LT = 0.34
 
-        # Hvelvningens bidrag til torsjonsstivheten
-        gaffel_v = math.sqrt(1 + ((math.pi / L_e) ** 2 * ((E * C_w) / (G * I_T))))
-
-        C = (L_e / math.pi) * math.sqrt((G * I_T) / (E * I_z)) * gaffel_v
+        # Relativt dimensjonsløst kritisk moment
+        gaffel_v = math.sqrt(1 + ((E * C_w) / (G * I_T)) * ((math.pi / L_e) ** 2))
 
         # Antar at lasten angriper i skjærsenteret, z_a == 0.
-        M_cr_vind = my_vind * E * I_z * C * (math.pi / L_e) ** 2
-        M_cr_punkt = my_punkt * E * I_z * C * (math.pi / L_e) ** 2
+        M_cr_vind = my_vind * (math.pi / L_e) * math.sqrt(G * I_T * E * I_z) * gaffel_v
+        M_cr_punkt = my_punkt * (math.pi / L_e) * math.sqrt(G * I_T * E * I_z) * gaffel_v
 
         # Kritisk moment
         M_cr = A * M_cr_vind + B * M_cr_punkt  # [Nmm]
@@ -131,9 +129,11 @@ class Tilstand(object):
             lam_0 = 0.40
             phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0 ** 2) + beta * lam_LT ** 2)
             X_LT = 1 / (phi_LT + math.sqrt(phi_LT ** 2 - beta * lam_LT ** 2))
+        if X_LT > 1.0:
+            X_LT = 1.0
 
         # Kapasitet
-        M_y_Rd = X_LT * W_y_pl * fy
+        M_y_Rd = X_LT * W_y_p * fy
 
         return M_y_Rd
 
@@ -295,50 +295,37 @@ class Tilstand(object):
             return u
 
         elif mast.type == "B":
+            if mast.navn == "B4" and self.lastsituasjon == "Vind dominerende":
+                print()
             """GLOBAL mastekontroll for B-mast"""
             # Inngangsparametre
-            W_y_pl = 2 * mast.A_profil *\
-                     0.9 * mast.bredde(mast.h)           # [mm^3]
-            alpha_y = 0.49              # [1] knekkfaktor, y-akse
-            alpha_z = 0.49              # [1] knekkfaktor, z-akse
-
-            # 90% av mastebredden ved mastefot (pga. konisk form) [mm]
-            b_g = 0.9 * mast.bredde(mast.h)
-
-            # 2. Arealmoment for B-masten om sterk akse [mm^4]
+            alpha = 0.49  # [1] knekkfaktor, y- og z-akse
             I_y_B = mast.Iy(mast.h, 0.9)
-
-            # 2. Arealmoment for B-masten om svak akse [mm^4]
             I_z_B = mast.Iz(mast.h)
 
-            # Kapasiteter, ganger med x2 for å ta med begge kanalprofilene
-            M_y_Rk = 2 * mast.A_profil * b_g * mast.fy
+            # Kapasiteter
+            M_y_Rk = mast.A * 0.9 * mast.bredde(mast.h) * mast.fy
             M_z_Rk = 2 * mast.Wyp * mast.fy
             N_Rk = 2 * mast.A_profil * mast.fy
 
             L_e, A, B = self._beregn_momentfordeling()
 
             # Redusert momentkapasitet om y-aksen pga vipping.
-            # W_y_pl gjelder for bare én kanalprofil
-            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk, W_y_pl)
+            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk)
 
             # Knekklengde
             L_cr = 2 * L_e
             if i.avspenningsmast or i.fixavspenningsmast:
                 L_cr = L_e
 
-            # Aksialkraftkapasitet om sterk akse (y-aksen)
-            UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y_B, L_cr, N_Ed, N_Rk, alpha_y)
-
-            # Aksialkraftkapasitet om svak akse (z-aksen)
-            UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha_z)
+            # Reduksjonsfaktor aksialkraftkapasitet om y- og z-aksen
+            UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y_B, L_cr, N_Ed, N_Rk, alpha)
+            UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha)
 
             # (0) Vind fra mast mot spor eller (1) fra spor mot mast
             if self.vindretning == 0 or 1:
-
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
-                                               M_z_Ed, M_z_Rk)
+                UR_y_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
                 if UR_y_B > u:
                     u = UR_y_B
 
@@ -354,15 +341,16 @@ class Tilstand(object):
                 if UR_z_B > u:
                     u = UR_z_B
 
+                return u
+
         elif mast.type == "bjelke":
             """GLOBAL mastekontroll av bjelkemast"""
 
             # Inngangsparametre
             I_z = mast.Iz_profil   # [mm^4]
             I_y = mast.Iy_profil   # [mm^4]
-            W_y_pl = mast.Wyp      # [mm^3]
-            alpha_y = 0.34         # [1] imperfeksjonsfaktor, knekk(y)
-            alpha_z = 0.49         # [1] imperfeksjonsfaktor, knekk(z)
+            alpha_y = 0.34         # [1] knekkfaktor, y-aksen
+            alpha_z = 0.49         # [1] knekkfaktor, z-aksen
 
             # Kapasiteter
             M_y_Rk = mast.Wyp * mast.fy      # [Nmm] sterk akse
@@ -372,24 +360,22 @@ class Tilstand(object):
             L_e, A, B = self._beregn_momentfordeling()
 
             # Redusert momentkapasitet om y-aksen pga vipping.
-            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk, W_y_pl)
+            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk)
 
             # Mastens knekklengde
             L_cr = 2 * L_e
             if i.avspenningsmast or i.fixavspenningsmast:
                 L_cr = L_e
 
+            # Reduksjonsfaktor aksialkraftkapasitet om y- og z-aksen
             UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y, L_cr, N_Ed, N_Rk, alpha_y)
-
-            # Aksialkraftkapasitet om svak akse (z-aksen)
             UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z, L_cr, N_Ed, N_Rk, alpha_z)
 
             # (0) Vind fra mast mot spor eller (1) fra spor mot mast
             if self.vindretning == 0 or 1:
 
                 # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
-                                                    M_z_Ed, M_z_Rk)
+                UR_y_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
                 if UR_y_bjelkemast > u:
                     u = UR_y_bjelkemast
 
@@ -400,10 +386,9 @@ class Tilstand(object):
                 # Ulogisk å beregne vipping når belastningen er om svak akse???????????????
 
                 # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
-                UR_z_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk,
-                                                        M_z_Ed, M_z_Rk)
+                UR_z_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
 
                 if UR_z_bjelkemast > u:
                     u = UR_z_bjelkemast
 
-        return u
+                return u
