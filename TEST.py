@@ -49,6 +49,12 @@ if __name__ == "__main__":
     print("H_x = {:.3g} kN\nAntall iterasjoner: {}".format(H_x/1000, i))
 
 
+    n = 1
+
+    for j in [x + 1 for x in range(n)]:
+        print(j)
+
+
 
 
 
