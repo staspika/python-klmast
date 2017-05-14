@@ -44,13 +44,12 @@ class Mast(object):
         self.k_g = k_g  # Knekklengdefaktor gurt
         self.k_d = k_d  # Knekklengdefaktor diagonal
 
-
         # Beregner totalt tverrsnittsareal A [mm^2]
         if type == "B":
             self.A = 2 * A_profil
         elif type == "H":
             self.A = 4 * A_profil
-        elif type == "bjelke":
+        else:
             self.A = A_profil
 
         self.h_max= h_max
@@ -122,7 +121,6 @@ class Mast(object):
         self.ulykkeslast = None
         self.bruksgrense = []
 
-
     def __repr__(self):
         Iy = self.Iy(self.h)/10**8
         Iz = self.Iz(self.h)/10**6
@@ -180,6 +178,28 @@ class Mast(object):
             Iz = self.Iz_profil
         return Iz
 
+    def My_Rk(self):
+        """Beregner mastens motstadsmoment [Nmm] om sterk akse
+        """
+        if self.type == "B":
+            My_Rk = self.A_profil * 0.9 * self.bredde(self.h) * self.fy
+        elif self.type == "H":
+            My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
+        else:
+            My_Rk = self.Wyp * self.fy
+        return My_Rk
+
+    def Mz_Rk(self):
+        """Beregner mastens motstadsmoment [Nmm] om svak akse
+        """
+        if self.type == "B":
+            My_Rk = 2 * self.Wyp * self.fy
+        elif self.type == "H":
+            My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
+        else:
+            My_Rk = self.Wzp * self.fy
+        return My_Rk
+
     """
     def _sammenlign_tilstander(self, t1, t2):
         Sjekker om t1 er dimensjonerende framfor t2.
@@ -236,7 +256,6 @@ class Mast(object):
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
         self.bruksgrense = sorted(self.bruksgrense, key=lambda tilstand: tilstand.K[1], reverse=True)
-
 
     def lagre_tilstand(self, tilstand):
         if tilstand.type == 0:

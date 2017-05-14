@@ -2,13 +2,14 @@ import math
 import numpy
 import copy
 
+
 class Tilstand(object):
     """Objekt med informasjon om lasttilstand fra lastfaktoranalyse.
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
     def __init__(self, mast, i, lastsituasjon, vindretning, F=None, R=None, D=None,
-                 G=0, L=0, T=0, S=0, V=0):
+                 G=0, L=0, T=0, S=0, V=0, iterasjon=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
          """
@@ -18,6 +19,7 @@ class Tilstand(object):
         # 0: Vind fra mast mot spor
         # 1: Vind fra spor mot mast
         # 2: Vind parallelt spor
+        self.iterasjon = iterasjon
 
         if R is not None:
             self.type = 0  # Bruddgrensetilstand
@@ -33,19 +35,18 @@ class Tilstand(object):
             self.N_kap = abs(self.K[4] * mast.materialkoeff / (mast.fy * mast.A))
             self.My_kap = abs(1000 * self.K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
-            self.utnyttelsesgrad = self._beregn_utnyttelsesgrad(mast, i, self.K)
+            self.utnyttelsesgrad = self._utnyttelsesgrad(i, mast, self.K)
         else:
             self.type = 1  # Bruksgrensetilstand
             self.D = D
             self.K = numpy.sum(numpy.sum(D, axis=0), axis=0)
-
 
     def __repr__(self):
         return self.rep()
 
     def rep(self):
         if self.type == 0:
-            K = self.K/1000  # Konverterer krefter til [kNm] og [kN]
+            K = self.K/1000  # Konverterer M til [kNm] og F til [kN]
             rep = ""
             #for j in self.F:
             #    rep += j.rep()
@@ -54,6 +55,7 @@ class Tilstand(object):
                   "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n".\
                 format(K[0], K[1], K[2], K[3], K[4], K[5])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
+            rep += "Iterasjon = {}\n".format(self.iterasjon)
             for key in self.faktorer:
                 rep += "{} = {}     ".format(key, self.faktorer[key])
             rep += "\nVindretning = {}\n".format(self.vindretning)
@@ -68,122 +70,13 @@ class Tilstand(object):
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
             rep += "Vindretning = {}\n".format(self.vindretning)
 
-
-
         return rep
-
-
-    def _trykkapasitet(self, mast, I, L, N_Ed, N_Rk, alpha):
-        """Beregner aksialkraftkapasitet etter EC3, 6.3.1.2"""
-
-        # Konstanter
-        E = mast.E                  # [N / mm^2] E-modulen til stål
-        gamma = mast.materialkoeff  # [1] Partialfaktor for stål
-
-        # Eulerlasten - kritisk aksialkraftkapasitet [N]
-        N_cr = (math.pi ** 2 * E * I) / (L ** 2)
-        lam_knekk = math.sqrt(N_Rk / N_cr)
-        phi = 0.5 * (1 + alpha * (lam_knekk - 0.2) + lam_knekk ** 2)
-        # Reduksjonsfaktoren X e [0, 1.0] && X <= 1.0
-        X = 1 / (phi + math.sqrt(phi ** 2 - lam_knekk ** 2))
-        if X > 1.0:
-            X = 1.0
-
-        # Utnyttelsesgrad av aksialkraftkapasitet
-        UR_aksial = (gamma * N_Ed) / (X * N_Rk)
-
-        return UR_aksial, X, lam_knekk
-
-    def _beregn_vipping(self, mast, L_e, A, B, M_y_Rk):
-        """Beregner kritisk moment for vipping av bjelkesøyler."""
-
-        # Konstanter
-        E, G, fy = mast.E, mast.G, mast.fy  # [N / mm^2]
-        C_w = mast.Cw  # [mm^6]
-        I_T = mast.It  # [mm^4]
-        I_z = mast.Iz(mast.h)  # [mm^4]
-        W_y_p = mast.A * 0.9 * mast.bredde(mast.h)  # [mm^3]
-        if mast.type == "bjelke":
-            W_y_p = mast.Wyp
-        my_vind, my_punkt = 2.05, 1.28
-        alpha_LT = 0.76
-        if mast.type == "bjelke":
-            alpha_LT = 0.34
-
-        # Relativt dimensjonsløst kritisk moment
-        gaffel_v = math.sqrt(1 + ((E * C_w) / (G * I_T)) * ((math.pi / L_e) ** 2))
-
-        # Antar at lasten angriper i skjærsenteret, z_a == 0.
-        M_cr_vind = my_vind * (math.pi / L_e) * math.sqrt(G * I_T * E * I_z) * gaffel_v
-        M_cr_punkt = my_punkt * (math.pi / L_e) * math.sqrt(G * I_T * E * I_z) * gaffel_v
-
-        # Kritisk moment
-        M_cr = A * M_cr_vind + B * M_cr_punkt  # [Nmm]
-
-        # EC3, 6.3.2.3: Reduksjonsfaktor for vipping
-        lam_LT = math.sqrt(abs(M_y_Rk / M_cr))
-        phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT ** 2)
-        X_LT = 1 / (phi_LT + math.sqrt(phi_LT ** 2 - lam_LT ** 2))
-        if mast.type == "bjelke":
-            beta = 0.75
-            lam_0 = 0.40
-            phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0 ** 2) + beta * lam_LT ** 2)
-            X_LT = 1 / (phi_LT + math.sqrt(phi_LT ** 2 - beta * lam_LT ** 2))
-        if X_LT > 1.0:
-            X_LT = 1.0
-
-        # Kapasitet
-        M_y_Rd = X_LT * W_y_p * fy
-
-        return M_y_Rd
-
-    def _utnyttelsesgrad(self, mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk):
-        """Beregner interaksjonsfaktorer k_ij for staver."""
-
-        # EC3, Tabell B.3: Ekvivalente momentfaktorer
-        # Setter forenklet C_ij = 0.6 da trekantmomentlast antas.
-        C_my, C_mz, C_mLT = 0.6, 0.6, 0.6
-        gamma = mast.materialkoeff
-
-        # EC3, Tabell B.1 og B.2: Interaksjonsfaktorer
-        k_yy = C_my * (1 + (lam_y - 0.2) * UR_Ny)
-        k_yy_max = C_my * (1 + 0.8 * UR_Ny)
-        if k_yy > k_yy_max:
-            k_yy = k_yy_max
-
-        # Dette betyr at B-masten antas torsjonsstiv (EC3, Tabell B.1)
-        k_zy = 0.6 * k_yy
-
-        # Bjelkemasten er torsjonsmyk (EC3, Tabell B.2)
-        if mast.type == "bjelke":
-            k_zy = 1 - (0.1 / (C_mLT - 0.25)) * UR_Nz
-            k_zy_max = 1 - ((0.1 * lam_z) / (C_mLT - 0.25)) * UR_Nz
-            if lam_z < 0.4:
-                k_zy = 0.6 + lam_z
-                k_zy_max = 1 - ((0.1 * lam_z) / (C_mLT - 0.25)) * UR_Nz
-            if k_zy > k_zy_max:
-                k_zy = k_zy_max
-
-        k_zz = C_mz * (1 + (2 * lam_z - 0.6) * UR_Nz)
-        k_zz_max = C_mz * (1 + 1.4 * UR_Nz)
-        if k_zz > k_zz_max:
-            k_zz = k_zz_max
-
-        k_yz = 0.6 * k_zz
-
-        # EC3, 6.3.3, kapasitet om y-aksen, lign (6.61):
-        if self.vindretning == 0 or self.vindretning == 1:
-            UR = UR_Ny + k_yy * ((M_y_Ed * gamma) / M_y_Rk) + k_yz * ((M_z_Ed * gamma) / M_z_Rk)
-        else:
-            # Vinden blåser parallelt sporet (Alternativ 3)
-            # EC3, 6.3.3, kapasitet om z-aksen, lign (6.62):
-            UR = UR_Nz + k_zy * ((M_y_Ed * gamma) / M_y_Rk) + k_zz * ((M_z_Ed * gamma) / M_z_Rk)
-
-        return UR
 
     def _beregn_momentfordeling(self):
         """Beregner ekvivalent mastelengde L_e,
-         samt momentandelene A og B
+         samt andeler til kritisk moment. A gir
+         vinlastens bidrag, mens B angir punkt-
+         lastenes andel av kritisk moment.
          """
 
         M_punkt, M_fordelt, M_fordelt_0, M_sum = 0, 0, 0, 0
@@ -217,178 +110,183 @@ class Tilstand(object):
                 M_sum += abs(f[1] * j.e[0])
 
         L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
-        # A = andel av vippemoment fra jevnt fordelt last.
         A = abs(M_fordelt_0 / M_sum)
         B = 1 - A
 
         return L_e, A, B
 
-    def _beregn_utnyttelsesgrad(self, mast, i, K):
-        """Beregner dimensjonerende utnyttelsesgrad u i bruddgrensetilstand"""
+    def _reduksjonsfaktor_knekking(self, mast,  L_cr, akse):
+        """
+        Beregner aksialkraftkapasitet etter EC3, 6.3.1.2
+        :param mast: Henter tverrsnittsverdier
+        :param L_cr: Effektiv mastelengde
+        :param akse: 0=y, 1=z
+        :return: Reduksjonsfaktoren X for knekking 
+        """
 
-        # Standard kapasitetssjekk ihht. EC3 og EN 50119
+        if akse == 0:
+            N_cr = (math.pi ** 2 * mast.E * mast.Iy(mast.h)) / (L_cr ** 2)
+            lam = math.sqrt((mast.A * mast.fy) / N_cr)
+            alpha = 0.34 if not mast.type == "B" else 0.49
+            phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
+            X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
+        else:
+            N_cr = (math.pi ** 2 * mast.E * mast.Iz(mast.h)) / (L_cr ** 2)
+            lam = math.sqrt((mast.A * mast.fy) / N_cr)
+            alpha = 0.49 if not mast.type == "H" else 0.34
+            phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
+            X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
+
+        if X > 1.0:
+            X = 1.0
+
+        return X, lam
+
+    def _reduksjonsfaktor_vipping(self, mast, L_e, A, B):
+        """
+        Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3
+        :param mast: Henter tverrsnittsverdier
+        :param L_e: Effektiv mastelengde
+        :param A: Momentandel tilknyttet vindlast
+        :param B: Momentandel tilknyttet vindlast
+        :return: Reduksjonsfaktoren X_LT for vipping
+        """
+
+        if not mast.type == "H":
+            # H-masten har ingen parameter It.
+            my_vind, my_punkt = 2.05, 1.28
+            gaffel_v = math.sqrt(1 + (mast.E * mast.Cw / (mast.G * mast.It)) * (math.pi / L_e) ** 2)
+
+            # Antar at lasten angriper i skjærsenteret, z_a == 0.
+            M_cr_vind = my_vind * (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * gaffel_v
+            M_cr_punkt = my_punkt * (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * gaffel_v
+
+            M_cr = A * M_cr_vind + B * M_cr_punkt
+
+        if mast.type == "B":
+            lam_LT = math.sqrt(mast.My_Rk()/M_cr)
+            alpha_LT = 0.76
+            phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT ** 2)
+            X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
+        elif mast.type == "bjelke":
+            lam_LT = math.sqrt(mast.My_Rk()/M_cr)
+            alpha_LT, lam_0, beta = 0.34, 0.4, 0.75
+            phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0) + beta * lam_LT**2)
+            X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - beta * lam_LT**2))
+            if X_LT <= (1 / lam_LT**2):
+                X_LT = 1.0
+        else:
+            X_LT = 1.0
+
+        if X_LT > 1.0:
+            X_LT = 1.0
+
+        return X_LT
+
+    def _interaksjonsfaktorer(self, mast, lam_y, N_Ed, X_y, X_z, lam_z):
+        """
+        Beregner interaksjonsfaktorer etter EC3, Tabell B.2.
+        Antar at alle master tilhører tverrsnittsklasse #1
+        :param mast: Henter areal for aksialkraftkapasitet
+        :param lam_y: Relativ slankhet for knekking om y-aksen
+        :param N_Ed: Dimensjonerende aksialkraft
+        :param X_y: Reduksjonsfaktoren for knekking om y-aksen
+        :param X_z: Reduksjonsfaktoren for knekking om z-aksen
+        :param lam_z: Relativ slankhet for knekking om y-aksen
+        :return: Interaksjonsfaktorer k_yy, k_yz, k_zy, k_zz
+        """
+
+        k_yy = 0.6 * (1 - (lam_y - 0.2) * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
+        k_yy_max = 0.6 * (1 + 0.8 * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
+        if k_yy > k_yy_max:
+            k_yy = k_yy_max
+
+        if lam_z < 0.4:
+            k_zy = 0.6 + lam_z
+            k_zy_max = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
+            if k_zy > k_zy_max:
+                k_zy = k_zy_max
+        else:
+            k_zy_1 = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
+            k_zy_2 = 1 - (0.1 / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
+            k_zy = max(k_zy_1, k_zy_2)
+
+        k_zz = 0.6 * (1 + (2 * lam_z - 0.6) * (1.05 * N_Ed / (X_z * mast.A * mast.fy)))
+        k_zz_max = 0.6 * (1 + 1.4 * (1.05 * N_Ed / (X_z * mast.A * mast.fy)))
+        if k_zz > k_zz_max:
+            k_zz = k_zz_max
+
+        k_yz = 0.6 * k_zz
+
+        return k_yy, k_yz, k_zy, k_zz
+
+    def _utnyttelsesgrad(self, i, mast, K):
+        """
+        Beregnes utnyttelsesgraden (UR) for alle typer master.
+        Beregning av reduksjons- og interaksjonsfaktorer foregår
+        i egne metoder.
+        :param i: Endrer knekklengden ved å sjekke om det er en avspenningsmast
+        :param mast: Henter tverrsnittsparametre
+        :param K: Henter dimensjonerende laster.
+        :return: Returnerer utnyttelsesgraden til masten.
+        """
+
         u = self.N_kap + self.My_kap + self.Mz_kap
 
-        # Last på mast
-        M_y_Ed = abs(K[0]) * 1000  # [Nmm]
-        M_z_Ed = abs(K[2]) * 1000  # [Nmm]
-        V_y_Ed = abs(K[1])  # [N]
-        V_z_Ed = abs(K[3])  # [N]
-        N_Ed = abs(K[4])  # [N]
+        L_e, A, B = self._beregn_momentfordeling()
+        L_cr = 2 * L_e
+        if i.avspenningsmast or i.fixavspenningsmast:
+            L_cr = L_e
 
+        X_y, lam_y = self._reduksjonsfaktor_knekking(mast, L_cr, 0)
+        X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
+        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B)
+
+        # Konverterer [Nm] til [Nmm]
+        My_Ed, Vy_Ed, Mz_Ed, Vz_Ed, N_Ed = 1000 * K[0], K[1], 1000 * K[2], K[3], K[4]
+
+        My_Rk, Mz_Rk, N_Rk = mast.My_Rk(), mast.Mz_Rk(), mast.A * mast.fy
+
+        k_yy, k_yz, k_zy, k_zz = self._interaksjonsfaktorer(mast, lam_y, N_Ed, X_y, X_z, lam_z)
+
+        # EC3, 6.3.3(4) ligning (6.61)
+        UR_y = (1.05 * N_Ed / (X_y * mast.A * mast.fy)) + \
+               k_yy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
+               k_yz * (1.05 * Mz_Ed / Mz_Rk)
+
+        # EC3, 6.3.3(4) ligning (6.62)
+        UR_z = (1.05 * N_Ed / (X_z * mast.A * mast.fy)) + \
+               k_zy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
+               k_zz * (1.05 * Mz_Ed / Mz_Rk)
+
+        UR_d, UR_g = 0, 0
         if mast.type == "H":
-            """LOKAL knekkapasitet for H-mast"""
-            # Utføres for gurt og diagonal helt nede ved mastefot.
+            # Diagonalstav:
+            N_Ed_d = max(math.sqrt(2)/2 * Vy_Ed, math.sqrt(2)/2 * Vz_Ed)
+            L_d = mast.k_d * mast.d_L
+            d_I = mast.d_I
+            alpha_d = 0.49
+            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
+            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
+            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
+            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
+            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
 
-            # DIAGONALSTAV
-            # Trykkraft [N] i mest påkjente diagonal er den største av:
-            N_Ed_d = max(math.sqrt(2) / 2 * V_y_Ed, math.sqrt(2) / 2 * V_z_Ed)
-            N_Rk_d = mast.d_A * mast.fy  # [N] Aksialkraftkap diagonal
-            L_d = mast.k_d * mast.d_L    # [mm] Lengde diagonal
-            d_I = mast.d_I               # [mm^4] diagonal
-            alpha_d = 0.49               # [1] Imperfeksjonsfaktor
+            # Gurt (vinkelprofil)
+            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
+            L_g = mast.k_g * 1000
+            I_g = mast.Iy_profil
+            alpha_g = 0.34
+            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
+            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
+            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
+            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
+            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
 
-            UR_d, X, lam_knekk = self._trykkapasitet(mast, d_I, L_d, N_Ed_d, N_Rk_d, alpha_d)
+        if mast.navn == "B2" and self.iterasjon == 64:
+            print()
+            print("u_plain = {}".format(u))
+            print()
+            print("UR_y = {},   UR_z = {}".format(UR_y, UR_z))
 
-            # GURT (Vinkelprofil)
-            # Trykkraft i GURT (vinkelprofil) [N]:
-            b = mast.bredde(mast.h - 1)
-            N_Ed_g = 0.5 * ((M_y_Ed / b) + (M_z_Ed / b) + V_y_Ed + V_z_Ed) + N_Ed / 4
-            N_Rk_g = mast.A_profil * mast.fy    # [N] Aksialkraftkapasitet
-            L_g = mast.k_g * 1000               # [mm] Knekklengde gurt
-            I_g = mast.Iy_profil                # [mm^4] 2. arealmoment
-            alpha_g = 0.34                      # [1] Imperfeksjonsfaktor
-
-            UR_g, X, lam_knekk = self._trykkapasitet(mast, I_g, L_g, N_Ed_g, N_Rk_g, alpha_g)
-
-            """GLOBAL mastekontroll for H-mast"""
-            gamma = mast.materialkoeff
-            # Kapasiteter
-            # Masten er konisk. Bredden b = 0.9 i mastefot benyttes.
-            b_g = 0.9 * mast.bredde(mast.h)  # [mm]
-            M_y_Rk = b_g * N_Rk_g * 2        # [Nmm] sterk akse
-            M_z_Rk = M_y_Rk                  # [Nmm] svak akse
-
-            # Aksialkraftkapasitet
-            N_Rk_mast = 4 * mast.A_profil * mast.fy
-            L_cr_mast = 0.85 * mast.h
-            I_y = mast.Iy(mast.h)
-            alpha_mast = 0.34
-
-            UR_Ny, X, lam_knekk_y = self._trykkapasitet(mast, I_y, L_cr_mast, N_Ed, N_Rk_mast, alpha_mast)
-
-            # Interaksjonsfaktorer for torsjonsstive staver
-            # EC3, Tabell B.1
-            k_yy = 0.6 * (1 + 0.6 * lam_knekk_y * UR_Ny)
-            # Pga. symmetri må k_yy == k_zz.
-            k_yz = 0.6 * k_yy
-
-            # EC3, kapittel 6.3.3, interaksjonsformel om y-aksen (6.61)
-            UR_mast = UR_Ny + ((k_yy * M_y_Ed * gamma) / M_y_Rk) + ((k_yz * M_z_Ed * gamma) / M_z_Rk)
-
-            # Utnyttelsesgrader
-            knekk = max(UR_d, UR_g, UR_mast)
-
-            if knekk > u:
-                u = knekk
-
-            return u
-
-        elif mast.type == "B":
-            if mast.navn == "B4" and self.lastsituasjon == "Vind dominerende":
-                print()
-            """GLOBAL mastekontroll for B-mast"""
-            # Inngangsparametre
-            alpha = 0.49  # [1] knekkfaktor, y- og z-akse
-            I_y_B = mast.Iy(mast.h, 0.9)
-            I_z_B = mast.Iz(mast.h)
-
-            # Kapasiteter
-            M_y_Rk = mast.A * 0.9 * mast.bredde(mast.h) * mast.fy
-            M_z_Rk = 2 * mast.Wyp * mast.fy
-            N_Rk = 2 * mast.A_profil * mast.fy
-
-            L_e, A, B = self._beregn_momentfordeling()
-
-            # Redusert momentkapasitet om y-aksen pga vipping.
-            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk)
-
-            # Knekklengde
-            L_cr = 2 * L_e
-            if i.avspenningsmast or i.fixavspenningsmast:
-                L_cr = L_e
-
-            # Reduksjonsfaktor aksialkraftkapasitet om y- og z-aksen
-            UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y_B, L_cr, N_Ed, N_Rk, alpha)
-            UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z_B, L_cr, N_Ed, N_Rk, alpha)
-
-            # (0) Vind fra mast mot spor eller (1) fra spor mot mast
-            if self.vindretning == 0 or 1:
-                # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
-                if UR_y_B > u:
-                    u = UR_y_B
-
-                return u
-
-            # (2) Vind parallelt spor
-            elif self.vindretning == 2:
-                # Ulogisk å beregne vipping når belastningen er om svak akse???????????????
-
-                # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
-                UR_z_B = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
-
-                if UR_z_B > u:
-                    u = UR_z_B
-
-                return u
-
-        elif mast.type == "bjelke":
-            """GLOBAL mastekontroll av bjelkemast"""
-
-            # Inngangsparametre
-            I_z = mast.Iz_profil   # [mm^4]
-            I_y = mast.Iy_profil   # [mm^4]
-            alpha_y = 0.34         # [1] knekkfaktor, y-aksen
-            alpha_z = 0.49         # [1] knekkfaktor, z-aksen
-
-            # Kapasiteter
-            M_y_Rk = mast.Wyp * mast.fy      # [Nmm] sterk akse
-            M_z_Rk = mast.Wzp * mast.fy      # [Nmm] svak akse
-            N_Rk = mast.A_profil * mast.fy   # [N] trykkapasitet
-
-            L_e, A, B = self._beregn_momentfordeling()
-
-            # Redusert momentkapasitet om y-aksen pga vipping.
-            M_y_Rk = self._beregn_vipping(mast, L_e, A, B, M_y_Rk)
-
-            # Mastens knekklengde
-            L_cr = 2 * L_e
-            if i.avspenningsmast or i.fixavspenningsmast:
-                L_cr = L_e
-
-            # Reduksjonsfaktor aksialkraftkapasitet om y- og z-aksen
-            UR_Ny, X_y, lam_y = self._trykkapasitet(mast, I_y, L_cr, N_Ed, N_Rk, alpha_y)
-            UR_Nz, X_z, lam_z = self._trykkapasitet(mast, I_z, L_cr, N_Ed, N_Rk, alpha_z)
-
-            # (0) Vind fra mast mot spor eller (1) fra spor mot mast
-            if self.vindretning == 0 or 1:
-
-                # EC3, kap. 6.3.3, interaksjonsformel om y-aksen (6.61)
-                UR_y_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
-                if UR_y_bjelkemast > u:
-                    u = UR_y_bjelkemast
-
-                return u
-
-            # (2) Vind parallelt spor
-            elif self.vindretning == 2:
-                # Ulogisk å beregne vipping når belastningen er om svak akse???????????????
-
-                # EC3, kap. 6.3.3, interaksjonsformel om z-aksen (6.62)
-                UR_z_bjelkemast = self._utnyttelsesgrad(mast, lam_y, UR_Ny, lam_z, UR_Nz, M_y_Ed, M_y_Rk, M_z_Ed, M_z_Rk)
-
-                if UR_z_bjelkemast > u:
-                    u = UR_z_bjelkemast
-
-                return u
+        return max(u, UR_y, UR_z, UR_d, UR_g)
