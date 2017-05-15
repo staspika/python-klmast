@@ -107,8 +107,8 @@ def beregn(i):
     # |             | 7  Brukerdefinert last
     #  -------------
     #
-    # Etasjer: 0 = statisk, 1 = dynamisk
-    #
+    # Etasjer: 0 = egenvekt, 1 = strekk,
+    #          2 = temperatur, 3 = snø, 4 = vind
 
     # Oppretter masteobjekt med brukerdefinert høyde
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
@@ -126,20 +126,18 @@ def beregn(i):
         F.extend(klima.vandringskraft(i, sys, mast))
         F.extend(klima.isogsno_last(i, sys))
 
-        # Sidekrefter til beregning av utliggerens deformasjonsbidrag
-        sidekrefter = []
-        for j in F:
-            if j.navn == "Sidekraft: Bæreline" or j.navn == "Sidekraft: Kontakttråd" \
-                    or j.navn == "Sidekraft: Avspenning bæreline" \
-                    or j.navn == "Sidekraft: Avspenning kontakttråd":
-                sidekrefter.append(j.f[2])
-
         # Vindretning 0 = Vind fra mast, mot spor
         for vindretning in range(3):
 
             # Setter på vindlast med korrekt lastretning ift. vindretning
             F.extend(klima.vindlast_mast(i, mast, vindretning))
             F.extend(klima.vindlast_ledninger(i, sys, vindretning))
+
+            # Sidekrefter til beregning av utliggerens deformasjonsbidrag
+            sidekrefter = []
+            for j in F:
+                if j.navn in lister.sidekraftbidrag:
+                    sidekrefter.append(j.f[2])
 
             R_0 = _beregn_reaksjonskrefter(F)
             D_0 = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
@@ -165,8 +163,9 @@ def beregn(i):
                                     # Vind
                                     R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
 
-                                    t = tilstand.Tilstand(mast, i,lastsituasjon, vindretning,
-                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V, iterasjon=iterasjon)
+                                    t = tilstand.Tilstand(mast, i,lastsituasjon, vindretning, 0,
+                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V,
+                                                          iterasjon=iterasjon)
 
                                     mast.lagre_tilstand(t)
 
@@ -184,15 +183,20 @@ def beregn(i):
                 #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
 
 
-
-
+                # Bruksgrense, forskyvning totalt
                 D = numpy.zeros((5, 8, 3))
+                if mast.navn == "HE200B" and vindretning == 0:
+                    print(D_0[1, :, :])
                 D[0, :, :] = D_0[0, :, :]
                 D[1, :, :] = D_0[1, :, :]
                 D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
                 D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
                 D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, D=D, iterasjon=iterasjon)
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 1, D=D, iterasjon=iterasjon)
+                mast.lagre_tilstand(t)
+                # Bruksgrense, forskyvning KL
+                D[0, :, :], D[1, :, :] = 0, 0  # Nullstiller bidrag fra egenvekt og strekk
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 2, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
 
             # Fjerner vindlaster fra systemet
@@ -210,7 +214,7 @@ def beregn(i):
             R_ulykke[3, :, :] += R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
             R_ulykke[4, :, :] += R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
 
-            t = tilstand.Tilstand(mast, i, lastsituasjon, 0, F=F, R=R_ulykke, iterasjon=iterasjon)
+            t = tilstand.Tilstand(mast, i, lastsituasjon, 0, 0, F=F, R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
 
             # Fjerner ulykkeslaster fra systemet

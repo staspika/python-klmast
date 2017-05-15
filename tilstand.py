@@ -8,7 +8,7 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, lastsituasjon, vindretning, F=None, R=None, D=None,
+    def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
                  G=0, L=0, T=0, S=0, V=0, iterasjon=0):
         """Initierer tilstandsobjekt med data om krefter og forskyvninger
          samt lastfaktorer ved gitt lasttilfelle.
@@ -19,10 +19,14 @@ class Tilstand(object):
         # 0: Vind fra mast mot spor
         # 1: Vind fra spor mot mast
         # 2: Vind parallelt spor
+        self.type = type
+        # 0: Bruddgrense
+        # 1: Bruksgrense, forskyvning totalt
+        # 2: Bruksgrense, forskyvning KL
         self.iterasjon = iterasjon
 
-        if R is not None:
-            self.type = 0  # Bruddgrensetilstand
+        if self.type == 0:
+            # Bruddgrensetilstand
             self.F = copy.copy(F)
             self.R = R
             self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
@@ -37,7 +41,7 @@ class Tilstand(object):
             self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
             self.utnyttelsesgrad = self._utnyttelsesgrad(i, mast, self.K)
         else:
-            self.type = 1  # Bruksgrensetilstand
+            # Bruksgrensetilstand
             self.D = D
             self.K = numpy.sum(numpy.sum(D, axis=0), axis=0)
 

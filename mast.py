@@ -119,7 +119,9 @@ class Mast(object):
         # Variabler for å holde dimensjonerende last/forskvningstilfeller
         self.bruddgrense = []
         self.ulykkeslast = None
-        self.bruksgrense = []
+        self.forskyvning_tot = []
+        self.forskyvning_kl = []
+
 
     def __repr__(self):
         Iy = self.Iy(self.h)/10**8
@@ -135,8 +137,10 @@ class Mast(object):
         if self.ulykkeslast is not None:
             rep += "\nUlykkeslast:\n\n"
             rep += self.ulykkeslast.rep()
-        rep += "\n\nStørste totale forskyvning av kontakttråd:\n\n"
-        rep += self.bruksgrense[0].rep()
+        rep += "\n\nStørste forskyvning totalt:\n\n"
+        rep += self.forskyvning_tot[0].rep()
+        rep += "\n\nStørste forskyvning KL:\n\n"
+        rep += self.forskyvning_kl[0].rep()
         return rep
 
     def bredde(self, x):
@@ -161,6 +165,16 @@ class Mast(object):
         if self.type == "H":
             z = breddefaktor*self.bredde(x)/2 - self.noytralakse
             Iy = 4 * (self.Iy_profil + self.A_profil * z**2)
+        elif self.type == "bjelke":
+            Iy = self.Iy_profil
+        return Iy
+
+    def Iy_KL_fund(self, x):
+        """Legacy fra KL_fund"""
+        if self.type == "B":
+            Iy = 2 * (self.Iz_profil + self.A_profil * (self.bredde(2 / 3 * x) / 2) ** 2)
+        if self.type == "H":
+            Iy = 4 * (self.Iz_profil + self.A_profil * (self.bredde(2 / 3 * x) / 2) ** 2)
         elif self.type == "bjelke":
             Iy = self.Iy_profil
         return Iy
@@ -255,7 +269,8 @@ class Mast(object):
         elif kriterie == 1:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
-        self.bruksgrense = sorted(self.bruksgrense, key=lambda tilstand: tilstand.K[1], reverse=True)
+        self.forskyvning_tot = sorted(self.forskyvning_tot, key=lambda tilstand: tilstand.K[1], reverse=True)
+        self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: tilstand.K[1], reverse=True)
 
     def lagre_tilstand(self, tilstand):
         if tilstand.type == 0:
@@ -263,8 +278,10 @@ class Mast(object):
                 self.bruddgrense.append(tilstand)
             else:
                 self.ulykkeslast = tilstand
+        elif tilstand.type == 1:
+            self.forskyvning_tot.append(tilstand)
         else:
-            self.bruksgrense.append(tilstand)
+            self.forskyvning_kl.append(tilstand)
 
 
 def hent_master(hoyde, s235, materialkoeff):
@@ -330,6 +347,24 @@ def hent_master(hoyde, s235, materialkoeff):
     master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
     return master
+
+
+
+if __name__ == "__main__":
+    master = hent_master(8, True, 1.05)
+    mazt = master[6]
+    print("Mast: {}".format(mazt.navn))
+    for h in range(80, 135, 5):
+        h *= 1/10
+        Iy_ny = mazt.Iy(h)
+        Iy_gammel = mazt.Iy_KL_fund(h)
+        brok = Iy_ny/Iy_gammel
+        print("H = {} m".format(h))
+        print("Iy, ny beregning = {}".format((Iy_ny)))
+        print("Iy, gammel beregning = {}".format((Iy_gammel)))
+        print("Brøk: {} %\n".format(brok*100))
+
+
 
 
 

@@ -3,8 +3,8 @@ import math
 
 
 def bjelkeformel_M(mast, j, fh):
-    """Beregner deformasjon D_z i kontakttrådhøyde som følge av moment
-    om  y-aksen med angrepspunkt i høyde x. Dersom FH > x interpoleres
+    """Beregner deformasjoner i kontakttrådhøyde som følge av et påsatt
+    moment med angrepspunkt i høyde x. Dersom FH > x interpoleres
     forskyvningen til høyde FH ved hjelp av tangens til vinkelen theta
     i høyde x ganget med høydedifferansen fh - x.
     """
@@ -15,9 +15,9 @@ def bjelkeformel_M(mast, j, fh):
     e_y = j.e[1] * 1000
     e_z = j.e[2] * 1000
     M_y = f_x * e_z
-    M_z = f_x * e_y
+    M_z = -f_x * e_y
     x = -j.e[0] * 1000
-    fh = fh * 1000
+    fh *= 1000
 
     D = numpy.zeros((5, 8, 3))
 
@@ -43,13 +43,19 @@ def bjelkeformel_P(mast, j, fh):
     I_z = mast.Iz(2/3 * mast.h)
     f_y = j.f[1]
     f_z = j.f[2]
-    e_x = -j.e[0] * 1000
+    x = -j.e[0] * 1000
     fh *= 1000
 
     D = numpy.zeros((5, 8, 3))
 
-    D[j.type[1], j.type[0], 1] = (f_z / (2 * E * I_y)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
-    D[j.type[1], j.type[0], 0] = (f_y / (2 * E * I_z)) * (e_x * fh ** 2 - ((1 / 3) * fh ** 3))
+    if fh > x:
+        theta_y = (f_y * x**2) / (2 * E * I_z)
+        theta_z = (f_z * x**2) / (2 * E * I_y)
+        D[j.type[1], j.type[0], 1] = (f_z / (3 * E * I_y)) * x ** 3 + numpy.tan(theta_y) * (fh - x)
+        D[j.type[1], j.type[0], 0] = (f_y / (3 * E * I_z)) * x ** 3 + numpy.tan(theta_z) * (fh - x)
+    else:
+        D[j.type[1], j.type[0], 1] = (f_z / (2 * E * I_y)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
+        D[j.type[1], j.type[0], 0] = (f_y / (2 * E * I_z)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
 
     return D
 
@@ -60,8 +66,8 @@ def bjelkeformel_q(mast, j, fh):
     """
 
     E = mast.E
-    I_y = mast.Iy(2 / 3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
-    I_z = mast.Iz(2 / 3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
+    I_y = mast.Iy(2/3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
+    I_z = mast.Iz(2/3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
     q_y = j.q[1] / 1000
     q_z = j.q[2] / 1000
     b = j.b * 1000
@@ -78,9 +84,10 @@ def bjelkeformel_q(mast, j, fh):
 def torsjonsvinkel(mast, j, i):
     """Beregner torsjonsvinkelen phi i grader i kontakttrådhøyde FH
     for en fast innspent mast pga. tosjonsmoment i en avstand x fra
-    fundamentet."""
+    fundamentet
+    """
 
-    T = abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])
+    T = (abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])) * 1000
     E = mast.E
     G = mast.G
     I_T = mast.It
