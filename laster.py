@@ -33,24 +33,29 @@ def beregn(i, sys):
         F.append(Kraft(navn="Egenvekt: Traverser", type=(0, 0),
                        f=[220, 0, 0], e=[-fh - sh/2, 0, 0]))
 
+
     # Utligger(e)
-    F.append(Kraft(navn="Egenvekt: Utligger", type=(0, 0),
+    navn = "Egenvekt: Utligger" if n<2 else "Egenvekt: Utliggere"
+    F.append(Kraft(navn=navn, type=(0, 0),
                    f=[n * sys.utligger["Egenvekt"] * sms, 0, 0],
                    e=[-fh - sh/2, 0, sys.utligger["Momentarm"] * sms]))
 
     # Bæreline(r)
-    F.append(Kraft(navn="Egenvekt: Bæreline", type=(0, 0),
+    navn = "Egenvekt: Bæreline" if n<2 else "Egenvekt: Bæreliner"
+    F.append(Kraft(navn=navn, type=(0, 0),
                    f=[n * sys.baereline["Egenvekt"] * a, 0, 0],
                    e=[-fh - sh, 0, sms]))
 
     # Hengetråd(er)
     L = 8 * (a / 60)
-    F.append(Kraft(navn="Egenvekt: Hengetråd", type=(0, 0),
+    navn = "Egenvekt: Hengetråd" if n<2 else "Egenvekt: Hengetråder"
+    F.append(Kraft(navn=navn, type=(0, 0),
                    f=[n * sys.hengetraad["Egenvekt"] * L, 0, 0],
                    e=[-fh - sh, 0, arm]))
 
     # Kontakttråd(er)
-    F.append(Kraft(navn="Egenvekt: Kontakttråd", type=(0, 0),
+    navn = "Egenvekt: Kontakttråd" if n<2 else "Egenvekt: Kontakttråder"
+    F.append(Kraft(navn=navn, type=(0, 0),
                    f=[n * sys.kontakttraad["Egenvekt"] * a, 0, 0],
                    e=[-fh, 0, arm]))
 
@@ -61,7 +66,8 @@ def beregn(i, sys):
             L = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L = 18
-        F.append(Kraft(navn="Egenvekt: Y-line", type=(0, 0),
+        navn = "Egenvekt: Y-line" if n<2 else "Egenvekt: Y-liner"
+        F.append(Kraft(navn=navn, type=(0, 0),
                        f=[n * sys.y_line["Egenvekt"] * L, 0, 0],
                        e=[-fh - sh, 0, arm]))
 
@@ -77,10 +83,12 @@ def beregn(i, sys):
         f_z_avsp_kl = - s * (arm / a2)
         if i.master_bytter_side:
             f_z_avsp_b, f_z_avsp_kl = - f_z_avsp_b, -f_z_avsp_kl
-    F.append(Kraft(navn="Strekk: Bæreline", type=(1, 1),
+    navn = "Strekk: Bæreline" if n<2 else "Strekk: Bæreliner"
+    F.append(Kraft(navn=navn, type=(1, 1),
                    f=[0, 0, f_z_kurvatur + f_z_avsp_b],
                    e=[-fh - sh, 0, sms]))
-    F.append(Kraft(navn="Strekk: Kontakttråd", type=(1, 1),
+    navn = "Strekk: Kontakttråd" if n<2 else "Strekk: Kontakttråder"
+    F.append(Kraft(navn=navn, type=(1, 1),
                    f=[0, 0, f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk],
                    e=[-fh, 0, arm]))
 
@@ -98,9 +106,9 @@ def beregn(i, sys):
         f_z = s * ((a / r) + 2 * (arm / a))
         if i.strekkutligger and r <= 1200:
             f_z = s * (-(a / r) + 2 * (arm / a))
-        F.append(Kraft(navn="Egenvekt: Fixline", type=(2, 0),
+        F.append(Kraft(navn="Egenvekt: Fixliner", type=(2, 0),
                        f=[g * a, 0, 0], e=[-fh - sh, 0, sms]))
-        F.append(Kraft(navn="Strekk: Fixline", type=(2, 1),
+        F.append(Kraft(navn="Strekk: Fixliner", type=(2, 1),
                        f=[0, 0, f_z], e=[-fh - sh, 0, sms]))
 
     # Fixavspenningsmast
@@ -112,7 +120,7 @@ def beregn(i, sys):
         if (not i.strekkutligger) and r <= 1200:
             f_z = s * (- 0.5 * (a / r) + (z / a))
         F.append(Kraft(navn="Egenvekt: Fixline", type=(2, 0),
-                       f=[g * a1 / 2, 0, 0], e=[-fh - sh, 0, 0]))
+                       f=[g * a / 2, 0, 0], e=[-fh - sh, 0, 0]))
         F.append(Kraft(navn="Strekk: Fixline", type=(2, 1),
                        f=[0, s, f_z], e=[-fh - sh, 0, 0]))
         # Avspenningsbardun
@@ -274,3 +282,73 @@ def egenvekt_mast(mast):
     F.append(Kraft(navn="Egenvekt: Mast", type=(0, 0),
                    f=[mast.egenvekt * mast.h, 0, 0]))
     return F
+
+
+def ulykkeslaster(i, sys, mast):
+    """Beregner laster i ulykkestilstand"""
+    r = i.radius
+    a = (i.a1 + i.a2) / 2
+    a1, a2 = i.a1, i.a2
+    B1, B2 = sys.B1, sys.B2
+    a_T, a_T_dot = sys.a_T, sys.a_T_dot
+    sms = i.sms
+    fh = i.fh
+    sh = i.sh
+
+    # Eksentrisitet i z-retning for KL.
+    arm = a_T_dot
+    if i.strekkutligger:
+        arm = a_T
+
+    # F = liste over krefter som skal returneres
+    F = []
+
+    # Sidekrefter pga. ledningsføring
+    s = 1000 * sys.kontakttraad["Strekk i ledning"]
+    f_z_kurvatur = - s * (a1 + a2) / (2 * r)
+    f_z_sikksakk = - s * ((B2 - B1) / a1 + (B2 - B1) / a2)
+    if i.strekkutligger:
+        f_z_kurvatur, f_z_sikksakk = - f_z_kurvatur, - f_z_sikksakk
+    f_z_avsp_b, f_z_avsp_kl = 0, 0
+    if i.siste_for_avspenning:
+        f_z_avsp_b = - s * (sms / a2)
+        f_z_avsp_kl = - s * (arm / a2)
+        if i.master_bytter_side:
+            f_z_avsp_b, f_z_avsp_kl = - f_z_avsp_b, -f_z_avsp_kl
+
+    # Bæreline
+    f_x = -sys.baereline["Egenvekt"] * a
+    f_z = -f_z_kurvatur + f_z_avsp_b
+    F.append(Kraft(navn="Ulykkeslast: Bæreline", type=(1, 0),
+                   f=[f_x, 0, f_z],
+                   e=[-fh - sh, 0, sms]))
+
+    # Kontakttråd
+    f_x = -sys.kontakttraad["Egenvekt"] * a
+    f_z = -(f_z_kurvatur + f_z_avsp_kl + f_z_sikksakk)
+    F.append(Kraft(navn="Ulykkeslast: Kontakttråd", type=(1, 0),
+                   f=[f_x, 0, f_z],
+                   e=[-fh, 0, arm]))
+
+    # Hengetråd
+    L = 8 * (a / 60)
+    f_x = -sys.hengetraad["Egenvekt"] * L
+    F.append(Kraft(navn="Ulykkeslast: Hengetråd", type=(1, 0),
+                   f=[f_x, 0, 0],
+                   e=[-fh - sh, 0, arm]))
+
+    # Y-line
+    if not sys.y_line == None:
+        L = 0
+        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+            L = 14
+        elif sys.navn == "25" and i.radius >= 1200:
+            L = 18
+        f_x = -sys.y_line["Egenvekt"] * L
+        F.append(Kraft(navn="Ulykkeslast: Y-line", type=(1, 0),
+                       f=[f_x, 0, 0],
+                       e=[-fh - sh, 0, arm]))
+
+
+    return F
+

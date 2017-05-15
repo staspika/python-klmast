@@ -198,22 +198,25 @@ def beregn(i):
 
 
             # Fjerner vindlaster fra systemet
-
             F[:] = [j for j in F if not j.navn.startswith("Vindlast:")]
 
         # Regner ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere == 2:
             lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
-            R = numpy.zeros((5, 8, 6))
-            R[0, :, :] = R_0[0, :, :]
-            R[1, :, :] = R_0[1, :, :]
-            R[2, :, :] = R_0[2, :, :] * lastsituasjon["Ulykkeslast"]["psi_T"]
-            R[3, :, :] = R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
-            R[4, :, :] = R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
+            F_ulykke = []
+            F_ulykke.extend(laster.ulykkeslaster(i, sys, mast))
+            R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
+            R_ulykke[0, :, :] += R_0[0, :, :]
+            R_ulykke[1, :, :] += R_0[1, :, :]
+            R_ulykke[2, :, :] += R_0[2, :, :] * lastsituasjon["Ulykkeslast"]["psi_T"]
+            R_ulykke[3, :, :] += R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
+            R_ulykke[4, :, :] += R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
 
-            t = tilstand.Tilstand(mast, i, lastsituasjon, 0,
-                                  F=F, R=R, G=G, L=L, T=T, S=S, V=V)
+            t = tilstand.Tilstand(mast, i, lastsituasjon, 0, F=F, R=R_ulykke)
             mast.lagre_tilstand(t)
+
+            # Fjerner ulykkeslaster fra systemet
+            F[:] = [j for j in F if not j.navn.startswith("Ulykkeslast:")]
 
             teller += 1
 
