@@ -95,17 +95,7 @@ def hent_system(i):
     Al_150_19 = {"Navn": "Al 150-19 uisolert", "Egenvekt": 4.07,
                          "Diameter": 15.9, "Tverrsnitt": 150.90,
                          "Max tillatt spenning": 50.0}
-    BLX_T_241_19_iso = {"Navn": "BLX-T 241-19 isolert", "Egenvekt": 8.13,
-                         "Diameter": 26.10, "Tverrsnitt": 241.0,
-                         "Max tillatt spenning": 80.0}
-    BLX_T_209_9_19_iso = {"Navn": "BLX-T 209,9-19 isolert", "Egenvekt": 7.91,
-                         "Diameter": 25.8, "Tverrsnitt": 209.0,
-                         "Max tillatt spenning": 80.0}
-    BLX_T_111_3_7_iso = {"Navn": "BLX-T 111,3-7 isolert", "Egenvekt": 4.71,
-                         "Diameter": 20.4, "Tverrsnitt": 111.0,
-                         "Max tillatt spenning": 80.0}
-    at_ledninger.extend([Al_400_37, Al_240_19, Al_150_19, BLX_T_241_19_iso,
-                        BLX_T_209_9_19_iso, BLX_T_111_3_7_iso])
+    at_ledninger.extend([Al_400_37, Al_240_19, Al_150_19])
 
     # Jordledninger
     jordledninger = []

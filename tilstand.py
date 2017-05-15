@@ -137,12 +137,11 @@ class Tilstand(object):
             phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
             X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
 
-        if X > 1.0:
-            X = 1.0
+        X = X if X <= 1.0 else 1.0
 
         return X, lam
 
-    def _reduksjonsfaktor_vipping(self, mast, L_e, A, B):
+    def _reduksjonsfaktor_vipping(self, mast, L_e, A, B, My_Ed):
         """
         Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3
         :param mast: Henter tverrsnittsverdier
@@ -151,7 +150,10 @@ class Tilstand(object):
         :param B: Momentandel tilknyttet vindlast
         :return: Reduksjonsfaktoren X_LT for vipping
         """
+        if self.iterasjon == 2336:
+            print("Knekkingsberegning")
 
+        X_LT = 1.0
         if not mast.type == "H":
             # H-masten har ingen parameter It.
             my_vind, my_punkt = 2.05, 1.28
@@ -163,23 +165,20 @@ class Tilstand(object):
 
             M_cr = A * M_cr_vind + B * M_cr_punkt
 
-        if mast.type == "B":
-            lam_LT = math.sqrt(mast.My_Rk()/M_cr)
-            alpha_LT = 0.76
-            phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT ** 2)
-            X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
-        elif mast.type == "bjelke":
-            lam_LT = math.sqrt(mast.My_Rk()/M_cr)
-            alpha_LT, lam_0, beta = 0.34, 0.4, 0.75
-            phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0) + beta * lam_LT**2)
-            X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - beta * lam_LT**2))
-            if X_LT <= (1 / lam_LT**2):
-                X_LT = 1.0
-        else:
-            X_LT = 1.0
-
-        if X_LT > 1.0:
-            X_LT = 1.0
+            lam_LT = math.sqrt(mast.My_Rk() / M_cr)
+            lam_0, beta = 0.4, 0.75
+            if lam_LT > lam_0 and (My_Ed / M_cr) > lam_0 ** 2:
+                if mast.type == "B":
+                    alpha_LT = 0.76
+                    phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT ** 2)
+                    X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
+                    X_LT = X_LT if X_LT <= 1.0 else 1.0
+                elif mast.type == "bjelke":
+                    alpha_LT = 0.34
+                    phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0) + beta * lam_LT**2)
+                    X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - beta * lam_LT**2))
+                    if X_LT > min(1.0, (1 / lam_0 ** 2)):
+                        X_LT = min(1.0, (1 / lam_0 ** 2))
 
         return X_LT
 
@@ -238,12 +237,13 @@ class Tilstand(object):
         if i.avspenningsmast or i.fixavspenningsmast:
             L_cr = L_e
 
+        # Konverterer [Nm] til [Nmm]
+        My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
+        Vy_Ed, Vz_Ed, N_Ed = abs(K[1]), abs(K[3]), abs(K[4])
+
         X_y, lam_y = self._reduksjonsfaktor_knekking(mast, L_cr, 0)
         X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
-        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B)
-
-        # Konverterer [Nm] til [Nmm]
-        My_Ed, Vy_Ed, Mz_Ed, Vz_Ed, N_Ed = 1000 * K[0], K[1], 1000 * K[2], K[3], K[4]
+        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B, My_Ed)
 
         My_Rk, Mz_Rk, N_Rk = mast.My_Rk(), mast.Mz_Rk(), mast.A * mast.fy
 
@@ -283,10 +283,14 @@ class Tilstand(object):
             X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
             UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
 
-        if mast.navn == "B2" and self.iterasjon == 32:
+        if self.iterasjon == 2368:
+            print()
+            print("X_y = {}, X_LT = {}".format(X_y, X_LT))
             print()
             print("u_plain = {}".format(u))
             print()
             print("UR_y = {},   UR_z = {}".format(UR_y, UR_z))
+            print()
+            print("k_yy = {}, k_yz = {}".format(k_yy, k_yz))
 
         return max(u, UR_y, UR_z, UR_d, UR_g)

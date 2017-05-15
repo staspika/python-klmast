@@ -110,13 +110,12 @@ def beregn(i):
     # Etasjer: 0 = statisk, 1 = dynamisk
     #
 
-
     # Oppretter masteobjekt med brukerdefinert høyde
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
 
-    teller = 0
+    iterasjon = 0
 
     # UNIKT FOR HVER MAST
     for mast in master:
@@ -167,23 +166,23 @@ def beregn(i):
                                     R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
 
                                     t = tilstand.Tilstand(mast, i,lastsituasjon, vindretning,
-                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V)
+                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V, iterasjon=iterasjon)
+
                                     mast.lagre_tilstand(t)
 
-
-                                    teller += 1
+                                    iterasjon += 1
 
 
                 # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit (mangler noen ledninger)
+                #        * VALIDERE FORSKYVNINGER
                 #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
                 #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
                 #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
-                #        * VALIDERE BEREGNING AV UTNYTTELSESGRAD!
-                #        * Validere forskyvninger
-                #        * Legge inn relevante ulykkessituasjoner
-                #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
+                #        * Implementere snølastens innvirkning på kabelstrekk
                 #        * Implementere snø/islast for NEK
-                #        ( * Implementere snlastens innvirkning på kabelstrekk )
+                #        * Legge inn relevante ulykkessituasjoner (to be continued)
+                #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
+
 
 
 
@@ -193,9 +192,8 @@ def beregn(i):
                 D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
                 D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
                 D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, D=D)
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
-
 
             # Fjerner vindlaster fra systemet
             F[:] = [j for j in F if not j.navn.startswith("Vindlast:")]
@@ -212,13 +210,13 @@ def beregn(i):
             R_ulykke[3, :, :] += R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
             R_ulykke[4, :, :] += R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
 
-            t = tilstand.Tilstand(mast, i, lastsituasjon, 0, F=F, R=R_ulykke)
+            t = tilstand.Tilstand(mast, i, lastsituasjon, 0, F=F, R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
 
             # Fjerner ulykkeslaster fra systemet
             F[:] = [j for j in F if not j.navn.startswith("Ulykkeslast:")]
 
-            teller += 1
+            iterasjon += 1
 
 
 
@@ -229,7 +227,7 @@ def beregn(i):
 
 
     # Antall gjennomkjøringer
-    print("\nAntall total iterasjoner: {}\nIterasjoner per mast: {}".format(teller,teller/len(master)))
+    print("\nAntall total iterasjoner: {}\nIterasjoner per mast: {}".format(iterasjon,iterasjon/len(master)))
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
