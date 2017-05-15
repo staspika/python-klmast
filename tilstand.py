@@ -283,7 +283,7 @@ class Tilstand(object):
             X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
             UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
 
-        if mast.navn == "B2" and self.iterasjon == 64:
+        if mast.navn == "B2" and self.iterasjon == 32:
             print()
             print("u_plain = {}".format(u))
             print()
