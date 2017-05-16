@@ -27,7 +27,7 @@ for iterasjon in range(1):
     for mast in master_sortert:
         print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
 
-    mastetype = "b"  # g for gitter, b for bjelke
+    mastetype = "g"  # g for gitter, b for bjelke
     mast = None
     for m in master_sortert:
         if mastetype == "g":

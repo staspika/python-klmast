@@ -159,6 +159,7 @@ class Mast(object):
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
         """
+
         if self.type == "B":
             z = breddefaktor*self.bredde(x)/2 - self.noytralakse
             Iy = 2 * (self.Iz_profil + self.A_profil * z**2)
@@ -168,13 +169,16 @@ class Mast(object):
         elif self.type == "bjelke":
             Iy = self.Iy_profil
         return Iy
+        """
+        return self.Iy_KL_fund(x)
+        """
 
     def Iy_KL_fund(self, x):
         """Legacy fra KL_fund"""
         if self.type == "B":
-            Iy = 2 * (self.Iz_profil + self.A_profil * (self.bredde(2 / 3 * x) / 2) ** 2)
+            Iy = 2 * (self.Iy_profil + self.A_profil * (self.bredde(x) / 2) ** 2)
         if self.type == "H":
-            Iy = 4 * (self.Iz_profil + self.A_profil * (self.bredde(2 / 3 * x) / 2) ** 2)
+            Iy = 4 * (self.Iy_profil + self.A_profil * (self.bredde(x) / 2) ** 2)
         elif self.type == "bjelke":
             Iy = self.Iy_profil
         return Iy
@@ -352,12 +356,12 @@ def hent_master(hoyde, s235, materialkoeff):
 
 if __name__ == "__main__":
     master = hent_master(8, True, 1.05)
-    mazt = master[6]
+    mazt = master[8]
     print("Mast: {}".format(mazt.navn))
     for h in range(80, 135, 5):
         h *= 1/10
-        Iy_ny = mazt.Iy(h)
-        Iy_gammel = mazt.Iy_KL_fund(h)
+        Iy_ny = mazt.Iy(2/3*h)
+        Iy_gammel = mazt.Iy_KL_fund(2/3*h)
         brok = Iy_ny/Iy_gammel
         print("H = {} m".format(h))
         print("Iy, ny beregning = {}".format((Iy_ny)))

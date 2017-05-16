@@ -12,8 +12,8 @@ def bjelkeformel_M(mast, j, fh):
     I_y = mast.Iy(2/3 * mast.h)
     I_z = mast.Iz(2/3 * mast.h)
     f_x = j.f[0]
-    e_y = j.e[1] * 1000
-    e_z = j.e[2] * 1000
+    e_y = j.e[1] * 1000 - mast.d/2
+    e_z = j.e[2] * 1000 - mast.bredde(mast.h + j.e[0])/2
     M_y = f_x * e_z
     M_z = -f_x * e_y
     x = -j.e[0] * 1000
@@ -29,6 +29,7 @@ def bjelkeformel_M(mast, j, fh):
     else:
         D[j.type[1], j.type[0], 1] = (M_y * fh ** 2) / (2 * E * I_y)
         D[j.type[1], j.type[0], 0] = (M_z * fh ** 2) / (2 * E * I_z)
+
 
     return D
 

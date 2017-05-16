@@ -139,6 +139,15 @@ def beregn(i):
                 if j.navn in lister.sidekraftbidrag:
                     sidekrefter.append(j.f[2])
 
+            if mast.navn == "HE200B" and vindretning == 0:
+                print("HELLLOOOOOO")
+                summen = 0
+                for j in F:
+                    if j.f[2] > 0 and j.type[0] == 1:
+                        print(j)
+                        summen += j.f[2]
+                print("SUmmen er: {}kN".format(summen/1000))
+
             R_0 = _beregn_reaksjonskrefter(F)
             D_0 = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
 
@@ -173,7 +182,6 @@ def beregn(i):
 
 
                 # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit (mangler noen ledninger)
-                #        * VALIDERE FORSKYVNINGER
                 #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
                 #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
                 #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
@@ -186,9 +194,12 @@ def beregn(i):
                 # Bruksgrense, forskyvning totalt
                 D = numpy.zeros((5, 8, 3))
                 if mast.navn == "HE200B" and vindretning == 0:
-                    print(D_0[1, :, :])
+                    etasje = 1
+                    print("\nD-matrise, etasje {}\n:".format(etasje))
+                    print(D_0[etasje, :, :])
                 D[0, :, :] = D_0[0, :, :]
                 D[1, :, :] = D_0[1, :, :]
+                D[1, 0, 1] = 0
                 D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
                 D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
                 D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
