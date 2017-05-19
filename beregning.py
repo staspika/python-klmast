@@ -10,7 +10,8 @@ import deformasjon
 
 def _beregn_reaksjonskrefter(F):
     """Beregner reaksjonskrefter og plasserer bidragene i riktig rad
-    og kolonne i R-matrisen."""
+    og kolonne i R-matrisen.
+    """
 
     # Initierer R-matrisen for reaksjonskrefter
     R = numpy.zeros((5, 8, 6))
@@ -22,12 +23,12 @@ def _beregn_reaksjonskrefter(F):
             f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
 
         # Sorterer bidrag til reaksjonskrefter
-        R_0[j.type[1], j.type[0], 0] = (f[0] * j.e[2]) + (f[2] * -j.e[0])
+        R_0[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
         R_0[j.type[1], j.type[0], 1] = f[1]
-        R_0[j.type[1], j.type[0], 2] = (f[0] * -j.e[1]) + (f[1] * j.e[0])
+        R_0[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
         R_0[j.type[1], j.type[0], 3] = f[2]
         R_0[j.type[1], j.type[0], 4] = f[0]
-        R_0[j.type[1], j.type[0], 5] = abs(f[1] * -j.e[2]) + abs(f[2] * j.e[1])
+        R_0[j.type[1], j.type[0], 5] = abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1])
         R += R_0
 
     return R
@@ -46,9 +47,10 @@ def _beregn_deformasjoner(i, sys, mast, F, sidekrefter):
 
         # Egenvekt og strekk statiske laster, resten dynamiske
 
-        D_0 += deformasjon.bjelkeformel_M(mast, j, i.fh) \
-             + deformasjon.bjelkeformel_P(mast, j, i.fh) \
+        D_0 += deformasjon.bjelkeformel_P(mast, j, i.fh) \
              + deformasjon.bjelkeformel_q(mast, j, i.fh)
+           # + deformasjon.bjelkeformel_M(mast, j, i.fh)
+
 
         if mast.type == "bjelke":
             D_0 += deformasjon.torsjonsvinkel(mast, j, i)
@@ -122,8 +124,7 @@ def beregn(i):
 
         F = []
         F.extend(laster.egenvekt_mast(mast))
-        F.extend(laster.beregn(i, sys))
-        F.extend(klima.vandringskraft(i, sys, mast))
+        F.extend(laster.beregn(i, sys, mast))
         F.extend(klima.isogsno_last(i, sys))
 
         # Vindretning 0 = Vind fra mast, mot spor
@@ -139,17 +140,11 @@ def beregn(i):
                 if j.navn in lister.sidekraftbidrag:
                     sidekrefter.append(j.f[2])
 
-            if mast.navn == "HE200B" and vindretning == 0:
-                print("HELLLOOOOOO")
-                summen = 0
-                for j in F:
-                    if j.f[2] > 0 and j.type[0] == 1:
-                        print(j)
-                        summen += j.f[2]
-                print("SUmmen er: {}kN".format(summen/1000))
-
             R_0 = _beregn_reaksjonskrefter(F)
             D_0 = _beregn_deformasjoner(i, sys, mast, F, sidekrefter)
+            if i.linjemast_utliggere == 2:
+                # Nullstiller T og phi for tilfelle linjemast med dobbel utligger
+                R_0[:, :, 5], D_0[:, :, 2] = 0, 0
 
             lastsituasjoner, lastfaktorer = lister.hent_lastkombinasjoner(i.ec3)
 
@@ -192,22 +187,21 @@ def beregn(i):
 
 
                 # Bruksgrense, forskyvning totalt
+                R = numpy.zeros((5, 8, 6))
+                R[0:2, :, :] = R_0[0:2, :, :]
+                R[2, :, :] = R_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
+                R[3, :, :] = R_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
+                R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
                 D = numpy.zeros((5, 8, 3))
-                if mast.navn == "HE200B" and vindretning == 0:
-                    etasje = 1
-                    print("\nD-matrise, etasje {}\n:".format(etasje))
-                    print(D_0[etasje, :, :])
-                D[0, :, :] = D_0[0, :, :]
-                D[1, :, :] = D_0[1, :, :]
-                D[1, 0, 1] = 0
+                D[0:2, :, :] = D_0[0:2, :, :]
                 D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
                 D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
                 D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 1, D=D, iterasjon=iterasjon)
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 1, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
                 # Bruksgrense, forskyvning KL
-                D[0, :, :], D[1, :, :] = 0, 0  # Nullstiller bidrag fra egenvekt og strekk
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 2, D=D, iterasjon=iterasjon)
+                R[0:2, :, :], D[0:2, :, :] = 0, 0  # Nullstiller bidrag fra egenvekt og strekk
+                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 2, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
 
             # Fjerner vindlaster fra systemet
@@ -219,8 +213,7 @@ def beregn(i):
             F_ulykke = []
             F_ulykke.extend(laster.ulykkeslaster(i, sys, mast))
             R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
-            R_ulykke[0, :, :] += R_0[0, :, :]
-            R_ulykke[1, :, :] += R_0[1, :, :]
+            R_ulykke[0:2, :, :] += R_0[0:2, :, :]
             R_ulykke[2, :, :] += R_0[2, :, :] * lastsituasjon["Ulykkeslast"]["psi_T"]
             R_ulykke[3, :, :] += R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
             R_ulykke[4, :, :] += R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
@@ -236,37 +229,13 @@ def beregn(i):
 
 
 
-
-
-
-
-
     # Antall gjennomkjøringer
-    print("\nAntall total iterasjoner: {}\nIterasjoner per mast: {}".format(iterasjon,iterasjon/len(master)))
+    print("\nAntall iterasjoner totalt: {}\nIterasjoner per mast: {}".format(iterasjon,iterasjon/len(master)))
 
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
 
     return master
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

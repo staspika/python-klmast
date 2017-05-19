@@ -42,15 +42,17 @@ class Tilstand(object):
             self.utnyttelsesgrad = self._utnyttelsesgrad(i, mast, self.K)
         else:
             # Bruksgrensetilstand
+            self.R = R
             self.D = D
-            self.K = numpy.sum(numpy.sum(D, axis=0), axis=0)
+            self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
+            self.K_D = numpy.sum(numpy.sum(D, axis=0), axis=0)
 
     def __repr__(self):
         return self.rep()
 
     def rep(self):
+        K = self.K / 1000  # Konverterer M til [kNm] og F til [kN]
         if self.type == 0:
-            K = self.K/1000  # Konverterer M til [kNm] og F til [kN]
             rep = ""
             #for j in self.F:
             #    rep += j.rep()
@@ -70,7 +72,10 @@ class Tilstand(object):
         else:
             rep = ""
             rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n".\
-                format(self.K[0], self.K[1], self.K[2])
+                format(self.K_D[0], self.K_D[1], self.K_D[2])
+            rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
+                   "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \
+                format(K[0], K[1], K[2], K[3], K[4], K[5])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
             rep += "Vindretning = {}\n".format(self.vindretning)
 
@@ -154,8 +159,6 @@ class Tilstand(object):
         :param B: Momentandel tilknyttet vindlast
         :return: Reduksjonsfaktoren X_LT for vipping
         """
-        if self.iterasjon == 2336:
-            print("Knekkingsberegning")
 
         X_LT = 1.0
         if not mast.type == "H":
@@ -286,15 +289,5 @@ class Tilstand(object):
             phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
             X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
             UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
-
-        if self.iterasjon == 2368:
-            print()
-            print("X_y = {}, X_LT = {}".format(X_y, X_LT))
-            print()
-            print("u_plain = {}".format(u))
-            print()
-            print("UR_y = {},   UR_z = {}".format(UR_y, UR_z))
-            print()
-            print("k_yy = {}, k_yz = {}".format(k_yy, k_yz))
 
         return max(u, UR_y, UR_z, UR_d, UR_g)

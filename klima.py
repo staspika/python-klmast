@@ -473,46 +473,6 @@ def isogsno_last(i, sys):
     return F
 
 
-def vandringskraft(i, sys, mast):
-    """Kraft i sporets lengderetning fordi utliggeren
-    ikke står normalt på masten.
-    """
-
-    # Inngangsparametre
-    B1, B2 = sys.B1, sys.B2
-    a_T, a_T_dot = sys.a_T, sys.a_T_dot
-
-    # Liste over krefter som returneres
-    F = []
-
-    a1, a2 = i.a1, i.a2  # [m] Avstand til forrige og neste mast
-    alpha = 1.7 * 10 ** (-5)  # [1] Lengdeutvidelseskoeffisient
-    delta_t = 45  # [grader C] maksimal temperaturendring
-    arm = a_T_dot
-    if i.strekkutligger:
-        arm = a_T
-    s = 1000 * sys.kontakttraad["Strekk i ledning"]  # [N]
-    f_z_kurvatur = - s * (a1 + a2) / (2 * i.radius)
-    f_z_sikksakk = - s * ((B2 - B1) / a1 + (B2 - B1) / a2)
-    if i.strekkutligger:
-        f_z_kurvatur, f_z_sikksakk = - f_z_kurvatur, - f_z_sikksakk
-
-    avstand_fixpunkt = i.avstand_fixpunkt if not i.fixavspenningsmast \
-        else (a1 + a2) / 2
-    if i.fixpunktmast or i.siste_for_avspenning or i.linjemast_utliggere == 2:
-        avstand_fixpunkt = 0
-
-    dl = alpha * delta_t * avstand_fixpunkt
-    F.append(Kraft(navn="Vandringskraft: Bæreline", type=(1, 2),
-                   f=[0, f_z_kurvatur * (dl / i.sms), 0],
-                   e=[-i.fh - i.sh, 0, mast.bredde(mast.h - (i.fh + i.sh))/2000]))
-    F.append(Kraft(navn="Vandringskraft: Kontakttråd", type=(1, 2),
-                   f=[0, (f_z_kurvatur + f_z_sikksakk) * (dl / arm), 0],
-                   e=[-i.fh, 0, mast.bredde(mast.h - i.fh)/2000]))
-
-    return F
-
-
 # ====================================================================#
 #                                                                     #
 #              Herfra brukes bransjestandarder (NEK).                 #

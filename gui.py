@@ -32,7 +32,7 @@ class KL_fund(tk.Tk):
         self.geometry("{}x{}".format(self.x, self.y))
 
         self.masteavstand_max = 63.0
-        self.h_max = 13.0
+        self.h_range = [8.0, 0.0, 13.0]
         self.hfj_type = "fjern-/AT-ledning"
         self.hfj_max = 13.0
         self.hf_type = "forbigangs-/fiberoptisk ledning"
@@ -120,7 +120,7 @@ class Hovedvindu(tk.Frame):
 
         # Info
         info = tk.Frame(self, width=self.master.x, height=0.10*self.master.y, bd=3, relief="ridge")
-        info.pack(fill="x")
+        info.pack(fill="both")
 
         tk.Label(info, text="KONTAKTLEDNINGSMASTER OG KREFTER I TOPP FUNDAMENT",
                  font=banner, fg="blue").grid(row=0, column=0, sticky="W", columnspan=4)
@@ -171,7 +171,8 @@ class Hovedvindu(tk.Frame):
 
         # Inngangsdata
         inngangsdata = tk.Frame(self, width=0.48 * self.master.x,
-                                     height=0.78 * self.master.y, bd=3, relief="ridge")
+                                     height=0.78 * self.master.y,
+                                    bd=3, relief="ridge")
         inngangsdata.pack(side="left")
         inngangsdata.columnconfigure(0, weight=1)
         inngangsdata.columnconfigure(1, weight=1)
@@ -181,7 +182,7 @@ class Hovedvindu(tk.Frame):
         hoyre.pack(side="right")
         # mastefelt
         mastefelt = tk.LabelFrame(venstre, text="Mastefelt", font=bold)
-        mastefelt.pack()
+        mastefelt.pack(fill="both")
         tk.Radiobutton(mastefelt, text="Linjemast med enkel utligger", font=plain,
                        variable=self.master._mastefelt, value=0).pack(anchor="w")
         tk.Radiobutton(mastefelt, text="Linjemast med dobbel utligger", font=plain,
@@ -199,7 +200,7 @@ class Hovedvindu(tk.Frame):
         self.fixavstand_spinbox.pack(anchor="e", side="right", padx=5, pady=8)
         # mastefunksjoner
         mastefunksjoner = tk.LabelFrame(venstre, text="Mastefunksjoner", font=bold)
-        mastefunksjoner.pack()
+        mastefunksjoner.pack(fill="both")
         alternative_funksjoner = tk.Checkbutton(mastefunksjoner, text="Alternative mastefunksjoner",
                                                 font=plain, variable=self.master._alternative_mastefunksjoner,
                                                 onvalue=True, offvalue=False)
@@ -227,7 +228,7 @@ class Hovedvindu(tk.Frame):
                        .grid(row=1, column=0, sticky="W", columnspan=2, pady=(0,2))
         # fastavspente ledninger
         fastavspente = tk.LabelFrame(venstre, text="Fastavspente ledninger", font=bold)
-        fastavspente.pack()
+        fastavspente.pack(fill="both")
         tk.Checkbutton(fastavspente, text="Mate-/fjernledning", font=plain,
                        variable=self.master.matefjern_ledn, onvalue=True,
                        offvalue=False).grid(row=0, column=0, sticky="W")
@@ -274,7 +275,7 @@ class Hovedvindu(tk.Frame):
         self.diff_spinbox.grid(row=6, column=1)
         # system
         system = tk.LabelFrame(hoyre, text="System", font=bold)
-        system.pack()
+        system.pack(fill="both")
         self.master.systemnavn.set(lister.system_list[0])
         system_menu = tk.OptionMenu(system, self.master.systemnavn, *lister.system_list)
         system_menu.config(font=plain)
@@ -309,16 +310,16 @@ class Hovedvindu(tk.Frame):
             .grid(row=5, column=1, sticky="W")
         # geometriske data
         geom_data = tk.LabelFrame(hoyre, text="System", font=bold)
-        geom_data.pack()
+        geom_data.pack(fill="both")
         g_1 = tk.Frame(geom_data, relief="groove", bd=1)
-        g_1.pack()
+        g_1.pack(fill="both")
         # h
         tk.Label(g_1, text="    (mastehøyde): [m]  ", font=plain) \
             .grid(row=0, column=0, sticky="W")
         tk.Label(g_1, text="H", font=bold) \
             .grid(row=0, column=0, sticky="W")
-        self.master.h.set(self.master.h_max)
-        self.h_spinbox = tk.Spinbox(g_1, from_=0.0, to=self.master.h_max,
+        self.master.h.set(self.master.h_range[0])
+        self.h_spinbox = tk.Spinbox(g_1, from_=self.master.h_range[1], to=self.master.h_range[2],
                                     increment=0.5, repeatinterval=120, width=10)
         self.h_spinbox.delete(0, "end")
         self.h_spinbox.insert(0, self.master.h.get())
@@ -373,7 +374,7 @@ class Hovedvindu(tk.Frame):
         self.hr_spinbox.config(font=plain, state="readonly")
         self.hr_spinbox.grid(row=4, column=1, sticky="W")
         g_2 = tk.Frame(geom_data, relief="groove", bd=1)
-        g_2.pack()
+        g_2.pack(fill="both")
         # fh
         tk.Label(g_2, text="      (kontakttråd): [m]  ", font=plain) \
             .grid(row=0, column=0, sticky="W")
@@ -424,7 +425,7 @@ class Hovedvindu(tk.Frame):
         self.sms_spinbox.grid(row=3, column=1, sticky="W")
         # mast
         mast = tk.LabelFrame(hoyre, text="Mast", font=bold)
-        mast.pack()
+        mast.pack(fill="both")
         self.master._gittermast.set(True)
         tk.Radiobutton(mast, text="Gittermast", font=plain,
                        variable=self.master._gittermast, value=True) \
@@ -440,14 +441,14 @@ class Hovedvindu(tk.Frame):
         system_menu.grid(row=1, column=1, sticky="W", columnspan=1)
         # avansert/beregn
         av_beregn = tk.LabelFrame(hoyre, text="Fullfør", font=bold)
-        av_beregn.pack()
+        av_beregn.pack(fill="both")
         avansert_btn = tk.Button(av_beregn, text="Avansert", font=plain)
         avansert_btn.pack(side="left")
         beregn_btn = tk.Button(av_beregn, text="Kjør beregning", font=bold)
         beregn_btn.pack(side="right")
 
 
-
+        """
         # Grafikk
         grafikk = tk.Frame(self, width=0.48 * self.master.x, height=0.6 * self.master.y)
         grafikk.pack(side="right")
@@ -455,7 +456,7 @@ class Hovedvindu(tk.Frame):
         image = image.resize((250, 250), Image.ANTIALIAS)
         image = ImageTk.PhotoImage(image)
         tk.Label(grafikk, image=image).grid(row=0, column=0, sticky="NSEW")
-
+        """
 
 
 
@@ -468,7 +469,7 @@ class Hovedvindu(tk.Frame):
             self.master.linjemast_utliggere.set(1)
         elif self.master._mastefelt.get() == 1:
             self.master.linjemast_utliggere.set(2)
-        elif self.master._mastefelt.get() == 2:
+        else:
             self.master.siste_for_avspenning.set(True)
             self.master.linjemast_utliggere.set(2)
 
@@ -486,9 +487,7 @@ class Hovedvindu(tk.Frame):
 
         self.master.differansestrekk.set(self.diff_spinbox.get())
 
-        self.master.s235 = False
-        if self.master._s235.get() == "S235":
-            self.master.s235 = True
+        self.master.s235 = False if self.master._s235.get() == "S235" else True
 
 
         cfg = configparser.ConfigParser(dict_type=OrderedDict)

@@ -93,16 +93,16 @@ def torsjonsvinkel(mast, j, i):
     G = mast.G
     I_T = mast.It
     C_w = mast.Cw
-    alpha = math.sqrt((E * C_w) / (G * I_T))
-    x = (i.fh + i.sh/2) * 1000
+    lam = math.sqrt(G * I_T / (E * C_w))
+    fh = i.fh * 1000
     e_x = -j.e[0] * 1000
 
     D = numpy.zeros((5, 8, 3))
 
-    D[j.type[1], j.type[0], 2] = (180 / math.pi) * abs(alpha * (T / (G * I_T)) *
-                   (math.tanh(e_x / alpha) * (math.cosh((x / alpha) - 1)) - math.sinh(x / alpha) + x / alpha))
-
+    D[j.type[1], j.type[0], 2] = (180/math.pi) * T/(E*C_w*lam**3) * ( (math.sinh(lam*(e_x-fh))
+                                                 - math.sinh(lam*e_x))/math.cosh(lam*e_x) + lam*fh )
     return D
+
 
 def utliggerbidrag(sys, sidekrefter):
 

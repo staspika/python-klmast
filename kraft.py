@@ -32,6 +32,7 @@ class Kraft(object):
             rep += "q*b = {}\n".format(self.q * self.b)
         else:
             rep += "f = {}\n".format(self.f)
+        rep += "e = {}\n".format(self.e)
         return rep
 
     def snu_lastretning(self):

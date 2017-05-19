@@ -116,11 +116,17 @@ class Mast(object):
         if type == "B":
             self.Cw = 0.5 * self.Iy_profil * (0.9 * self.bredde(h)) ** 2
 
-        # Variabler for å holde dimensjonerende last/forskvningstilfeller
+        # Lister for å holde last/forskvningstilstander
         self.bruddgrense = []
-        self.ulykkeslast = None
         self.forskyvning_tot = []
         self.forskyvning_kl = []
+
+        # Variabler for å holde dimensjonerende tilstander
+        self.UR_max = None
+        self.My_max = None
+        self.T_max = None
+        self.Dz_max = None
+        self.phi_max = None
 
 
     def __repr__(self):
@@ -134,9 +140,6 @@ class Mast(object):
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
         rep += "\nDimensjonerende lasttilfelle:\n\n"
         rep += self.bruddgrense[0].rep()
-        if self.ulykkeslast is not None:
-            rep += "\nUlykkeslast:\n\n"
-            rep += self.ulykkeslast.rep()
         rep += "\n\nStørste forskyvning totalt:\n\n"
         rep += self.forskyvning_tot[0].rep()
         rep += "\n\nStørste forskyvning KL:\n\n"
@@ -273,15 +276,12 @@ class Mast(object):
         elif kriterie == 1:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
 
-        self.forskyvning_tot = sorted(self.forskyvning_tot, key=lambda tilstand: tilstand.K[1], reverse=True)
-        self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: tilstand.K[1], reverse=True)
+        self.forskyvning_tot = sorted(self.forskyvning_tot, key=lambda tilstand: tilstand.K_D[1], reverse=True)
+        self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: tilstand.K_D[1], reverse=True)
 
     def lagre_tilstand(self, tilstand):
         if tilstand.type == 0:
-            if not tilstand.lastsituasjon == "Ulykkeslast":
-                self.bruddgrense.append(tilstand)
-            else:
-                self.ulykkeslast = tilstand
+            self.bruddgrense.append(tilstand)
         elif tilstand.type == 1:
             self.forskyvning_tot.append(tilstand)
         else:
