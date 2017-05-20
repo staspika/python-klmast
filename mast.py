@@ -139,11 +139,11 @@ class Mast(object):
               "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
         rep += "\nDimensjonerende lasttilfelle:\n\n"
-        rep += self.bruddgrense[0].rep()
+        rep += repr(self.bruddgrense[0])
         rep += "\n\nStørste forskyvning totalt:\n\n"
-        rep += self.forskyvning_tot[0].rep()
+        rep += repr(self.forskyvning_tot[0])
         rep += "\n\nStørste forskyvning KL:\n\n"
-        rep += self.forskyvning_kl[0].rep()
+        rep += repr(self.forskyvning_kl[0])
         return rep
 
     def bredde(self, x):
@@ -272,12 +272,12 @@ class Mast(object):
         kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
 
         if kriterie == 0:
-            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.K[0], reverse=True)
+            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand: abs(tilstand.K[0]), reverse=True)
         elif kriterie == 1:
-            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand:tilstand.utnyttelsesgrad, reverse=True)
+            self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand: abs(tilstand.utnyttelsesgrad), reverse=True)
 
-        self.forskyvning_tot = sorted(self.forskyvning_tot, key=lambda tilstand: tilstand.K_D[1], reverse=True)
-        self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: tilstand.K_D[1], reverse=True)
+        self.forskyvning_tot = sorted(self.forskyvning_tot, key=lambda tilstand: abs(tilstand.K_D[1]), reverse=True)
+        self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: abs(tilstand.K_D[1]), reverse=True)
 
     def lagre_tilstand(self, tilstand):
         if tilstand.type == 0:

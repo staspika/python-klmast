@@ -48,10 +48,8 @@ def hent_system(i):
     # Kontakttråder
     Ri_100_Cu = {"Egenvekt": 8.9, "Diameter": 12.0,
                  "Tverrsnitt": 100.0, "Strekk i ledning": 10.0}
-    # Ri/RiS 120 CuAG
     Ri_120_CuAg = {"Egenvekt": 10.7, "Diameter": 13.2,
                    "Tverrsnitt": 120.0, "Strekk i ledning": 15.0}
-    # 7.1 kN strekk i System 35
     Ri_100_Cu_s35 = {"Egenvekt": 8.9, "Diameter": 12.0,
                      "Tverrsnitt": 100.0, "Strekk i ledning": 7.1}
 
@@ -63,48 +61,65 @@ def hent_system(i):
 
 
     # Forbigangsledninger
-    Al_240_61 = {"Egenvekt": 6.7, "Diameter": 20.3,
-                 "Tverrsnitt": 222.35, "Max tillatt spenning": 50.0,
+    # Det antas en oppspenningskraft på 3kN og ingen temperaturutvidelse av
+    # fiberoptisk kabel da denne er metallfri.
+    Al_240_61 = {"Egenvekt": 6.43, "Diameter": 20.3,
+                 "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0,
                  "Strekk 5C": _strekkraft(2.48, 2.78, a),
                  "Strekk -40C": _strekkraft(10.22, 5.21, a)}
 
     # Returledninger
-    Al_240_61_iso = {"Egenvekt": 9.2, "Diameter": 25.0,
+    Al_240_61_iso = {"Egenvekt": 7.63, "Diameter": 23.9,
                      "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0,
                      "Strekk 5C": _strekkraft(2.95, 3.28, a),
                      "Strekk -40C": _strekkraft(10.74, 5.87, a)}
 
     # Mate-/fjernledninger
-    SAHF_120_26_7 = {"Egenvekt": 7.77, "Diameter": 19.38,
+    SAHF_120_26_7 = {"Egenvekt": 7.56, "Diameter": 19.38,
                      "Tverrsnitt": 222.35, "Max tillatt spenning": 95.0,
                      "Strekk 5C": _strekkraft(2.77, 3.06, a),
                      "Strekk -40C": _strekkraft(10.70, 4.73, a)}
 
     # Fiberoptiske kabler
     ADSS_GRHSLLDV_9_125 = {"Egenvekt": 2.6, "Diameter": 18.5,
-                     "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5}
+                           "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5,
+                           "Strekk 5C": 3.0,
+                           "Strekk -40C": 3.0}
 
     # AT-ledninger
+    # Ved manglende strekktabeller for Al 400-37 og 240-19 er verdier for
+    # Al 400-61 og 240-61 benyttet. Strekkverdier for Al 150-19 ekstrapoleres
+    # ut fra arealforholdet mellom denne og Al 400-37 (= 0.4).
     at_ledninger = []
     Al_400_37 = {"Navn": "Al 400-37 uisolert", "Egenvekt": 10.31,
                          "Diameter": 25.34, "Tverrsnitt": 381.0,
-                         "Max tillatt spenning": 50.0}
+                         "Max tillatt spenning": 50.0,
+                         "Strekk 5C": _strekkraft(4.09, 4.59, a),
+                         "Strekk -40C": _strekkraft(16.86, 8.60, a)}
     Al_240_19 = {"Navn": "Al 240-19 uisolert", "Egenvekt": 6.46,
                          "Diameter": 20.0, "Tverrsnitt": 238.76,
-                         "Max tillatt spenning": 50.0}
+                         "Max tillatt spenning": 50.0,
+                         "Strekk 5C": _strekkraft(2.48, 2.78, a),
+                         "Strekk -40C": _strekkraft(10.22, 5.21, a)}
     Al_150_19 = {"Navn": "Al 150-19 uisolert", "Egenvekt": 4.07,
                          "Diameter": 15.9, "Tverrsnitt": 150.90,
-                         "Max tillatt spenning": 50.0}
+                         "Max tillatt spenning": 50.0,
+                         "Strekk 5C": _strekkraft(0.4*4.09, 0.4*4.59, a),
+                         "Strekk -40C": _strekkraft(0.4*16.86, 0.4*8.60, a)}
     at_ledninger.extend([Al_400_37, Al_240_19, Al_150_19])
 
     # Jordledninger
     jordledninger = []
-    KHF_70 = {"Navn": "KHF-70", "Egenvekt": 6.23,
-                          "Diameter": 10.7, "Tverrsnitt": 70.0,
-                          "Max tillatt spenning": 125.0}
-    KHF_95 = {"Navn": "KHF-95", "Egenvekt": 8.44,
-                          "Diameter": 12.6, "Tverrsnitt": 95.0,
-                          "Max tillatt spenning": 125.0}
+    KHF_70 = {"Navn": "KHF-70", "Egenvekt": 5.81,
+                      "Diameter": 10.5, "Tverrsnitt": 66.75,
+                      "Max tillatt spenning": 125.0,
+                      "Strekk 5C": _strekkraft(2.09, 2.25, a),
+                      "Strekk -40C": _strekkraft(5.54, 3.08, a)}
+    KHF_95 = {"Navn": "KHF-95", "Egenvekt": 8.25,
+                      "Diameter": 12.5, "Tverrsnitt": 94.7,
+                      "Max tillatt spenning": 125.0,
+                      "Strekk 5C": _strekkraft(2.97, 3.20, a),
+                      "Strekk -40C": _strekkraft(7.86, 4.37, a)}
     jordledninger.extend([KHF_70, KHF_95])
 
     # Utliggere (s2x for system 20A/20B/25, s3x for system 35)

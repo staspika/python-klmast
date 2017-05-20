@@ -48,17 +48,14 @@ class Tilstand(object):
             self.K_D = numpy.sum(numpy.sum(D, axis=0), axis=0)
 
     def __repr__(self):
-        return self.rep()
-
-    def rep(self):
         K = self.K / 1000  # Konverterer M til [kNm] og F til [kN]
         if self.type == 0:
             rep = ""
-            #for j in self.F:
+            # for j in self.F:
             #    rep += j.rep()
             rep += "\nBeregningsmetode: {}\n".format(self.metode)
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
-                  "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n".\
+                   "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \
                 format(K[0], K[1], K[2], K[3], K[4], K[5])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
             rep += "Iterasjon = {}\n".format(self.iterasjon)
@@ -66,12 +63,12 @@ class Tilstand(object):
                 rep += "{} = {}     ".format(key, self.faktorer[key])
             rep += "\nVindretning = {}\n".format(self.vindretning)
             rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
-                   "N_kap: {:.3g}%\n".format(self.My_kap*100, self.Mz_kap*100,self.N_kap*100)
-            rep += "Sum kapasiteter: {}%\n".format(self.My_kap*100 + self.Mz_kap*100 + self.N_kap*100)
+                   "N_kap: {:.3g}%\n".format(self.My_kap * 100, self.Mz_kap * 100, self.N_kap * 100)
+            rep += "Sum kapasiteter: {}%\n".format(self.My_kap * 100 + self.Mz_kap * 100 + self.N_kap * 100)
             rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
         else:
             rep = ""
-            rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n".\
+            rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n". \
                 format(self.K_D[0], self.K_D[1], self.K_D[2])
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
                    "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \

@@ -24,9 +24,6 @@ class Kraft(object):
 
 
     def __repr__(self):
-        return self.rep()
-
-    def rep(self):
         rep = "{}   type={}\n".format(self.navn, self.type)
         if not count_nonzero(self.q) == 0:
             rep += "q*b = {}\n".format(self.q * self.b)

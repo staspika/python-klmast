@@ -1,6 +1,6 @@
 from kraft import *
 
-def _utliggerkrefter(i, sys, mast, e_t):
+def _utliggerkrefter(i, sys, mast, e_t=0):
     """Beregner krefter med eksentrisitet avhengig av utliggers montering på travers"""
 
     r = i.radius
@@ -57,12 +57,10 @@ def _utliggerkrefter(i, sys, mast, e_t):
     # Sidekrefter pga. ledningsføring
     s_b = 1000 * sys.baereline["Strekk i ledning"]
     s_kl = 1000 * sys.kontakttraad["Strekk i ledning"]
-    f_z_kurvatur_b = - s_b * a / r
-    f_z_kurvatur_kl = - s_kl * a / r
-    f_z_sikksakk = - s_kl * ((B2 - B1) / a1 + (B2 - B1) / a2)
+    f_z_b = - s_b * a / r
+    f_z_kl = - s_kl * (a / r + ((B2 - B1) / a1 + (B2 - B1) / a2))
     if i.strekkutligger:
-        f_z_kurvatur_b, f_z_kurvatur_kl = - f_z_kurvatur_b, - f_z_kurvatur_kl
-        f_z_sikksakk = - f_z_sikksakk
+        f_z_b, f_z_kl = - f_z_b, - f_z_kl
     f_z_avsp_b, f_z_avsp_kl = 0, 0
     if i.siste_for_avspenning and e_t<0:
         f_z_avsp_b = - s_b * (sms / a2)
@@ -70,11 +68,17 @@ def _utliggerkrefter(i, sys, mast, e_t):
         if i.master_bytter_side:
             f_z_avsp_b, f_z_avsp_kl = - f_z_avsp_b, -f_z_avsp_kl
     F.append(Kraft(navn="Strekk: Bæreline", type=(1, 1),
-                   f=[0, 0, f_z_kurvatur_b + f_z_avsp_b],
-                   e=[-fh - sh, e_t, sms]))
+                   f=[0, 0, f_z_b + f_z_avsp_b],
+                   e=[-fh - sh, 0, sms]))
     F.append(Kraft(navn="Strekk: Kontakttråd", type=(1, 1),
-                   f=[0, 0, f_z_kurvatur_kl + f_z_avsp_kl + f_z_sikksakk],
-                   e=[-fh, e_t, arm]))
+                   f=[0, 0, f_z_kl + f_z_avsp_kl],
+                   e=[-fh, 0, arm]))
+    # Torsjonsresultant grunnet sidekreftenes eksentrisitet på travers
+    if e_t<0:
+        f_z_res = f_z_avsp_b + f_z_avsp_kl
+        F.append(Kraft(navn="Strekk: Torsjon, eksentrisitet utliggere", type=(1, 1),
+                       f=[0, 0, f_z_res],
+                       e=[-fh-sh/2, -e_t, (sms+arm)/2]))
 
     # Vandringskraft
     avstand_fixpunkt = i.avstand_fixpunkt if not i.fixavspenningsmast else a
@@ -82,10 +86,10 @@ def _utliggerkrefter(i, sys, mast, e_t):
         avstand_fixpunkt = 0
     dl = alpha * delta_t * avstand_fixpunkt
     F.append(Kraft(navn="Vandringskraft: Bæreline", type=(1, 2),
-                   f=[0, f_z_kurvatur_b * (dl / i.sms), 0],
+                   f=[0, f_z_b * (dl / i.sms), 0],
                    e=[-i.fh - i.sh, 0, mast.bredde(mast.h - (i.fh + i.sh))/2000]))
     F.append(Kraft(navn="Vandringskraft: Kontakttråd", type=(1, 2),
-                   f=[0, (f_z_kurvatur_kl + f_z_sikksakk) * (dl / arm), 0],
+                   f=[0, (f_z_kl) * (dl / arm), 0],
                    e=[-i.fh, 0, mast.bredde(mast.h - i.fh)/2000]))
 
     # Bidrag til normalkraft dersom ulik høyde mellom nabomaster
@@ -122,19 +126,16 @@ def beregn(i, sys, mast):
     # F = liste over krefter som skal returneres
     F = []
 
-    # Antall utliggere
-    n = 1
     e_t = 0
+    # Sjekker om mast har 2 utliggere
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
-        n = 2
         # Ekstra bidrag fra traversens eksentrisitet i y-retning
         e_t = i.traverslengde / 2
         F.append(Kraft(navn="Egenvekt: Traverser", type=(0, 0),
                        f=[220, 0, 0], e=[-fh - sh/2, 0, 0]))
-
-    F.extend(_utliggerkrefter(i, sys, mast, e_t))
-    if n>1:
         F.extend(_utliggerkrefter(i, sys, mast, -e_t))
+    F.extend(_utliggerkrefter(i, sys, mast, e_t))
+
 
     # Fixpunktmast
     if i.fixpunktmast:

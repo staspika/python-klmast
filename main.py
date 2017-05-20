@@ -51,7 +51,7 @@ for iterasjon in range(1):
     print(mast)
     print()
     for j in mast.bruddgrense[0].F:
-        if j.type == (1,2):
+        if j.type == (1,1):
             print(j)
     print("Torsjonsbidrag:")
     print(mast.bruddgrense[0].R[1, :, 5])
@@ -62,15 +62,7 @@ for iterasjon in range(1):
               mast.bruddgrense[0].Mz_kap, mast.bruddgrense[0].N_kap]
     values.append(current_values)
 
-    """
-    print()
-    for m in mast.bruddgrense:
-        for j in m.F:
-            if j.type[1]==4 and j.navn=="Vindlast: Mast":
-                print("Vindretning = {}".format(m.vindretning))
-                print(j)
-                print()
-    """
+
 
 #resultater.barplot(values)
 

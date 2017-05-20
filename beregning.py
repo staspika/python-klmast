@@ -49,7 +49,7 @@ def _beregn_deformasjoner(i, sys, mast, F, sidekrefter):
 
         D_0 += deformasjon.bjelkeformel_P(mast, j, i.fh) \
              + deformasjon.bjelkeformel_q(mast, j, i.fh)
-           # + deformasjon.bjelkeformel_M(mast, j, i.fh)
+            # + deformasjon.bjelkeformel_M(mast, j, i.fh)
 
 
         if mast.type == "bjelke":
