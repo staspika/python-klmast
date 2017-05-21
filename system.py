@@ -1,4 +1,5 @@
 import geometri
+import matplotlib.pyplot as plt
 
 class System(object):
     """Parent class for alle systemteyper"""
@@ -63,68 +64,113 @@ def hent_system(i):
     # Forbigangsledninger
     # Det antas en oppspenningskraft på 3kN og ingen temperaturutvidelse av
     # fiberoptisk kabel da denne er metallfri.
-    Al_240_61 = {"Egenvekt": 6.43, "Diameter": 20.3,
-                 "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0,
-                 "Strekk 5C": _strekkraft(2.48, 2.78, a),
-                 "Strekk -40C": _strekkraft(10.22, 5.21, a)}
+    Al_240_61 = {"Navn": "Al 240-61", "Egenvekt": 6.43,
+                 "Diameter": 20.3, "Tverrsnitt": 242.54,
+                 "E-modul": 56000, "Max tillatt spenning": 50.0,
+                 "Lengdeutvidelseskoeffisient": 2.3*10**(-5),
+                 "Strekk 5C": _strekkraft(2.48, 2.78, a)}
 
     # Returledninger
-    Al_240_61_iso = {"Egenvekt": 7.63, "Diameter": 23.9,
-                     "Tverrsnitt": 242.54, "Max tillatt spenning": 50.0,
-                     "Strekk 5C": _strekkraft(2.95, 3.28, a),
-                     "Strekk -40C": _strekkraft(10.74, 5.87, a)}
+    Al_240_61_iso = {"Navn": "Al 240-61 isolert", "Egenvekt": 7.63,
+                     "Diameter": 23.9, "Tverrsnitt": 242.54,
+                     "E-modul": 56000, "Max tillatt spenning": 50.0,
+                     "Lengdeutvidelseskoeffisient": 2.3 * 10 ** (-5),
+                     "Strekk 5C": _strekkraft(2.95, 3.28, a)}
 
     # Mate-/fjernledninger
-    SAHF_120_26_7 = {"Egenvekt": 7.56, "Diameter": 19.38,
-                     "Tverrsnitt": 222.35, "Max tillatt spenning": 95.0,
-                     "Strekk 5C": _strekkraft(2.77, 3.06, a),
-                     "Strekk -40C": _strekkraft(10.70, 4.73, a)}
+    SAHF_120_26_7 = {"Navn": "SAHF 120 Feral", "Egenvekt": 7.56,
+                     "Diameter": 19.38, "Tverrsnitt": 222.35,
+                     "E-modul": 76000, "Max tillatt spenning": 95.0,
+                     "Lengdeutvidelseskoeffisient": 1.9 * 10 ** (-5),
+                     "Strekk 5C": _strekkraft(2.77, 3.06, a)}
 
     # Fiberoptiske kabler
-    ADSS_GRHSLLDV_9_125 = {"Egenvekt": 2.6, "Diameter": 18.5,
+    ADSS_GRHSLLDV_9_125 = {"Navn": "ADSS GRHSLLDV 9/125",
+                           "Egenvekt": 2.6, "Diameter": 18.5,
                            "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5,
-                           "Strekk 5C": 3.0,
-                           "Strekk -40C": 3.0}
+                           "Strekk 5C": 3.0, "Strekk -40C": 3.0,
+                           "Strekk med snø -25C": 9.0}
 
     # AT-ledninger
     # Ved manglende strekktabeller for Al 400-37 og 240-19 er verdier for
     # Al 400-61 og 240-61 benyttet. Strekkverdier for Al 150-19 ekstrapoleres
-    # ut fra arealforholdet mellom denne og Al 400-37 (= 0.4).
+    # ut fra arealforholdet mellom denne og Al 400-37 (ca. 40%).
     at_ledninger = []
-    Al_400_37 = {"Navn": "Al 400-37 uisolert", "Egenvekt": 10.31,
-                         "Diameter": 25.34, "Tverrsnitt": 381.0,
-                         "Max tillatt spenning": 50.0,
-                         "Strekk 5C": _strekkraft(4.09, 4.59, a),
-                         "Strekk -40C": _strekkraft(16.86, 8.60, a)}
-    Al_240_19 = {"Navn": "Al 240-19 uisolert", "Egenvekt": 6.46,
-                         "Diameter": 20.0, "Tverrsnitt": 238.76,
-                         "Max tillatt spenning": 50.0,
-                         "Strekk 5C": _strekkraft(2.48, 2.78, a),
-                         "Strekk -40C": _strekkraft(10.22, 5.21, a)}
-    Al_150_19 = {"Navn": "Al 150-19 uisolert", "Egenvekt": 4.07,
-                         "Diameter": 15.9, "Tverrsnitt": 150.90,
-                         "Max tillatt spenning": 50.0,
-                         "Strekk 5C": _strekkraft(0.4*4.09, 0.4*4.59, a),
-                         "Strekk -40C": _strekkraft(0.4*16.86, 0.4*8.60, a)}
+    Al_400_37 = {"Navn": "Al 400-37", "Egenvekt": 10.31,
+                 "Diameter": 25.34, "Tverrsnitt": 381.0,
+                 "E-modul": 56000, "Max tillatt spenning": 50.0,
+                 "Lengdeutvidelseskoeffisient": 2.3 * 10 ** (-5),
+                 "Strekk 5C": _strekkraft(4.09, 4.59, a)}
+    Al_240_19 = {"Navn": "Al 240-19", "Egenvekt": 6.46,
+                 "Diameter": 20.0, "Tverrsnitt": 238.76,
+                 "E-modul": 56000, "Max tillatt spenning": 50.0,
+                 "Lengdeutvidelseskoeffisient": 2.3 * 10 ** (-5),
+                 "Strekk 5C": _strekkraft(2.48, 2.78, a)}
+    Al_150_19 = {"Navn": "Al 150-19", "Egenvekt": 4.07,
+                 "Diameter": 15.9, "Tverrsnitt": 150.90,
+                 "E-modul": 56000, "Max tillatt spenning": 50.0,
+                 "Lengdeutvidelseskoeffisient": 2.3 * 10 ** (-5),
+                 "Strekk 5C": _strekkraft(0.4*4.09, 0.4*4.59, a)}
     at_ledninger.extend([Al_400_37, Al_240_19, Al_150_19])
 
     # Jordledninger
     jordledninger = []
     KHF_70 = {"Navn": "KHF-70", "Egenvekt": 5.81,
-                      "Diameter": 10.5, "Tverrsnitt": 66.75,
-                      "Max tillatt spenning": 125.0,
-                      "Strekk 5C": _strekkraft(2.09, 2.25, a),
-                      "Strekk -40C": _strekkraft(5.54, 3.08, a)}
+              "Diameter": 10.5, "Tverrsnitt": 66.75,
+              "E-modul": 116000, "Max tillatt spenning": 125.0,
+              "Lengdeutvidelseskoeffisient": 1.7 * 10 ** (-5),
+              "Strekk 5C": _strekkraft(2.09, 2.25, a)}
     KHF_95 = {"Navn": "KHF-95", "Egenvekt": 8.25,
-                      "Diameter": 12.5, "Tverrsnitt": 94.7,
-                      "Max tillatt spenning": 125.0,
-                      "Strekk 5C": _strekkraft(2.97, 3.20, a),
-                      "Strekk -40C": _strekkraft(7.86, 4.37, a)}
+              "Diameter": 12.5, "Tverrsnitt": 94.7,
+              "E-modul": 116000, "Max tillatt spenning": 125.0,
+              "Lengdeutvidelseskoeffisient": 1.7 * 10 ** (-5),
+              "Strekk 5C": _strekkraft(2.97, 3.20, a)}
     jordledninger.extend([KHF_70, KHF_95])
 
     # Utliggere (s2x for system 20A/20B/25, s3x for system 35)
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
+
+
+    ledninger = [Al_240_61, Al_240_61_iso, SAHF_120_26_7]
+    ledninger.extend(at_ledninger)
+    ledninger.extend(jordledninger)
+
+    for ledning in ledninger:
+        H_0 = ledning["Strekk 5C"]
+        E = ledning["E-modul"]
+        A = ledning["Tverrsnitt"]
+        G_0 = ledning["Egenvekt"]
+        G_sno = 2 + 0.5 * ledning["Diameter"]
+        L = a
+        alpha = ledning["Lengdeutvidelseskoeffisient"]
+
+        # Beregner strekk ved snøfri kabel og -40C
+        ledning["Strekk -40C"], iter_40, list_40 = _newtonraphson(H_0, E, A, G_0, G_0, L, alpha, -40)
+        # Beregner strekk ved snøbelastet kabel og -25C
+        ledning["Strekk med snø -25C"], iter_sno_25, list_sno_25 = _newtonraphson(H_0, E, A, G_0, G_0+G_sno, L, alpha, -25)
+
+        # Beregner differansestrekk ved -40C
+        s_1, s_11, s_111 = _newtonraphson(H_0, E, A, G_0, G_0, i.a1, alpha, -40)
+        s_2, s_22, s_222 = _newtonraphson(H_0, E, A, G_0, G_0, i.a2, alpha, -40)
+        ledning["Differansestrekk"] = abs(s_1-s_2)
+
+        """
+        print()
+        print("Ledning: {}".format(ledning["Navn"]))
+        print("Differansestrekk: {} kN".format(ledning["Differansestrekk"]))
+        print("Initiell strekkraft: {} kN".format(ledning["Strekk 5C"]))
+        print("-40C, fri line: H_x = {:.3g} kN    Antall iterasjoner: {}".format(ledning["Strekk -40C"] / 1000, iter_40))
+        print("-25C, inkl snølast: H_x = {:.3g} kN    Antall iterasjoner: {}".format(ledning["Strekk med snø -25C"] / 1000, iter_sno_25))
+        okning = ledning["Strekk med snø -25C"]-ledning["Strekk 5C"]
+        print("Økning fra snølast: {} kN    = {} %".format(okning, okning/ledning["Strekk 5C"]*100))
+
+        plt.plot([x for x in range(iter_40+1)], list_40, "b", [x for x in range(iter_sno_25+1)], list_sno_25, "y--",)
+        plt.show(True)
+        """
+
+    # Antatt verdi for diff.strekk i fiberoptisk kabel
+    SAHF_120_26_7["Differansestrekk"] = Al_240_61["Differansestrekk"]
 
     at_ledning = None
     # Setter AT-ledning
@@ -191,6 +237,51 @@ def _strekkraft(a, b, masteavstand):
 
     s = 1000 * (a + (masteavstand-30) * (b - a)/40)
     return s
+
+
+
+def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
+    """
+    Numerisk løsning av kabelstrekk i fastavspente ledninger.
+    :param H_0: Initiell spennkraft i kabel [N]
+    :param E: Kabelens E-modul [N/mm^2]
+    :param A: Kabelens tverrsnittsareal [mm^2]
+    :param G_0: Kabelens egenvekt [N/m]
+    :param G_x: Kabelens egenvekt + eventuell snølast [N/m]
+    :param L: Masteavstand [m]
+    :param alpha: Lengdeutvidelseskoeffisient [1/C]
+    :param T: Lufttemperatur [C]
+    :return: Spennkraft i kabel ved oppgitte forhold [N]
+    """
+
+    # Konstanter
+    delta_T = T - 5
+    a = E*A*(G_x*L)**2/24
+    b = - H_0 + E*A*(G_0*L)**2/(24*H_0**2) + E*A*alpha*delta_T
+
+    # Initialverdier
+    iterasjoner = 0
+    H_x = H_0
+    H_list = []
+    delta_H_x = 0
+
+    while iterasjoner<100:
+        H_x += delta_H_x
+        H_list.append(H_x)
+        r = a - H_x**3 - b*H_x**2
+        conv = abs(r/a)
+
+        if conv < 10**(-3):
+            return (H_x, iterasjoner, H_list)
+
+        K_T = 3*H_x**2 + 2*b*H_x
+        delta_H_x = r/K_T
+
+        iterasjoner += 1
+
+    return(H_x, iterasjoner, H_list)
+
+
 
 
 

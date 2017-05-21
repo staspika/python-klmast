@@ -207,6 +207,7 @@ def beregn(i):
             # Fjerner vindlaster fra systemet
             F[:] = [j for j in F if not j.navn.startswith("Vindlast:")]
 
+        """
         # Regner ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere == 2:
             lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
@@ -223,8 +224,7 @@ def beregn(i):
 
             # Fjerner ulykkeslaster fra systemet
             F[:] = [j for j in F if not j.navn.startswith("Ulykkeslast:")]
-
-            iterasjon += 1
+        """
 
 
 

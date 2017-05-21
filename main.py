@@ -51,11 +51,7 @@ for iterasjon in range(1):
     print(mast)
     print()
     for j in mast.bruddgrense[0].F:
-        if j.type == (1,1):
-            print(j)
-    print("Torsjonsbidrag:")
-    print(mast.bruddgrense[0].R[1, :, 5])
-
+        print(j)
 
     UR = mast.bruddgrense[0].utnyttelsesgrad
     current_values = [UR, mast.bruddgrense[0].My_kap,
