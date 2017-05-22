@@ -59,12 +59,12 @@ def _beregn_deformasjoner(i, mast, F):
 
     return D
 
-def _beregn_sidekraftbidrag(sys, sidekrefter, statisk):
+def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
 
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))
 
-    D += deformasjon.utliggerbidrag(sys, sidekrefter, statisk)
+    D += deformasjon.utliggerbidrag(sys, sidekrefter, etasje)
 
     return D
 
@@ -142,18 +142,22 @@ def beregn(i):
             F.extend(klima.vindlast_ledninger(i, sys, vindretning))
 
             # Sidekrefter til beregning av utliggerens deformasjonsbidrag
-            sidekrefter_statisk = []
-            sidekrefter_dynamisk = []
+            sidekrefter_strekk = []
+            sidekrefter_sno = []
+            sidekrefter_vind = []
             for j in F:
-                if j.navn in lister.sidekraftbidrag_statisk:
-                    sidekrefter_statisk.append(j.f[2])
-                elif j.navn in lister.sidekraftbidrag_dynamisk:
-                    sidekrefter_dynamisk.append(j.f[2])
+                if j.navn in lister.sidekraftbidrag_strekk:
+                    sidekrefter_strekk.append(j.f[2])
+                elif j.navn in lister.sidekraftbidrag_sno:
+                    sidekrefter_sno.append(j.f[2])
+                elif j.navn in lister.sidekraftbidrag_vind:
+                    sidekrefter_vind.append(j.f[2])
 
             R_0 = _beregn_reaksjonskrefter(F)
             D_0 = _beregn_deformasjoner(i, mast, F)
-            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_statisk, True)
-            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_dynamisk, False)
+            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_strekk, 1)
+            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_sno, 3)
+            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_vind, 4)
             if i.linjemast_utliggere == 2:
                 # Nullstiller T og phi for tilfelle linjemast med dobbel utligger
                 R_0[:, :, 5], D_0[:, :, 2] = 0, 0
