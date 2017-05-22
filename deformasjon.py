@@ -1,5 +1,6 @@
 import numpy
 import math
+import scipy.integrate as integrate
 
 
 def bjelkeformel_M(mast, j, fh):
@@ -39,24 +40,30 @@ def bjelkeformel_P(mast, j, fh):
     pga. en generell horisontal last
     """
 
-    E = mast.E
-    I_y = mast.Iy(2/3 * mast.h)
-    I_z = mast.Iz(2/3 * mast.h)
-    f_y = j.f[1]
-    f_z = j.f[2]
-    x = -j.e[0] * 1000
-    fh *= 1000
-
     D = numpy.zeros((5, 8, 3))
 
-    if fh > x:
-        theta_y = (f_y * x**2) / (2 * E * I_z)
-        theta_z = (f_z * x**2) / (2 * E * I_y)
-        D[j.type[1], j.type[0], 1] = (f_z / (3 * E * I_y)) * x ** 3 + numpy.tan(theta_y) * (fh - x)
-        D[j.type[1], j.type[0], 0] = (f_y / (3 * E * I_z)) * x ** 3 + numpy.tan(theta_z) * (fh - x)
-    else:
-        D[j.type[1], j.type[0], 1] = (f_z / (2 * E * I_y)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
-        D[j.type[1], j.type[0], 0] = (f_y / (2 * E * I_z)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
+    if j.e[0] < 0:
+
+        E = mast.E
+        delta_topp = mast.h + j.e[0]
+        L = (mast.h - delta_topp) * 1000
+        delta_y = integrate.quad(mast.Iy_int_P, 0, L, args=(delta_topp,))
+        delta_z = integrate.quad(mast.Iz_int_P, 0, L, args=(delta_topp,))
+        I_y = L ** 3 / (3 * delta_y[0])
+        I_z = L ** 3 / (3 * delta_z[0])
+        f_y = j.f[1]
+        f_z = j.f[2]
+        x = -j.e[0] * 1000
+        fh *= 1000
+
+        if fh > x:
+            theta_y = (f_y * x**2) / (2 * E * I_z)
+            theta_z = (f_z * x**2) / (2 * E * I_y)
+            D[j.type[1], j.type[0], 1] = (f_z / (3 * E * I_y)) * x ** 3 + numpy.tan(theta_y) * (fh - x)
+            D[j.type[1], j.type[0], 0] = (f_y / (3 * E * I_z)) * x ** 3 + numpy.tan(theta_z) * (fh - x)
+        else:
+            D[j.type[1], j.type[0], 1] = (f_z / (2 * E * I_y)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
+            D[j.type[1], j.type[0], 0] = (f_y / (2 * E * I_z)) * (x * fh ** 2 - ((1 / 3) * fh ** 3))
 
     return D
 
@@ -66,18 +73,25 @@ def bjelkeformel_q(mast, j, fh):
     pga. en generell jevnt fordelt horisontal last
     """
 
-    E = mast.E
-    I_y = mast.Iy(2/3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
-    I_z = mast.Iz(2/3 * mast.h)  # [mm^4] 2. arealmoment i 2/3 ned fra mastetopp
-    q_y = j.q[1] / 1000
-    q_z = j.q[2] / 1000
-    b = j.b * 1000
-    fh *= 1000
-
     D = numpy.zeros((5, 8, 3))
 
-    D[j.type[1], j.type[0], 1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
-    D[j.type[1], j.type[0], 0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+    if j.b > 0:
+
+        E = mast.E
+        delta_topp = mast.h - j.b
+        L = (mast.h - delta_topp) * 1000
+        delta_y = integrate.quad(mast.Iy_int_q, 0, L, args=(delta_topp,))
+        delta_z = integrate.quad(mast.Iz_int_q, 0, L, args=(delta_topp,))
+        I_y = L ** 4 / (4 * delta_y[0])
+        I_z = L ** 4 / (4 * delta_z[0])
+
+        q_y = j.q[1] / 1000
+        q_z = j.q[2] / 1000
+        b = j.b * 1000
+        fh *= 1000
+
+        D[j.type[1], j.type[0], 1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
+        D[j.type[1], j.type[0], 0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (6 * b ** 2 - 4 * b * fh + fh ** 2)
 
     return D
 
@@ -104,16 +118,20 @@ def torsjonsvinkel(mast, j, i):
     return D
 
 
-def utliggerbidrag(sys, sidekrefter):
+def utliggerbidrag(sys, sidekrefter, statisk):
 
     D = numpy.zeros((5, 8, 3))
 
+    etasje = 4
+    if statisk:
+        etasje = 1
+
     if sys.navn == "20a" or sys.navn == "20b":
         for s in sidekrefter:
-            D[1, 0, 1] += 20/2500 * s
+            D[etasje, 0, 1] += 20/2500 * s
     elif sys.navn == "25":
         for s in sidekrefter:
-            D[1, 0, 1] += 4/2500 * s
+            D[etasje, 0, 1] += 4/2500 * s
 
     return D
 

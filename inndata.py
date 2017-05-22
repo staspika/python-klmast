@@ -49,6 +49,7 @@ class Inndata(object):
         self.delta_h1 = cfg.getfloat("System", "delta_h1")
         self.delta_h2 = cfg.getfloat("System", "delta_h2")
         self.referansevindhastighet = cfg.getfloat("System", "referansevindhastighet")
+        self.kastvindhastighet = cfg.getfloat("System", "kastvindhastighet")
         self.vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
 
         # Geometri
@@ -67,4 +68,5 @@ class Inndata(object):
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
         self.ec3 = cfg.getboolean("Div", "ec3")
+        self.isklasse = cfg.getint("Div", "isklasse")
 

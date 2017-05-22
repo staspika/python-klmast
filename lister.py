@@ -171,10 +171,9 @@ for s in sikksakk_20:
     radius_list.append(s)
 radius_list.sort(key=_hent_tall)
 
-sidekraftbidrag = ["Strekk: Bæreline", "Strekk: Bæreliner",
-				   "Strekk: Kontakttråd", "Strekk: Kontakttråder",
-				   "Vindlast: Kontakttråd", "Vindlast: Bæreline", "Vindlast: Hengetråd",
-				   "Vindlast: Y-line"]
+sidekraftbidrag_statisk = ["Strekk: Bæreline", "Strekk: Kontakttråd"]
+sidekraftbidrag_dynamisk = ["Vindlast: Kontakttråd", "Vindlast: Bæreline",
+							"Vindlast: Hengetråd", "Vindlast: Y-line"]
 
 
 def hent_lastkombinasjoner(eurokode):

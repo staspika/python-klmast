@@ -1,4 +1,6 @@
 import math
+import scipy.integrate as integrate
+import matplotlib.pyplot as plt
 
 class Mast(object):
     """Parent class for alle masteyper"""
@@ -147,27 +149,31 @@ class Mast(object):
         return rep
 
     def bredde(self, x):
-        """Beregner tverrsnittsbredde b [mm]
-        i avstand x [m] fra mastens toppunkt.
-        Stigningen multipliseres med 2 da
-        masten skråner til begge sider.
+        """
+        Beregner total bredde av tverrsnitt.
+        :param x: Avstand fra mastens toppunkt [m]
+        :return: Tverrsnittsbredde [mm]
         """
         if not self.type == "bjelke":
             return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
 
-    def Iy(self, x, breddefaktor=1.0):
-        """Beregner annet arealmoment om sterk akse
-        i avstand x fra mastens toppunkt [mm^4].
+    def Iy(self, x, delta_topp=0, breddefaktor=1.0,):
+        """
+        Beregner annet arealmoment om mastens sterk akse.
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
+        :param x: Avstand fra mastens toppunkt [m]
+        :param delta_topp: Konstant tillegg til x [m]
+        :param breddefaktor: Faktor for å kontrollere effektiv bredde
+        :return: Annet arealmoment om y-akse [mm^2]
         """
 
         if self.type == "B":
-            z = breddefaktor*self.bredde(x)/2 - self.noytralakse
+            z = breddefaktor*self.bredde(x+delta_topp)/2 - self.noytralakse
             Iy = 2 * (self.Iz_profil + self.A_profil * z**2)
         if self.type == "H":
-            z = breddefaktor*self.bredde(x)/2 - self.noytralakse
+            z = breddefaktor*self.bredde(x+delta_topp)/2 - self.noytralakse
             Iy = 4 * (self.Iy_profil + self.A_profil * z**2)
         elif self.type == "bjelke":
             Iy = self.Iy_profil
@@ -175,6 +181,11 @@ class Mast(object):
         """
         return self.Iy_KL_fund(x)
         """
+
+    def Iy_int_P(self, x, delta_topp=0):
+        return x**2 / self.Iy(x/1000, delta_topp=delta_topp)
+    def Iy_int_q(self, x, delta_topp=0):
+        return x**3 / self.Iy(x/1000, delta_topp=delta_topp)
 
     def Iy_KL_fund(self, x):
         """Legacy fra KL_fund"""
@@ -186,18 +197,28 @@ class Mast(object):
             Iy = self.Iy_profil
         return Iy
 
-    def Iz(self, x):
-        """Beregner annet arealmoment om svak akse
-        i avstand x fra mastens toppunkt [mm^4]
+    def Iz(self, x, delta_topp=0):
+        """
+        Beregner annet arealmoment om mastens sterk akse.
+        Breddefaktor kan oppgis for å ta hensyn til
+        redusert effektiv bredde grunnet helning på mast.
+        :param x: Avstand fra mastens toppunkt [m]
+        :param delta_topp: Tillegg til x (for løsning av stivhetsintegral) [m]
+        :return: Annet arealmoment om y-akse [mm^2]
         """
         if self.type == "B":
             Iz = 2 * self.Iy_profil
         if self.type == "H":
-            y = self.bredde(x)/2 - self.noytralakse
+            y = self.bredde(x+delta_topp)/2 - self.noytralakse
             Iz = 4 * (self.Iz_profil + self.A_profil * y**2)
         elif self.type == "bjelke":
             Iz = self.Iz_profil
         return Iz
+
+    def Iz_int_P(self, x, delta_topp=0):
+        return x**2 / self.Iz(x / 1000, delta_topp=delta_topp)
+    def Iz_int_q(self, x, delta_topp=0):
+        return x**3 / self.Iz(x / 1000, delta_topp=delta_topp)
 
     def My_Rk(self):
         """Beregner mastens motstadsmoment [Nmm] om sterk akse
@@ -356,17 +377,53 @@ def hent_master(hoyde, s235, materialkoeff):
 
 if __name__ == "__main__":
     master = hent_master(8, True, 1.05)
-    mazt = master[8]
-    print("Mast: {}".format(mazt.navn))
+    mazt = master[3]
+    x = []
+    y_ny = []
+    y_gammel = []
+    y_ekv = []
+    print("Mast: {}\n".format(mazt.navn))
     for h in range(80, 135, 5):
         h *= 1/10
         Iy_ny = mazt.Iy(2/3*h)
         Iy_gammel = mazt.Iy_KL_fund(2/3*h)
-        brok = Iy_ny/Iy_gammel
+
+        delta_topp = 0
+        L = (h-delta_topp) * 1000  # FH + SH/2
+
+        delta = integrate.quad(mazt.Iy_int_P, 0, L, args=(delta_topp,))
+        Iy_ekv = L ** 3 / (3 * delta[0])
+
+        x.append(h)
+        y_ny.append(Iy_ny)
+        y_gammel.append(Iy_gammel)
+        y_ekv.append(Iy_ekv)
+
+        print("")
+        print("I_ekv =")
         print("H = {} m".format(h))
-        print("Iy, ny beregning = {}".format((Iy_ny)))
-        print("Iy, gammel beregning = {}".format((Iy_gammel)))
-        print("Brøk: {} %\n".format(brok*100))
+        print("Iy, ny beregning = {:.3g}".format((Iy_ny)))
+        print("Iy, gammel beregning = {:.3g}".format((Iy_gammel)))
+        print("Iy_ekv = {:.3g}".format(Iy_ekv))
+
+
+    ny, = plt.plot(x, y_ny, "b--", label="Eksakt i 1/3-dels punkt")
+    plt.hold(True)
+    gammel, = plt.plot(x, y_gammel, "r", label="Stivhet KL_fund")
+    ekv, = plt.plot(x, y_ekv, "g", label="Midlere stivhet")
+    plt.title("Iy for mast {}".format(mazt.navn))
+    first_legend = plt.legend(handles=[ny, gammel, ekv], loc=0)
+    plt.ylabel("Annet arealmoment [mm^4]")
+    plt.xlabel("Mastehøyde [m]")
+    plt.show()
+
+
+
+
+
+
+
+
 
 
 
