@@ -21,10 +21,11 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    a = 3
-    b = 2
-    print((b*a)**2)
-
+    lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
+    if "Ulykkeslast" in lastsituasjon:
+        print("JAU")
+    else:
+        print("nei")
 
 
 

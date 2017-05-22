@@ -177,6 +177,12 @@ sidekraftbidrag_sno = ["Vindlast: Kontakttråd, økt diameter", "Vindlast: Bære
 sidekraftbidrag_vind = ["Vindlast: Kontakttråd", "Vindlast: Bæreline",
 					    "Vindlast: Hengetråd", "Vindlast: Y-line"]
 
+ulykkeslaster_KL = ["Egenvekt: Bæreline", "Egenvekt: Hengetråd", "Egenvekt: Kontakttråd",
+                    "Egenvekt: Y-line", "Strekk: Bæreline", "Strekk: Kontakttråd",
+                    "Strekk: Bæreline til avspenning", "Strekk: Kontakttråd til avspenning",
+                    "Strekk: Torsjon, eksentrisitet utliggere", "Vandringskraft: Bæreline",
+                    "Vandringskraft: Kontakttråd", "Geometri: Ulik høyde mellom master"]
+
 
 def hent_lastkombinasjoner(eurokode):
     if eurokode:

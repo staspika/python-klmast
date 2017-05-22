@@ -158,6 +158,7 @@ def beregn(i):
             D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_strekk, 1)
             D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_sno, 3)
             D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_vind, 4)
+
             if i.linjemast_utliggere == 2:
                 # Nullstiller T og phi for tilfelle linjemast med dobbel utligger
                 R_0[:, :, 5], D_0[:, :, 2] = 0, 0
@@ -192,14 +193,17 @@ def beregn(i):
                                     iterasjon += 1
 
 
-                # TO DO: * Dele opp strekkraft i fastavspente i temp.avhengig og permanent bit (mangler noen ledninger)
-                #        * Regne ut pilhøyde f for hver enkelt fastavspente kabel ved +5C og -40C
-                #        * Lage en funksjon for å beregne horisontal spennkraft fra fastavspente kabler
-                #          mhp. egenvekt (+snø) og masteavstand (evt: formel fra KL-bibel, eller tabeller)
-                #        * Implementere snølastens innvirkning på kabelstrekk
-                #        * Implementere snø/islast for NEK
-                #        * Legge inn relevante ulykkessituasjoner (to be continued)
+
+
+
+
+                # TO DO:
                 #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
+
+
+
+
+
 
 
                 # Bruksgrense, forskyvning totalt
@@ -220,27 +224,34 @@ def beregn(i):
                 t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 2, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
 
+                iterasjon += 1
+
             # Fjerner vindlaster fra systemet
             F[:] = [j for j in F if not j.navn.startswith("Vindlast:")]
 
-        """
+
         # Regner ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere == 2:
             lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
+            """
             F_ulykke = []
             F_ulykke.extend(laster.ulykkeslaster(i, sys, mast))
             R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
-            R_ulykke[0:2, :, :] += R_0[0:2, :, :]
-            R_ulykke[2, :, :] += R_0[2, :, :] * lastsituasjon["Ulykkeslast"]["psi_T"]
-            R_ulykke[3, :, :] += R_0[3, :, :] * lastsituasjon["Ulykkeslast"]["psi_S"]
-            R_ulykke[4, :, :] += R_0[4, :, :] * lastsituasjon["Ulykkeslast"]["psi_V"]
+            """
+
+            F_ulykke = []
+            F_ulykke[:] = [j for j in F if not j.navn in lister.ulykkeslaster_KL]
+            F_ulykke.extend(laster.ulykkeslast_KL(i, sys, mast))
+
+            R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
+            R_ulykke[3:5, :, :] = 0
 
             t = tilstand.Tilstand(mast, i, lastsituasjon, 0, 0, F=F, R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
+            
+            iterasjon += 1
 
-            # Fjerner ulykkeslaster fra systemet
-            F[:] = [j for j in F if not j.navn.startswith("Ulykkeslast:")]
-        """
+
 
 
 
