@@ -8,67 +8,6 @@ import TEST
 import deformasjon
 
 
-def _beregn_reaksjonskrefter(F):
-    """Beregner reaksjonskrefter og plasserer bidragene i riktig rad
-    og kolonne i R-matrisen.
-    """
-
-    # Initierer R-matrisen for reaksjonskrefter
-    R = numpy.zeros((5, 8, 6))
-
-    for j in F:
-        R_0 = numpy.zeros((5, 8, 6))
-        f = j.f
-        if not numpy.count_nonzero(j.q) == 0:
-            f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
-
-        # Sorterer bidrag til reaksjonskrefter
-        R_0[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
-        R_0[j.type[1], j.type[0], 1] = f[1]
-        R_0[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
-        R_0[j.type[1], j.type[0], 3] = f[2]
-        R_0[j.type[1], j.type[0], 4] = f[0]
-        R_0[j.type[1], j.type[0], 5] = abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1])
-        R += R_0
-
-    return R
-
-
-def _beregn_deformasjoner(i, mast, F):
-    """Beregner deformasjoner og plasserer bidragene
-     i riktig rad og kolonne i D-matrisen.
-    """
-
-    # Initierer deformasjonsmatrisen, D
-    D = numpy.zeros((5, 8, 3))
-
-    for j in F:
-        D_0 = numpy.zeros((5, 8, 3))
-
-        # Egenvekt og strekk statiske laster, resten dynamiske
-
-        D_0 += deformasjon.bjelkeformel_P(mast, j, i.fh) \
-             + deformasjon.bjelkeformel_q(mast, j, i.fh)
-            # + deformasjon.bjelkeformel_M(mast, j, i.fh)
-
-
-        if mast.type == "bjelke":
-            D_0 += deformasjon.torsjonsvinkel(mast, j, i)
-
-        D += D_0
-
-    return D
-
-def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
-
-    # Initierer deformasjonsmatrisen, D
-    D = numpy.zeros((5, 8, 3))
-
-    D += deformasjon.utliggerbidrag(sys, sidekrefter, etasje)
-
-    return D
-
-
 def beregn(i):
     import mast
 
@@ -199,6 +138,7 @@ def beregn(i):
 
                 # TO DO:
                 #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
+                #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
 
 
 
@@ -263,6 +203,67 @@ def beregn(i):
     TEST.print_memory_info()
 
     return master
+
+
+def _beregn_reaksjonskrefter(F):
+    """Beregner reaksjonskrefter og plasserer bidragene i riktig rad
+    og kolonne i R-matrisen.
+    """
+
+    # Initierer R-matrisen for reaksjonskrefter
+    R = numpy.zeros((5, 8, 6))
+
+    for j in F:
+        R_0 = numpy.zeros((5, 8, 6))
+        f = j.f
+        if not numpy.count_nonzero(j.q) == 0:
+            f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
+
+        # Sorterer bidrag til reaksjonskrefter
+        R_0[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
+        R_0[j.type[1], j.type[0], 1] = f[1]
+        R_0[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
+        R_0[j.type[1], j.type[0], 3] = f[2]
+        R_0[j.type[1], j.type[0], 4] = f[0]
+        R_0[j.type[1], j.type[0], 5] = abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1])
+        R += R_0
+
+    return R
+
+
+def _beregn_deformasjoner(i, mast, F):
+    """Beregner deformasjoner og plasserer bidragene
+     i riktig rad og kolonne i D-matrisen.
+    """
+
+    # Initierer deformasjonsmatrisen, D
+    D = numpy.zeros((5, 8, 3))
+
+    for j in F:
+        D_0 = numpy.zeros((5, 8, 3))
+
+        # Egenvekt og strekk statiske laster, resten dynamiske
+
+        D_0 += deformasjon.bjelkeformel_P(mast, j, i.fh) \
+             + deformasjon.bjelkeformel_q(mast, j, i.fh)
+            # + deformasjon.bjelkeformel_M(mast, j, i.fh)
+
+
+        if mast.type == "bjelke":
+            D_0 += deformasjon.torsjonsvinkel(mast, j, i)
+
+        D += D_0
+
+    return D
+
+def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
+
+    # Initierer deformasjonsmatrisen, D
+    D = numpy.zeros((5, 8, 3))
+
+    D += deformasjon.utliggerbidrag(sys, sidekrefter, etasje)
+
+    return D
 
 
 
