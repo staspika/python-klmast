@@ -124,11 +124,13 @@ class Mast(object):
         self.forskyvning_kl = []
 
         # Variabler for å holde dimensjonerende tilstander
-        self.UR_max = None
-        self.My_max = None
-        self.T_max = None
-        self.Dz_max = None
-        self.phi_max = None
+        self.tilstand_UR_max = None
+        self.tilstand_My_max = None
+        self.tilstand_T_max = None
+        self.tilstand_Dz_tot_max = None
+        self.tilstand_phi_tot_max = None
+        self.tilstand_Dz_kl_max = None
+        self.tilstand_phi_kl_max = None
 
 
     def __repr__(self):
@@ -140,12 +142,20 @@ class Mast(object):
         rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
               "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
-        rep += "\nDimensjonerende lasttilfelle:\n\n"
-        rep += repr(self.bruddgrense[0])
-        rep += "\n\nStørste forskyvning totalt:\n\n"
-        rep += repr(self.forskyvning_tot[0])
-        rep += "\n\nStørste forskyvning KL:\n\n"
-        rep += repr(self.forskyvning_kl[0])
+        rep += "\nSørste utnyttelsesgrad:\n"
+        rep += repr(self.tilstand_My_max)
+        rep += "\nSørste moment My:\n"
+        rep += repr(self.tilstand_UR_max)
+        rep += "\nSørste torsjon T:\n"
+        rep += repr(self.tilstand_T_max)
+        rep += "\nStørste forskyvning Dz (totalt):\n"
+        rep += repr(self.tilstand_Dz_tot_max)
+        rep += "\nStørste torsjonsvinkel phi (totalt):\n"
+        rep += repr(self.tilstand_phi_tot_max)
+        rep += "\nStørste forskyvning Dz (KL):\n"
+        rep += repr(self.tilstand_Dz_kl_max)
+        rep += "\nStørste torsjonsvinkel phi (KL):\n"
+        rep += repr(self.tilstand_phi_kl_max)
         return rep
 
     def bredde(self, x):
@@ -242,52 +252,71 @@ class Mast(object):
             My_Rk = self.Wzp * self.fy
         return My_Rk
 
-    """
-    def _sammenlign_tilstander(self, t1, t2):
-        Sjekker om t1 er dimensjonerende framfor t2.
-        Dersom t2 ikke har fått noen verdi enda, returneres True
-        slik at t1 blir satt som dimensjonerende tilfelle.
-        
 
-        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
+    def sorter_grenseverdier(self):
 
-        if t2 == None:
-            return True
-        if t1.navn == "bruddgrense":
-            if kriterie == 0:
-                # Sammenligner My
-                if abs(t1.K[0]) > abs(t2.K[0]):
-                    return True
-                elif abs(t1.K[0]) == abs(t2.K[0]):
-                    # Sammenligner Mz
-                    if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
-                        return True
-                    elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
-                        # Sammenligner Mz
-                        if abs(t1.K[2]) > abs(t2.K[2]):
-                            return True
-            elif kriterie == 1:
-                # Sammenligner Utnyttelsesgrad
-                if abs(t1.utnyttelsesgrad) > abs(t2.utnyttelsesgrad):
-                    return True
-                elif abs(t1.utnyttelsesgrad) == abs(t2.utnyttelsesgrad):
-                    # Sammenligner My
-                    if abs(t1.K[0]) > abs(t2.K[0]):
-                        return True
-                    elif abs(t1.K[0]) == abs(t2.K[0]):
-                        # Sammenligner Mz
-                        if abs(t1.K[2]) > abs(t2.K[2]):
-                            return True
-        else:
-            # Sammenligner Dz
-            if abs(t1.K[1]) > abs(t2.K[1]):
-                return True
-            elif abs(t1.K[1]) == abs(t2.K[1]):
-                # Sammenligner phi
-                if abs(t1.K[2]) > abs(t2.K[2]):
-                    return True
-        return False
-    """
+        #Bruddgrense
+        self.tilstand_UR_max = self.bruddgrense[0]
+        self.tilstand_My_max = self.bruddgrense[0]
+        self.tilstand_T_max = self.bruddgrense[0]
+        self.tilstand_Dz_tot_max = self.forskyvning_tot[0]
+        self.tilstand_phi_tot_max = self.forskyvning_tot[0]
+        self.tilstand_Dz_kl_max = self.forskyvning_kl[0]
+        self.tilstand_phi_kl_max = self.forskyvning_kl[0]
+
+        for tilstand in self.bruddgrense:
+            UR_max = self.tilstand_UR_max.utnyttelsesgrad
+            My_max = abs(self.tilstand_My_max.K[0])
+            Mz_max = abs(self.tilstand_My_max.K[2])
+            T_max = abs(self.tilstand_T_max.K[5])
+            UR = tilstand.utnyttelsesgrad
+            My = abs(tilstand.K[0])
+            Mz = abs(tilstand.K[2])
+            T = abs(tilstand.K[5])
+
+            if UR > UR_max:
+                self.tilstand_UR_max = tilstand
+
+            if My > My_max:
+                self.tilstand_My_max = tilstand
+            elif My == My_max:
+                if Mz > Mz_max:
+                    self.tilstand_My_max = tilstand
+
+            if T > T_max:
+                self.tilstand_T_max = tilstand
+
+        # Forskyvning totalt
+        self.tilstand_Dz_tot_max = self.forskyvning_tot[0]
+        self.tilstand_phi_tot_max = self.forskyvning_tot[0]
+
+        for tilstand in self.forskyvning_tot:
+            Dz_max = abs(self.tilstand_Dz_tot_max.K_D[1])
+            phi_max = abs(self.tilstand_phi_tot_max.K_D[2])
+            Dz = abs(tilstand.K_D[1])
+            phi = abs(tilstand.K_D[2])
+
+            if Dz > Dz_max:
+                self.tilstand_Dz_tot_max = tilstand
+
+            if phi > phi_max:
+                self.tilstand_phi_tot_max = tilstand
+
+        # Forskyvning KL
+        self.tilstand_Dz_kl_max = self.forskyvning_kl[0]
+        self.tilstand_phi_kl_max = self.forskyvning_kl[0]
+
+        for tilstand in self.forskyvning_kl:
+            Dz_max = abs(self.tilstand_Dz_kl_max.K_D[1])
+            phi_max = abs(self.tilstand_phi_kl_max.K_D[2])
+            Dz = abs(tilstand.K_D[1])
+            phi = abs(tilstand.K_D[2])
+
+            if Dz > Dz_max:
+                self.tilstand_Dz_kl_max = tilstand
+
+            if phi > phi_max:
+                self.tilstand_phi_kl_max = tilstand
 
     def sorter(self):
         kriterie = 0  # 0 = My, 1 = utnyttelsesgrad

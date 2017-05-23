@@ -45,18 +45,13 @@ for iterasjon in range(1):
 
     #resultater.skriv_bidrag(i, mast)
 
+    mast.sorter_grenseverdier()
     print()
     print("Anbefalt mast:")
     print()
     print(mast)
     print()
-    """
-    for j in mast.bruddgrense[0].F:
-        print(j)
-    """
-    for tilstand in mast.bruddgrense:
-        if "Ulykkeslast" in tilstand.lastsituasjon:
-            print(tilstand)
+
 
     UR = mast.bruddgrense[0].utnyttelsesgrad
     current_values = [UR, mast.bruddgrense[0].My_kap,

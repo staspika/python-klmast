@@ -40,6 +40,8 @@ class Tilstand(object):
             self.My_kap = abs(1000 * self.K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
             self.utnyttelsesgrad = self._utnyttelsesgrad(i, mast, self.K)
+            if "Ulykkeslast" in lastsituasjon:
+                self.lastsituasjon = "Ulykkeslast"
         else:
             # Bruksgrensetilstand
             self.R = R
@@ -53,19 +55,21 @@ class Tilstand(object):
             rep = ""
             # for j in self.F:
             #    rep += j.rep()
-            rep += "\nBeregningsmetode: {}\n".format(self.metode)
+            rep += "Beregningsmetode: {}\n".format(self.metode)
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
                    "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \
                 format(K[0], K[1], K[2], K[3], K[4], K[5])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
             rep += "Iterasjon = {}\n".format(self.iterasjon)
-            for key in self.faktorer:
-                rep += "{} = {}     ".format(key, self.faktorer[key])
-            rep += "\nVindretning = {}\n".format(self.vindretning)
+            if self.lastsituasjon is not "Ulykkeslast":
+                for key in self.faktorer:
+                    rep += "{} = {}     ".format(key, self.faktorer[key])
+                rep += "\n"
+            rep += "Vindretning = {}\n".format(self.vindretning)
             rep += "My_kap: {:.3g}%    Mz_kap: {:.3g}%    " \
                    "N_kap: {:.3g}%\n".format(self.My_kap * 100, self.Mz_kap * 100, self.N_kap * 100)
             rep += "Sum kapasiteter: {}%\n".format(self.My_kap * 100 + self.Mz_kap * 100 + self.N_kap * 100)
-            rep += "Utnyttelsesgrad: {}%".format(self.utnyttelsesgrad * 100)
+            rep += "Utnyttelsesgrad: {}%\n".format(self.utnyttelsesgrad * 100)
         else:
             rep = ""
             rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n". \
@@ -74,6 +78,7 @@ class Tilstand(object):
                    "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \
                 format(K[0], K[1], K[2], K[3], K[4], K[5])
             rep += "Lastsituasjon: {}\n".format(self.lastsituasjon)
+            rep += "Iterasjon = {}\n".format(self.iterasjon)
             rep += "Vindretning = {}\n".format(self.vindretning)
 
         return rep

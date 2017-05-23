@@ -137,7 +137,6 @@ def beregn(i):
 
 
                 # TO DO:
-                #        * Skille mellom tilstand med max My og max UR; tilsvarende for Dz og phi
                 #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
 
 
@@ -173,11 +172,6 @@ def beregn(i):
         # Regner ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere == 2:
             lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
-            """
-            F_ulykke = []
-            F_ulykke.extend(laster.ulykkeslaster(i, sys, mast))
-            R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
-            """
 
             F_ulykke = []
             F_ulykke[:] = [j for j in F if not j.navn in lister.ulykkeslaster_KL]
