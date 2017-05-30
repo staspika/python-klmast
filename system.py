@@ -266,16 +266,16 @@ def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
     delta_H_x = 0
 
     while iterasjoner<100:
-        H_x += delta_H_x
+        H_x -= delta_H_x
         H_list.append(H_x)
         r = a - H_x**3 - b*H_x**2
-        conv = abs(r/a)
+        e = abs(r/a)
 
-        if conv < 10**(-3):
+        if e < 10**(-3):
             return (H_x, iterasjoner, H_list)
 
-        K_T = 3*H_x**2 + 2*b*H_x
-        delta_H_x = r/K_T
+        r_d = - 3*H_x**2 - 2*b*H_x
+        delta_H_x = r/r_d
 
         iterasjoner += 1
 

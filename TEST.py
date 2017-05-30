@@ -21,11 +21,7 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
-    if "Ulykkeslast" in lastsituasjon:
-        print("JAU")
-    else:
-        print("nei")
+
 
 
 

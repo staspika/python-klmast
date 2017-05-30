@@ -406,7 +406,7 @@ def hent_master(hoyde, s235, materialkoeff):
 
 if __name__ == "__main__":
     master = hent_master(8, True, 1.05)
-    mazt = master[3]
+    mazt = master[6]
     x = []
     y_ny = []
     y_gammel = []
@@ -439,7 +439,7 @@ if __name__ == "__main__":
     ny, = plt.plot(x, y_ny, "b--", label="Eksakt i 1/3-dels punkt")
     plt.hold(True)
     gammel, = plt.plot(x, y_gammel, "r", label="Stivhet KL_fund")
-    ekv, = plt.plot(x, y_ekv, "g", label="Midlere stivhet")
+    ekv, = plt.plot(x, y_ekv, "g", label="Midlere stivhet, kontakttrådhøyde")
     plt.title("Iy for mast {}".format(mazt.navn))
     first_legend = plt.legend(handles=[ny, gammel, ekv], loc=0)
     plt.ylabel("Annet arealmoment [mm^4]")

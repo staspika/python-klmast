@@ -2,7 +2,6 @@ import numpy
 import math
 import scipy.integrate as integrate
 
-
 def bjelkeformel_M(mast, j, fh):
     """Beregner deformasjoner i kontakttrådhøyde som følge av et påsatt
     moment med angrepspunkt i høyde x. Dersom FH > x interpoleres

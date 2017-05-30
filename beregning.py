@@ -123,7 +123,7 @@ def beregn(i):
                                     # Vind
                                     R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
 
-                                    t = tilstand.Tilstand(mast, i,lastsituasjon, vindretning, 0,
+                                    t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 0,
                                                           F=F, R=R, G=G, L=L, T=T, S=S, V=V,
                                                           iterasjon=iterasjon)
 
