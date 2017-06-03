@@ -1,7 +1,7 @@
 import configparser
 
 class Inndata(object):
-    """Klasse som holder inngangsparametre fra .ini-fil"""
+    """Container-klasse for enkel tilgang til inngangsparametre fra .ini-fil."""
 
     def __init__(self, ini):
         cfg = configparser.ConfigParser()

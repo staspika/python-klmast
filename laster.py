@@ -1,7 +1,30 @@
+"""Funksjoner for beregning av laster ikke relatert til is/snø på systemet."""
+
 from kraft import *
 
 def _utliggerkrefter(i, sys, mast, e_t=0):
-    """Beregner krefter med eksentrisitet avhengig av utliggers montering på travers"""
+    """Beregner krefter fra utstyr montert på utligger.
+
+    *Tilfelle* ``e_t`` *= 0*:
+    Beregner krefter for tilfelle med én utligger på systemet.
+
+    *Tilfelle* ``e_t`` *> 0*:
+    Beregner krefter for en normalt konfigurert utligger
+    dersom systemet har to utliggere.
+
+    *Tilfelle* ``e_t`` *< 0*:
+    Beregner krefter for en normalt konfigurert utligger
+    dersom systemet har to utliggere, eller utligger
+    med KL til avspenning dersom masten er angitt å være
+    siste seksjonsmast før avspenning.
+
+    :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
+    :param Mast mast: Aktuell mast
+    :param e_t: Traversens eksentrisitet i y-retning
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
+    """
 
     r = i.radius
     a = (i.a1 + i.a2) / 2
@@ -109,10 +132,18 @@ def _utliggerkrefter(i, sys, mast, e_t=0):
     return F
 
 def beregn(i, sys, mast):
-    """Beregner krefter fra egenvekt av og strekk i samtlige ledninger,
-    vekt av isolatorer, krefter grunnet ledningsføringens geometri, 
+    """Beregner krefter grunnet statiske og temperaturavhengige forhold i systemet.
+
+    Krefter som beregnes inkluderer egenvekt av og strekk i samtlige ledninger,
+    vekt av isolatorer, krefter grunnet ledningsføringens geometri,
     fix- og avspenningskrefter samt tilhørende
     lodd og eventuell bardunering.
+
+    :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
+    :param Mast mast: Aktuell mast
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
     """
 
     r = i.radius
@@ -385,7 +416,14 @@ def beregn(i, sys, mast):
 
 
 def egenvekt_mast(mast):
-    """Mastens egenvekt"""
+    """Beregner last grunnet mastens egenvekt.
+
+    :param Mast mast: Aktuell mast
+    :return: Liste med :class:`Kraft`-objekt for mastens egenvekt
+    :rtype: :class:`list`
+    """
+
+
     # F = liste over krefter som skal returneres
     F = []
 
@@ -395,7 +433,15 @@ def egenvekt_mast(mast):
 
 
 def ulykkeslast_KL(i, sys, mast):
-    """Beregner laster i ulykkestilstand"""
+    """Beregner laster som skal påføres systemet ved ulykkessituasjon.
+
+    :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
+    :param Mast mast: Aktuell mast
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
+    """
+
     r = i.radius
     a = (i.a1 + i.a2) / 2
     a1, a2 = i.a1, i.a2
@@ -415,7 +461,7 @@ def ulykkeslast_KL(i, sys, mast):
     # F = liste over krefter som skal returneres
     F = []
 
-    trav = i.traverslengde/2
+    e_t = i.traverslengde/2
     # Sidekrefter pga. ledningsføring
     s_b = 1000 * sys.baereline["Strekk i ledning"]
     s_kl = 1000 * sys.kontakttraad["Strekk i ledning"]
@@ -432,33 +478,33 @@ def ulykkeslast_KL(i, sys, mast):
     if abs(f_z_b + f_z_avsp_b + f_z_kl + f_z_avsp_kl) > abs(f_z_b + f_z_kl):
         F.append(Kraft(navn="Strekk: Bæreline", type=(1, 1),
                        f=[0, 0, f_z_b + f_z_avsp_b],
-                       e=[-fh - sh, trav, sms]))
+                       e=[-fh - sh, e_t, sms]))
         F.append(Kraft(navn="Strekk: Kontakttråd", type=(1, 1),
                        f=[0, 0, f_z_kl + f_z_avsp_kl],
-                       e=[-fh, trav, arm]))
+                       e=[-fh, e_t, arm]))
     else:
         F.append(Kraft(navn="Strekk: Bæreline", type=(1, 1),
                        f=[0, 0, f_z_b],
-                       e=[-fh - sh, trav, sms]))
+                       e=[-fh - sh, e_t, sms]))
         F.append(Kraft(navn="Strekk: Kontakttråd", type=(1, 1),
                        f=[0, 0, f_z_kl],
-                       e=[-fh, trav, arm]))
+                       e=[-fh, e_t, arm]))
 
     # Bæreline(r)
     F.append(Kraft(navn="Egenvekt: Bæreline", type=(0, 0),
                    f=[sys.baereline["Egenvekt"] * a, 0, 0],
-                   e=[-fh - sh, trav, sms]))
+                   e=[-fh - sh, e_t, sms]))
 
     # Hengetråd(er)
     L = 8 * (a / 60)
     F.append(Kraft(navn="Egenvekt: Hengetråd", type=(0, 0),
                    f=[sys.hengetraad["Egenvekt"] * L, 0, 0],
-                   e=[-fh - sh, trav, arm]))
+                   e=[-fh - sh, e_t, arm]))
 
     # Kontakttråd(er)
     F.append(Kraft(navn="Egenvekt: Kontakttråd", type=(0, 0),
                    f=[sys.kontakttraad["Egenvekt"] * a, 0, 0],
-                   e=[-fh, trav, arm]))
+                   e=[-fh, e_t, arm]))
 
     # Y-line(er)
     if not sys.y_line == None:
@@ -469,7 +515,7 @@ def ulykkeslast_KL(i, sys, mast):
             L = 18
         F.append(Kraft(navn="Egenvekt: Y-line", type=(0, 0),
                        f=[sys.y_line["Egenvekt"] * L, 0, 0],
-                       e=[-fh - sh, trav, arm]))
+                       e=[-fh - sh, e_t, arm]))
 
     # Vandringskraft
     avstand_fixpunkt = i.avstand_fixpunkt if not i.fixavspenningsmast else a
@@ -488,7 +534,7 @@ def ulykkeslast_KL(i, sys, mast):
         s = 1000 * (sys.baereline["Strekk i ledning"] + sys.kontakttraad["Strekk i ledning"])
         f_x = s * (i.delta_h1 / a1 + i.delta_h2 / a2)
         F.append(Kraft(navn="Geometri: Ulik høyde mellom master", type=(1, 1),
-                       f=[f_x, 0, 0], e=[-fh - sh / 2, trav, (sms + arm) / 2]))
+                       f=[f_x, 0, 0], e=[-fh - sh / 2, e_t, (sms + arm) / 2]))
 
     return F
 

@@ -1,7 +1,7 @@
 
 
 def _hent_tall(str):
-    """Henter ut tallverdi fra string for sortering"""
+    """Henter ut tallverdi fra string for sortering."""
     tall = [int(s) for s in str.split() if s.isdigit()]
     return tall
 
@@ -184,7 +184,13 @@ ulykkeslaster_KL = ["Egenvekt: Bæreline", "Egenvekt: Hengetråd", "Egenvekt: Ko
                     "Vandringskraft: Kontakttråd", "Geometri: Ulik høyde mellom master"]
 
 
-def hent_lastkombinasjoner(eurokode):
+def hent_lastkombinasjoner(ec3):
+    """Henter last- og kombinasjonsfaktorer til utregning av dimensjonerene laster.
+
+    :param Boolean ec3: Brukerens valg av beregningsmetode
+    :return: Lastsituasjoner (kombinasjonsfaktorer), lastfaktorer
+    :rtype: :class:`dict`, :class:`dict`
+    """
     if eurokode:
         # Lastsituasjoner og faktorer ihht. EC3
         lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6},

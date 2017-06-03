@@ -1,9 +1,17 @@
+"""Funksjoner for beregning av geometriske systemdata."""
+
 import math
 import lister
 
 
 def beregn_sikksakk(sys, radius):
-    """Beregning av KL sikksakk, B1 og B2, samt max forskyvning, e."""
+    """Beregner sikksakk og max tillat utblåsning av KL.
+
+    :param System sys: Data for ledninger og utligger
+    :param int radius: Sporkurvaturens radius
+    :return: Sikksakkverdier ``B1`` og ``B1``, max tillatt utblåsning ``e_max``
+    :rtype: :class:`float`, :class:`float`, :class:`float`
+    """
 
     r = radius
     sikksakk, e_max = 0, 0
@@ -49,7 +57,17 @@ def beregn_sikksakk(sys, radius):
 
 
 def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
-    """Beregning av tillatt masteavstand, a, mht utblåsning av KL."""
+    """Beregner max tillatt masteavstand.
+
+    :param System sys: Data for ledninger og utligger
+    :param int radius: Sporkurvaturens radius
+    :param float B1: Første sikksakkverdi
+    :param float B2: Andre sikksakkverdi
+    :param float e_max: Max tillatt utblåsning
+    :param float q: Vindlast på kontaktledningen
+    :return: Max tillatt masteavstand
+    :rtype: :class:`float`
+    """
 
     r = radius                                          # [m]
     s_kl = sys.kontakttraad["Strekk i ledning"] * 1000  # [N]
@@ -78,8 +96,15 @@ def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
 
 
 def beregn_arm(radius, sms, fh, B1):
-    """Beregner momentarm a_T for strekkutligger og momentarm
-    a_T_dot for trykkutligger."""
+    """Beregner momentarm for utligger.
+
+    :param int radius: Sporkurvaturens radius
+    :param float sms: Avstand senter mast - senter spor
+    :param float fh: Kontakttrådhøyde
+    :param float B1: Første sikksakkverdi
+    :return: Momentarm ``a_T`` (strekkutligger), ``a_T_dot`` (trykkutligger)
+    :rtype: :class:`float`
+    """
 
     r = radius
     b = abs(B1)

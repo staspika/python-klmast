@@ -1,12 +1,28 @@
+"""Funksjoner for å beregne deformasjonsbidrag fra et :class:`Kraft`-objekt."""
+
 import numpy
 import math
 import scipy.integrate as integrate
 
 def bjelkeformel_M(mast, j, fh):
-    """Beregner deformasjoner i kontakttrådhøyde som følge av et påsatt
-    moment med angrepspunkt i høyde x. Dersom FH > x interpoleres
-    forskyvningen til høyde FH ved hjelp av tangens til vinkelen theta
-    i høyde x ganget med høydedifferansen fh - x.
+    """
+    .. warning::
+        Denne funksjonen er for øyeblikket *ikke* aktiv ved
+        deformasjonsberegninger da den ikke tar hensyn til forskjellige
+        innspenningsbetingelser for eksentrisk plasserte vertikale laster.
+        Mangler også implementasjon av midlere stivhetsberegning.
+
+    Beregner deformasjoner i kontakttrådhøyde grunnet et rent moment.
+
+    Dersom :math:`fh > x` interpoleres forskyvningen til høyde fh
+    ved hjelp av :math:`tan(theta) * (fh-x)`,
+    der :math:`theta` er mastens utbøyningsvinkel i høyde x.
+
+    :param Mast mast: Aktuell mast som beregnes
+    :param Kraft j: Last som skal påføres ``mast``
+    :param float fh: Kontakttrådhøyde i :math:`m`
+    :return: Matrise med forskyvningsbidrag i :math:`mm`
+    :rtype: :class:`numpy.array`
     """
     E = mast.E
     I_y = mast.Iy(2/3 * mast.h)
@@ -35,8 +51,17 @@ def bjelkeformel_M(mast, j, fh):
 
 
 def bjelkeformel_P(mast, j, fh):
-    """Beregner derformasjon i kontakttrådhøyde
-    pga. en generell horisontal last
+    """Beregner deformasjoner i kontakttrådhøyde grunnet en punklast.
+
+    Dersom :math:`fh > x` interpoleres forskyvningen til høyde fh
+    ved hjelp av :math:`tan(theta) * (fh-x)`,
+    der :math:`theta` er mastens utbøyningsvinkel i høyde x.
+
+    :param Mast mast: Aktuell mast som beregnes
+    :param Kraft j: Last som skal påføres ``mast``
+    :param float fh: Kontakttrådhøyde i :math:`m`
+    :return: Matrise med forskyvningsbidrag i :math:`mm`
+    :rtype: :class:`numpy.array`
     """
 
     D = numpy.zeros((5, 8, 3))
@@ -68,8 +93,16 @@ def bjelkeformel_P(mast, j, fh):
 
 
 def bjelkeformel_q(mast, j, fh):
-    """Beregner derformasjon i kontakttrådhøyde
-    pga. en generell jevnt fordelt horisontal last
+    """Beregner deformasjoner i kontakttrådhøyde grunnet en fordelt last.
+
+    Lasten antas å være jevnet fordelt over hele mastens høyde ``h``,
+    med resultant i høyde :math:`h/2`
+
+    :param Mast mast: Aktuell mast som beregnes
+    :param Kraft j: Last som skal påføres ``mast``
+    :param float fh: Kontakttrådhøyde i :math:`m`
+    :return: Matrise med forskyvningsbidrag i :math:`mm`
+    :rtype: :class:`numpy.array`
     """
 
     D = numpy.zeros((5, 8, 3))
@@ -95,10 +128,14 @@ def bjelkeformel_q(mast, j, fh):
     return D
 
 
-def torsjonsvinkel(mast, j, i):
-    """Beregner torsjonsvinkelen phi i grader i kontakttrådhøyde FH
-    for en fast innspent mast pga. tosjonsmoment i en avstand x fra
-    fundamentet
+def torsjonsvinkel(mast, j, fh):
+    """Beregner torsjonsvinkel i kontakttrådhøyde grunnet en eksentrisk horisontal last.
+
+    :param Mast mast: Aktuell mast som beregnes
+    :param Kraft j: Last som skal påføres ``mast``
+    :param float fh: Kontakttrådhøyde i :math:`m`
+    :return: Matrise med rotasjonsbidrag i grader
+    :rtype: :class:`numpy.array`
     """
 
     T = (abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])) * 1000
@@ -107,7 +144,7 @@ def torsjonsvinkel(mast, j, i):
     I_T = mast.It
     C_w = mast.Cw
     lam = math.sqrt(G * I_T / (E * C_w))
-    fh = i.fh * 1000
+    fh = fh * 1000
     e_x = -j.e[0] * 1000
 
     D = numpy.zeros((5, 8, 3))
@@ -118,6 +155,14 @@ def torsjonsvinkel(mast, j, i):
 
 
 def utliggerbidrag(sys, sidekrefter, etasje):
+    """Beregner deformasjonsbidrag fra utligger grunnet sidekrefter i KL.
+
+    :param System sys: Data for ledninger og utligger
+    :param list sidekrefter: Liste med :class:`Kraft`-objekter som gir sidekrefter
+    :param int etasje: Angir riktig plassering av bidrag i forskyvningsmatrisen
+    :return: Matrise med forskyvninger
+    :rtype: :class:`numpy.array`
+    """
 
     D = numpy.zeros((5, 8, 3))
 

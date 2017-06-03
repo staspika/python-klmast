@@ -10,9 +10,23 @@ class Tilstand(object):
 
     def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
                  G=0, L=0, T=0, S=0, V=0, iterasjon=0):
-        """Initierer tilstandsobjekt med data om krefter og forskyvninger
-         samt lastfaktorer ved gitt lasttilfelle.
-         """
+        """Initierer tilstandsobjekt.
+
+        :param Mast mast: Aktuell mast
+        :param Inndata i: Input fra bruker
+        :param dict lastsituasjon: Aktuell lastsituasjon
+        :param int vindretning: Aktuell vindretning
+        :param tuple type: (Rad, etasje) for plassering i R- og D-matrise
+        :param list F: Liste med :class:`Kraft`-objekter påført systemet
+        :param numpy.array R: Reaksjonskraftmatrise
+        :param numpy.array D: Forskyvningsmatrise
+        :param float G: Lastfaktor egenvekt
+        :param float L: Lastfaktor kabelstrekk
+        :param float T: Lastfaktor temperatur
+        :param float S: Lastfaktor snø/is
+        :param float V: Lastfaktor vind
+        :param iterasjon: Iterasjon for utregning av aktuell :class:`Tilstand`
+        """
         self.metode = "EC3" if i.ec3 else "NEK"
         self.lastsituasjon = lastsituasjon
         self.vindretning = vindretning
@@ -84,11 +98,16 @@ class Tilstand(object):
         return rep
 
     def _beregn_momentfordeling(self):
-        """Beregner ekvivalent mastelengde L_e,
-         samt andeler til kritisk moment. A gir
-         vinlastens bidrag, mens B angir punkt-
-         lastenes andel av kritisk moment.
-         """
+        """Beregner mastens momentfordeling.
+
+        Beregner ekvivalent mastelengde L_e,
+        samt andeler til kritisk moment. A gir
+        vindlastens, mens B angir punktlastenes
+        andel av bidrag til kritisk moment.
+
+        :return: Ekvivalent mastelengde, momentandeler A og B
+        :rtype: :class:`float`, :class:`float`, :class:`float`
+        """
 
         M_punkt, M_fordelt, M_fordelt_0, M_sum = 0, 0, 0, 0
 
@@ -126,13 +145,18 @@ class Tilstand(object):
 
         return L_e, A, B
 
-    def _reduksjonsfaktor_knekking(self, mast,  L_cr, akse):
-        """
-        Beregner aksialkraftkapasitet etter EC3, 6.3.1.2
-        :param mast: Henter tverrsnittsverdier
-        :param L_cr: Effektiv mastelengde
-        :param akse: 0=y, 1=z
-        :return: Reduksjonsfaktoren X for knekking 
+    def _reduksjonsfaktor_knekking(self, mast, L_cr, akse):
+        """Beregner faktorer for aksialkraftkapasitet etter EC3, 6.3.1.2.
+
+        ``akse`` kan oppgis for å regne om hhv. sterk og svak akse:
+        **0** = y
+        **1** = z
+
+        :param Mast mast: Aktuell mast
+        :param float L_cr: Effektiv mastelengde
+        :param int akse:
+        :return: Reduksjonsfaktor X for knekking, slankhet lam
+        :rtype: :class:`float`, :class:`float`
         """
 
         if akse == 0:
@@ -153,13 +177,14 @@ class Tilstand(object):
         return X, lam
 
     def _reduksjonsfaktor_vipping(self, mast, L_e, A, B, My_Ed):
-        """
-        Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3
-        :param mast: Henter tverrsnittsverdier
-        :param L_e: Effektiv mastelengde
-        :param A: Momentandel tilknyttet vindlast
-        :param B: Momentandel tilknyttet vindlast
-        :return: Reduksjonsfaktoren X_LT for vipping
+        """Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3.
+
+        :param Mast mast: Aktuell mast
+        :param float L_e: Effektiv mastelengde
+        :param float A: Momentandel fra vindlast
+        :param float B: Momentandel fra punktlaster
+        :return: Reduksjonsfaktor X_LT for vipping
+        :rtype: :class:`float`
         """
 
         X_LT = 1.0
@@ -192,16 +217,18 @@ class Tilstand(object):
         return X_LT
 
     def _interaksjonsfaktorer(self, mast, lam_y, N_Ed, X_y, X_z, lam_z):
-        """
-        Beregner interaksjonsfaktorer etter EC3, Tabell B.2.
-        Antar at alle master tilhører tverrsnittsklasse #1
-        :param mast: Henter areal for aksialkraftkapasitet
-        :param lam_y: Relativ slankhet for knekking om y-aksen
-        :param N_Ed: Dimensjonerende aksialkraft
-        :param X_y: Reduksjonsfaktoren for knekking om y-aksen
-        :param X_z: Reduksjonsfaktoren for knekking om z-aksen
-        :param lam_z: Relativ slankhet for knekking om y-aksen
+        """Beregner interaksjonsfaktorer etter EC3, Tabell B.2.
+
+        Det antas at alle master tilhører tverrsnittsklasse #1.
+
+        :param Mast mast: Aktuell mast
+        :param float lam_y: Relativ slankhet for knekking om y-aksen
+        :param float N_Ed: Dimensjonerende aksialkraft
+        :param float X_y: Reduksjonsfaktor for knekking om y-aksen
+        :param float X_z: Reduksjonsfaktor for knekking om z-aksen
+        :param float lam_z: Relativ slankhet for knekking om y-aksen
         :return: Interaksjonsfaktorer k_yy, k_yz, k_zy, k_zz
+        :rtype: :class:`float`, :class:`float`, :class:`float`, :class:`float`
         """
 
         k_yy = 0.6 * (1 - (lam_y - 0.2) * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
@@ -229,14 +256,16 @@ class Tilstand(object):
         return k_yy, k_yz, k_zy, k_zz
 
     def _utnyttelsesgrad(self, i, mast, K):
-        """
-        Beregnes utnyttelsesgraden (UR) for alle typer master.
-        Beregning av reduksjons- og interaksjonsfaktorer foregår
-        i egne metoder.
-        :param i: Endrer knekklengden ved å sjekke om det er en avspenningsmast
-        :param mast: Henter tverrsnittsparametre
-        :param K: Henter dimensjonerende laster.
-        :return: Returnerer utnyttelsesgraden til masten.
+        """Beregner utnyttelsesgrad.
+
+        Funksjonen undersøker utnyttelsesgrad for alle relevante
+        bruddsituasjoner, og returnerer den høyeste verdien.
+
+        :param Inndata i: Input fra bruker
+        :param Mast mast: Aktuell mast
+        :param list K: Liste med dimensjonerende reaksjonskrefter
+        :return: Mastens utnyttelsesgrad UR
+        :rtype: :class:`float`
         """
 
         u = self.N_kap + self.My_kap + self.Mz_kap

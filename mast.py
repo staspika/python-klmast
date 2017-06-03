@@ -3,7 +3,7 @@ import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 
 class Mast(object):
-    """Parent class for alle masteyper"""
+    """Klasse for å representere alle typer master."""
 
     # Klassevariabler er like for alle master
     E = 210000  # N/mm^2
@@ -14,7 +14,33 @@ class Mast(object):
                  toppmaal=0, stigning=0, d_h=0, d_b=0,
                  k_g=0, k_d=0, A_ref=0, A_ref_par=0, h_max=0, h=0,
                  s235=False, materialkoeff=1.05):
-        """Oppretter nytt masteobjekt"""
+        """Initialiserer masteobjekt.
+
+        :param str navn: Mastens navn
+        :param str type: Mastens type (B, H, bjelke)
+        :param int egenvekt: Mastens egenvekt
+        :param float A_profil: Arealet av et stegprofil
+        :param float Iy_profil: Stegprofilets annet arealmoment om lokal y-akse
+        :param float Iz_profil: Stegprofilets annet arealmoment om lokal z-akse
+        :param float Wyp: Plastisk tverrsnittsmodul om profilets y-akse
+        :param float Wzp: Plastisk tverrsnittsmodul om profilets z-akse
+        :param float It: Profilets treghetsmoment for torsjon
+        :param float Cw: Profilets hvelvningskonstant
+        :param float noytralakse: Avstand ytterkant profil - lokal z-akse
+        :param int toppmaal: Tverrsnittsbredde ved mastetopp
+        :param float stigning: Mastens helning
+        :param float d_h: Tverrsnittshøyde diagonaler
+        :param float d_b: Tverrsnittsbredde diagonaler
+        :param float k_g: Knekklengdefaktor gurter
+        :param float k_d: Knekklengdefaktor diagonaler
+        :param float A_ref: Vindareal normalt sporretning
+        :param float A_ref_par: Vindareal parallelt sporretning
+        :param float h_max: Max tillatt høyde av mast
+        :param float h: Faktisk høyde av mast
+        :param Boolean s235: Angir valg av flytespenning
+        :param float materialkoeff: Materialkoeffisient for dimensjonering
+        """
+
         self.navn = navn  # Mastens lastsituasjon
         self.type = type  # Støttede mastetyper: B, H, bjelke
         self.egenvekt = egenvekt  # Egenvekt [N/m]
@@ -159,24 +185,28 @@ class Mast(object):
         return rep
 
     def bredde(self, x):
+        """Beregner total bredde av tverrsnitt.
+
+        :param float x: Avstand fra mastens toppunkt [m]
+        :return: Tverrsnittsbredde i angitt høyde [mm]
+        :rtype: :class:`float`
         """
-        Beregner total bredde av tverrsnitt.
-        :param x: Avstand fra mastens toppunkt [m]
-        :return: Tverrsnittsbredde [mm]
-        """
+
         if not self.type == "bjelke":
             return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
 
     def Iy(self, x, delta_topp=0, breddefaktor=1.0,):
-        """
-        Beregner annet arealmoment om mastens sterk akse.
+        """Beregner annet arealmoment om mastens sterk akse.
+
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
+
         :param x: Avstand fra mastens toppunkt [m]
-        :param delta_topp: Konstant tillegg til x [m]
+        :param delta_topp: Konstant tillegg til x (til hjelp ved integrasjon) [m]
         :param breddefaktor: Faktor for å kontrollere effektiv bredde
-        :return: Annet arealmoment om y-akse [mm^2]
+        :return: Annet arealmoment om y-akse i angitt høyde [mm^2]
+        :rtype: :class:`float`
         """
 
         if self.type == "B":
@@ -188,34 +218,38 @@ class Mast(object):
         elif self.type == "bjelke":
             Iy = self.Iy_profil
         return Iy
-        """
-        return self.Iy_KL_fund(x)
-        """
 
     def Iy_int_P(self, x, delta_topp=0):
+        """Beregner integralet for Iy ved punktlast.
+
+        :param float x: Lengden det skal integreres over
+        :param float delta_topp: Avstand til mastetopp det skal integreres fra
+        :return: Summen av Iy-bidrag over angitt høyde
+        :rtype: :class:`float`
+        """
+
         return x**2 / self.Iy(x/1000, delta_topp=delta_topp)
+
     def Iy_int_q(self, x, delta_topp=0):
+        """Beregner integralet for Iy ved jevnt fordelt last.
+
+        :param float x: Lengden det skal integreres over
+        :param float delta_topp: Avstand til mastetopp det skal integreres fra
+        :return: Summen av Iy-bidrag over angitt høyde
+        :rtype: :class:`float`
+        """
+
         return x**3 / self.Iy(x/1000, delta_topp=delta_topp)
 
-    def Iy_KL_fund(self, x):
-        """Legacy fra KL_fund"""
-        if self.type == "B":
-            Iy = 2 * (self.Iy_profil + self.A_profil * (self.bredde(x) / 2) ** 2)
-        if self.type == "H":
-            Iy = 4 * (self.Iy_profil + self.A_profil * (self.bredde(x) / 2) ** 2)
-        elif self.type == "bjelke":
-            Iy = self.Iy_profil
-        return Iy
-
     def Iz(self, x, delta_topp=0):
-        """
-        Beregner annet arealmoment om mastens sterk akse.
-        Breddefaktor kan oppgis for å ta hensyn til
-        redusert effektiv bredde grunnet helning på mast.
+        """Beregner annet arealmoment om mastens svake akse.
+
         :param x: Avstand fra mastens toppunkt [m]
-        :param delta_topp: Tillegg til x (for løsning av stivhetsintegral) [m]
-        :return: Annet arealmoment om y-akse [mm^2]
+        :param delta_topp: Konstant tillegg til x (til hjelp ved integrasjon) [m]
+        :return: Annet arealmoment om z-akse i angitt høyde [mm^2]
+        :rtype: :class:`float`
         """
+
         if self.type == "B":
             Iz = 2 * self.Iy_profil
         if self.type == "H":
@@ -226,13 +260,34 @@ class Mast(object):
         return Iz
 
     def Iz_int_P(self, x, delta_topp=0):
+        """Beregner integralet for Iz ved punktlast.
+
+        :param float x: Lengden det skal integreres over
+        :param float delta_topp: Avstand til mastetopp det skal integreres fra
+        :return: Summen av Iy-bidrag over angitt høyde
+        :rtype: :class:`float`
+        """
+
         return x**2 / self.Iz(x / 1000, delta_topp=delta_topp)
+
     def Iz_int_q(self, x, delta_topp=0):
+        """Beregner integralet for Iz ved jevnt fordelt last.
+
+        :param float x: Lengden det skal integreres over
+        :param float delta_topp: Avstand til mastetopp det skal integreres fra
+        :return: Summen av Iy-bidrag over angitt høyde
+        :rtype: :class:`float`
+        """
+
         return x**3 / self.Iz(x / 1000, delta_topp=delta_topp)
 
     def My_Rk(self):
-        """Beregner mastens motstadsmoment [Nmm] om sterk akse
+        """Beregner mastens motstandsmoment om sterk akse [Nmm]
+
+        :return: Motstandsmoment om y-aksen
+        :rtype: :class:`float`
         """
+
         if self.type == "B":
             My_Rk = self.A_profil * 0.9 * self.bredde(self.h) * self.fy
         elif self.type == "H":
@@ -242,8 +297,12 @@ class Mast(object):
         return My_Rk
 
     def Mz_Rk(self):
-        """Beregner mastens motstadsmoment [Nmm] om svak akse
+        """Beregner mastens motstandsmoment om svak akse [Nmm]
+
+        :return: Motstandsmoment om z-aksen
+        :rtype: :class:`float`
         """
+
         if self.type == "B":
             My_Rk = 2 * self.Wyp * self.fy
         elif self.type == "H":
@@ -254,6 +313,17 @@ class Mast(object):
 
 
     def sorter_grenseverdier(self):
+        """Lagrer høyeste verdier av utvalgte parametre i egne variabler.
+
+        Tilstander med høyeste registrerte verdi av gitte parametre sorteres ut
+        og lagres i egne variabler tilknyttet :class:`Mast`-objektet.
+
+        Tilstandsparametre for utvelgelse blant bruddgrensetilstander:
+        **Utnyttelsesgrad**, **My_max**, **T_max**
+
+        Tilstandsparametre for utvelgelse blant forskyvningstilstander (både total og KL):
+        **Dz_max**, **phi_max**
+        """
 
         #Bruddgrense
         self.tilstand_UR_max = self.bruddgrense[0]
@@ -318,8 +388,15 @@ class Mast(object):
             if phi > phi_max:
                 self.tilstand_phi_kl_max = tilstand
 
-    def sorter(self):
-        kriterie = 0  # 0 = My, 1 = utnyttelsesgrad
+    def sorter(self, kriterie):
+        """Sorterer :class:`Mast`-objektets tilstander.
+
+        ``kriterie`` oppgis for å styre sortering av bruddgrensetilstander:
+        **0** = My
+        **1** = utnyttelsesgrad
+
+        :param int kriterie:
+        """
 
         if kriterie == 0:
             self.bruddgrense = sorted(self.bruddgrense, key=lambda tilstand: abs(tilstand.K[0]), reverse=True)
@@ -330,6 +407,11 @@ class Mast(object):
         self.forskyvning_kl = sorted(self.forskyvning_kl, key=lambda tilstand: abs(tilstand.K_D[1]), reverse=True)
 
     def lagre_tilstand(self, tilstand):
+        """Lagrer tilstand i tilknyttet :class:`Mast`-objekt.
+
+        :param Tilstand tilstand: Tilstand som skal lagres
+        """
+
         if tilstand.type == 0:
             self.bruddgrense.append(tilstand)
         elif tilstand.type == 1:
@@ -339,7 +421,14 @@ class Mast(object):
 
 
 def hent_master(hoyde, s235, materialkoeff):
-    """Returnerer liste med master til beregning."""
+    """Henter liste med master til beregning.
+
+    :param float hoyde: Valgt mastehøyde
+    :param Boolean s235: Angir valg av flytespenning
+    :param float materialkoeff: Materialkoeffisient for dimensjonering
+    :return: Liste inneholdende samtlige av programmets master
+    :rtype: :class:`list`
+    """
 
     # B-master (tverrsnittsklasse 3)
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,

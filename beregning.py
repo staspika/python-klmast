@@ -1,3 +1,5 @@
+"""Overordnet beregningsprosedyre for master."""
+
 import numpy
 import system
 import lister
@@ -9,6 +11,12 @@ import deformasjon
 
 
 def beregn(i):
+    """Gjennomfører beregning og returnerer masteobjekter med resultater.
+
+    :param Inndata i: Input fra bruker
+    :return: Liste med master
+    :rtype: :class:`list`
+    """
     import mast
 
     # Indeksering av 3D-matriser:
@@ -138,6 +146,8 @@ def beregn(i):
 
                 # TO DO:
                 #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
+                #        * Sjekke gyldigheten av R- og D-beregninger når e er negativ
+                #        * Oversett deformasjon_M til eksakt beregning av Iy/Iz
 
 
 
@@ -200,8 +210,11 @@ def beregn(i):
 
 
 def _beregn_reaksjonskrefter(F):
-    """Beregner reaksjonskrefter og plasserer bidragene i riktig rad
-    og kolonne i R-matrisen.
+    """Beregner reaksjonskrefter ved masteinnspenning grunnet krefter i F.
+
+    :param list F: Liste med :class:`Kraft`-objekter påført systemet
+    :return: Matrise med reaksjonskrefter
+    :rtype: :class:`numpy.array`
     """
 
     # Initierer R-matrisen for reaksjonskrefter
@@ -226,9 +239,15 @@ def _beregn_reaksjonskrefter(F):
 
 
 def _beregn_deformasjoner(i, mast, F):
-    """Beregner deformasjoner og plasserer bidragene
-     i riktig rad og kolonne i D-matrisen.
+    """Beregner forskyvninger i kontakttrådhøyde grunnet krefter i F.
+
+    :param Inndata i: Input fra bruker
+    :param Mast mast: Aktuell mast som beregnes
+    :param list F: Liste med :class:`Kraft`-objekter påført systemet
+    :return: Matrise med forskyvninger
+    :rtype: :class:`numpy.array`
     """
+
 
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))
@@ -244,13 +263,21 @@ def _beregn_deformasjoner(i, mast, F):
 
 
         if mast.type == "bjelke":
-            D_0 += deformasjon.torsjonsvinkel(mast, j, i)
+            D_0 += deformasjon.torsjonsvinkel(mast, j, i.fh)
 
         D += D_0
 
     return D
 
 def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
+    """Returnerer deformasjonsbidrag fra :func:`deformasjon.utliggerbidrag`.
+
+    :param System sys: Data for ledninger og utligger
+    :param list sidekrefter: Liste med :class:`Kraft`-objekter som gir sidekrefter
+    :param int etasje: Angir riktig plassering av bidrag i forskyvningsmatrisen
+    :return: Matrise med forskyvninger
+    :rtype: :class:`numpy.array`
+    """
 
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))

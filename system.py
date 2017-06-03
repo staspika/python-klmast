@@ -2,7 +2,7 @@ import geometri
 import matplotlib.pyplot as plt
 
 class System(object):
-    """Parent class for alle systemteyper"""
+    """Klasse for å representere alle valg av system."""
 
     def __init__(self, navn, baereline, kontakttraad, fixline,
                  forbigangsledning, returledning, matefjernledning,
@@ -31,7 +31,12 @@ class System(object):
 
 
 def hent_system(i):
-    """Returnerer navngitt system"""
+    """Henter :class:`System` med data for ledninger og utliggere
+
+    :param Inndata i: Input fra bruker
+    :return: Systemkonfigurasjon
+    :rtype: :class:`System`
+    """
 
     a = (i.a1 + i.a2)/2
 
@@ -226,32 +231,40 @@ def hent_system(i):
                       radius=i.radius, sms=i.sms, fh=i.fh)
 
 def _strekkraft(a, b, masteavstand):
-    """
-    Beregner strekkraft i [N] mhp. masteavstand.
+    """Beregner strekkraft i fastavspent ledning mhp. masteavstand.
     
-    :param a: Strekk ved 30m masteavstand [kN]
-    :param b: Strekk ved 70m masteavstand [kN]
-    :param masteavstand: Faktisk masteavstand [m]
+    :param float a: Strekk ved 30m masteavstand [kN]
+    :param float b: Strekk ved 70m masteavstand [kN]
+    :param float masteavstand: Faktisk masteavstand [m]
     :return: Strekkraft ved faktisk masteavstand [N]
+    :rtype: :class:`float`
     """
 
     s = 1000 * (a + (masteavstand-30) * (b - a)/40)
+
     return s
 
 
 
 def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
-    """
-    Numerisk løsning av kabelstrekk i fastavspente ledninger.
-    :param H_0: Initiell spennkraft i kabel [N]
-    :param E: Kabelens E-modul [N/mm^2]
-    :param A: Kabelens tverrsnittsareal [mm^2]
-    :param G_0: Kabelens egenvekt [N/m]
-    :param G_x: Kabelens egenvekt + eventuell snølast [N/m]
-    :param L: Masteavstand [m]
-    :param alpha: Lengdeutvidelseskoeffisient [1/C]
-    :param T: Lufttemperatur [C]
-    :return: Spennkraft i kabel ved oppgitte forhold [N]
+    """Numerisk løsning av kabelstrekk i fastavspente ledninger.
+
+    Løsningen finnes ved hjelp av Newton-Raphson-iterasjoner
+    for en residualfunksjon utledet fra likevekstligningen
+    til en fastavspent kabel.
+    Løsning returneres dersom feilkriteriet ``e`` er innenfor
+    valgt grense eller antall iterasjoner overgår 100.
+
+    :param float H_0: Initiell spennkraft i kabel [N]
+    :param float E: Kabelens E-modul [N/mm^2]
+    :param float A: Kabelens tverrsnittsareal [mm^2]
+    :param float G_0: Kabelens egenvekt [N/m]
+    :param float G_x: Kabelens egenvekt + eventuell snølast [N/m]
+    :param float L: Masteavstand [m]
+    :param float alpha: Lengdeutvidelseskoeffisient [1/C]
+    :param float T: Lufttemperatur [C]
+    :return: Endelig kabelstrekk [N], antall iterasjoner, kabelstrekk ved hver iterasjon
+    :rtype: :class:`float`, :class:`int`, :class:`list`
     """
 
     # Konstanter

@@ -1,14 +1,13 @@
+"""Grafisk brukergrensesnitt, avlesing/skriving av inndata til .ini-fil."""
+
 import tkinter as tk
 import configparser
 import lister
 import ctypes
 import math
-from PIL import ImageTk, Image
 from collections import OrderedDict
 from datetime import date
 
-
-"""Grafisk brukergrensesnitt, avlesing/skriving av inndata til .ini-fil"""
 
 # Fonter
 skrifttype = "Helvetica"
@@ -19,7 +18,7 @@ bold = (skrifttype, skriftstr, "bold")
 italic = (skrifttype, skriftstr, "italic")
 
 class KL_fund(tk.Tk):
-    """Hovedprogram"""
+    """Hovedprogram."""
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -32,17 +31,17 @@ class KL_fund(tk.Tk):
         self.geometry("{}x{}".format(self.x, self.y))
 
         self.masteavstand_max = 63.0
-        self.h_range = [8.0, 0.0, 13.0]
+        self.h_range = [10.0, 8.0, 13.0]
         self.hfj_type = "fjern-/AT-ledning"
-        self.hfj_max = 13.0
+        self.hfj_range = [10.5, 8.0, 13.0]
         self.hf_type = "forbigangs-/fiberoptisk ledning"
-        self.hf_max = 13.0
-        self.hj_max = 13.0
-        self.hr_max = 13.0
-        self.fh_max = 6.5
-        self.sh_max = 2.0
-        self.e_max = 3.0
-        self.sms_max = 6.0
+        self.hf_range = [7.8, 8.0, 13.0]
+        self.hj_range = [7.3, 8.0, 13.0]
+        self.hr_range = [7.3, 8.0, 13.0]
+        self.fh_range = [5.7, 8.0, 13.0]
+        self.sh_range = [1.6, 8.0, 13.0]
+        self.e_range = [0.0, 8.0, 13.0]
+        self.sms_range = [3.5, -5.1, 3]
 
         self._gittermast = tk.BooleanVar()
 
@@ -112,13 +111,14 @@ class KL_fund(tk.Tk):
 
 
 class Hovedvindu(tk.Frame):
-    """Vindu for hovedprogram"""
+    """Vindu for hovedprogram."""
 
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
         self.pack(fill="both")
 
-        # Info
+
+        #--------------------------------------Info--------------------------------------
         info = tk.Frame(self, width=self.master.x, height=0.10*self.master.y, bd=3, relief="ridge")
         info.pack(fill="both")
 
@@ -131,6 +131,7 @@ class Hovedvindu(tk.Frame):
         strekning_menu = tk.OptionMenu(info, self.master.banestrekning, *lister.kilometer_list)
         strekning_menu.config(font=plain)
         strekning_menu.grid(row=1, column=1, sticky="EW")
+
         # km
         self.master.km.set(lister.kilometer[lister.kilometer_list[0]][0])
         tk.Label(info, text="Km:", font=plain).grid(row=1, column=2, sticky="E")
@@ -138,22 +139,26 @@ class Hovedvindu(tk.Frame):
         km_entry.config(font=plain)
         km_entry.grid(row=1, column=3, sticky="W")
         createToolTip(self.master, km_entry, "km")
+
         # prosjektnr
         self.master.prosjektnr.set(0)
         tk.Label(info, text="Prosj.nr:", font=plain).grid(row=0, column=4, sticky="E")
         prosj_entry = tk.Entry(info, textvariable=self.master.prosjektnr, bg="red")
         prosj_entry.config(font=plain)
         prosj_entry.grid(row=0, column=5, sticky="W")
+
         # mastenr
         self.master.mastenr.set(0)
         tk.Label(info, text="Mastenr:", font=plain).grid(row=1, column=4, sticky="E")
         mastenr_entry = tk.Entry(info, textvariable=self.master.mastenr, bg="red")
         mastenr_entry.config(font=plain)
         mastenr_entry.grid(row=1, column=5, sticky="W")
+
         # signatur
         self.master.signatur.set("ANONYM")
         tk.Label(info, text="Sign.:", font=plain).grid(row=0, column=6, sticky="E")
         tk.Entry(info, textvariable=self.master.signatur, bg="red").grid(row=0, column=7, sticky="W")
+
         # dato
         today = date.today()
         self.master.dato.set("{}.{}.{}".format(today.day, today.month, today.year))
@@ -161,15 +166,17 @@ class Hovedvindu(tk.Frame):
         dato_entry = tk.Entry(info, textvariable=self.master.dato, state="readonly")
         dato_entry.config(font=plain)
         dato_entry.grid(row=0, column=9, sticky="W")
+
         # kontroll
         tk.Label(info, text="Kontroll:", font=plain).grid(row=1, column=6, sticky="E")
         tk.Label(info, text="_______________________", font=plain).grid(row=1, column=7, sticky="W")
+
         # kontrolldato
         tk.Label(info, text="Dato for kontroll:", font=plain).grid(row=1, column=8, sticky="E")
         tk.Label(info, text="_______________________", font=plain).grid(row=1, column=9, sticky="W")
 
 
-        # Inngangsdata
+        # ----------------------------------Inngangsdata----------------------------------
         inngangsdata = tk.Frame(self, width=0.48 * self.master.x,
                                      height=0.78 * self.master.y,
                                     bd=3, relief="ridge")
@@ -180,6 +187,7 @@ class Hovedvindu(tk.Frame):
         venstre.pack(side="left")
         hoyre = tk.Frame(inngangsdata)
         hoyre.pack(side="right")
+
         # mastefelt
         mastefelt = tk.LabelFrame(venstre, text="Mastefelt", font=bold)
         mastefelt.pack(fill="both")
@@ -198,6 +206,7 @@ class Hovedvindu(tk.Frame):
         self.fixavstand_spinbox.insert(0, self.master.avstand_fixpunkt.get())
         self.fixavstand_spinbox.config(font=plain, state="readonly")
         self.fixavstand_spinbox.pack(anchor="e", side="right", padx=5, pady=8)
+
         # mastefunksjoner
         mastefunksjoner = tk.LabelFrame(venstre, text="Mastefunksjoner", font=bold)
         mastefunksjoner.pack(fill="both")
@@ -226,6 +235,7 @@ class Hovedvindu(tk.Frame):
         tk.Checkbutton(mastefunksjoner_2, text="Neste mast på andre siden av sporet", font=plain,
                        variable=self.master.master_bytter_side, onvalue=True, offvalue=False)\
                        .grid(row=1, column=0, sticky="W", columnspan=2, pady=(0,2))
+
         # fastavspente ledninger
         fastavspente = tk.LabelFrame(venstre, text="Fastavspente ledninger", font=bold)
         fastavspente.pack(fill="both")
@@ -273,6 +283,7 @@ class Hovedvindu(tk.Frame):
         self.diff_spinbox.insert(0, self.master.differansestrekk.get())
         self.diff_spinbox.config(font=plain, state="readonly")
         self.diff_spinbox.grid(row=6, column=1)
+
         # system
         system = tk.LabelFrame(hoyre, text="System", font=bold)
         system.pack(fill="both")
@@ -308,11 +319,13 @@ class Hovedvindu(tk.Frame):
         tk.Label(system, text="(Vindkasthastighetstrykk = {} kN/m^2)"
                  .format(self.master.vindkasthastighetstrykk.get()), font=italic) \
             .grid(row=5, column=1, sticky="W")
+
         # geometriske data
         geom_data = tk.LabelFrame(hoyre, text="System", font=bold)
         geom_data.pack(fill="both")
         g_1 = tk.Frame(geom_data, relief="groove", bd=1)
         g_1.pack(fill="both")
+
         # h
         tk.Label(g_1, text="    (mastehøyde): [m]  ", font=plain) \
             .grid(row=0, column=0, sticky="W")
@@ -325,6 +338,7 @@ class Hovedvindu(tk.Frame):
         self.h_spinbox.insert(0, self.master.h.get())
         self.h_spinbox.config(font=plain, state="readonly")
         self.h_spinbox.grid(row=0, column=1, sticky="W")
+
         # hfj
         tk.Label(g_1, text="      ({}): [m]  ".format(self.master.hfj_type), font=plain) \
             .grid(row=1, column=0, sticky="W")
@@ -337,6 +351,7 @@ class Hovedvindu(tk.Frame):
         self.hfj_spinbox.insert(0, self.master.hfj.get())
         self.hfj_spinbox.config(font=plain, state="readonly")
         self.hfj_spinbox.grid(row=1, column=1, sticky="W")
+
         # hf
         tk.Label(g_1, text="     ({}): [m]  ".format(self.master.hf_type), font=plain) \
             .grid(row=2, column=0, sticky="W")
@@ -349,6 +364,7 @@ class Hovedvindu(tk.Frame):
         self.hf_spinbox.insert(0, self.master.hf.get())
         self.hf_spinbox.config(font=plain, state="readonly")
         self.hf_spinbox.grid(row=2, column=1, sticky="W")
+
         # hj
         tk.Label(g_1, text="     (jordledning): [m]  ", font=plain) \
             .grid(row=3, column=0, sticky="W")
@@ -361,6 +377,7 @@ class Hovedvindu(tk.Frame):
         self.hj_spinbox.insert(0, self.master.hj.get())
         self.hj_spinbox.config(font=plain, state="readonly")
         self.hj_spinbox.grid(row=3, column=1, sticky="W")
+
         # hr
         tk.Label(g_1, text="     (returledning): [m]  ", font=plain) \
             .grid(row=4, column=0, sticky="W")
@@ -375,6 +392,7 @@ class Hovedvindu(tk.Frame):
         self.hr_spinbox.grid(row=4, column=1, sticky="W")
         g_2 = tk.Frame(geom_data, relief="groove", bd=1)
         g_2.pack(fill="both")
+
         # fh
         tk.Label(g_2, text="      (kontakttråd): [m]  ", font=plain) \
             .grid(row=0, column=0, sticky="W")
@@ -387,6 +405,7 @@ class Hovedvindu(tk.Frame):
         self.fh_spinbox.insert(0, self.master.fh.get())
         self.fh_spinbox.config(font=plain, state="readonly")
         self.fh_spinbox.grid(row=0, column=1, sticky="W")
+
         # sh
         tk.Label(g_2, text="      (systemhøyde): [m]  ", font=plain) \
             .grid(row=1, column=0, sticky="W")
@@ -399,6 +418,7 @@ class Hovedvindu(tk.Frame):
         self.sh_spinbox.insert(0, self.master.sh.get())
         self.sh_spinbox.config(font=plain, state="readonly")
         self.sh_spinbox.grid(row=1, column=1, sticky="W")
+
         # e
         tk.Label(g_2, text="    (SOK - top fundament): [m]  ", font=plain) \
             .grid(row=2, column=0, sticky="W")
@@ -411,6 +431,7 @@ class Hovedvindu(tk.Frame):
         self.e_spinbox.insert(0, self.master.e.get())
         self.e_spinbox.config(font=plain, state="readonly")
         self.e_spinbox.grid(row=2, column=1, sticky="W")
+
         # sms
         tk.Label(g_2, text="      (s mast - s spor): [m]  ", font=plain) \
             .grid(row=3, column=0, sticky="W")
@@ -423,6 +444,7 @@ class Hovedvindu(tk.Frame):
         self.sms_spinbox.insert(0, self.master.sms.get())
         self.sms_spinbox.config(font=plain, state="readonly")
         self.sms_spinbox.grid(row=3, column=1, sticky="W")
+
         # mast
         mast = tk.LabelFrame(hoyre, text="Mast", font=bold)
         mast.pack(fill="both")
@@ -439,6 +461,7 @@ class Hovedvindu(tk.Frame):
         system_menu = tk.OptionMenu(mast, self.master._s235, *lister.staal_list)
         system_menu.config(font=plain)
         system_menu.grid(row=1, column=1, sticky="W", columnspan=1)
+
         # avansert/beregn
         av_beregn = tk.LabelFrame(hoyre, text="Fullfør", font=bold)
         av_beregn.pack(fill="both")
@@ -448,21 +471,11 @@ class Hovedvindu(tk.Frame):
         beregn_btn.pack(side="right")
 
 
-        """
-        # Grafikk
-        grafikk = tk.Frame(self, width=0.48 * self.master.x, height=0.6 * self.master.y)
-        grafikk.pack(side="right")
-        image = Image.open("mast_grafikk.jpg")
-        image = image.resize((250, 250), Image.ANTIALIAS)
-        image = ImageTk.PhotoImage(image)
-        tk.Label(grafikk, image=image).grid(row=0, column=0, sticky="NSEW")
-        """
-
 
 
 
     def _skriv_ini(self):
-        """Skriver varibelverdier til input-fil"""
+        """Skriver varibelverdier fra hovedprogram til .ini-fil."""
 
         self.master.siste_for_avspenning.set(False)
         if self.master._mastefelt.get() == 0:
@@ -537,11 +550,14 @@ class Hovedvindu(tk.Frame):
 
 
 
-# Originalkode for implementasjon av tooltips:
-# http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
+
 
 class ToolTip(object):
-    """Klasse for visning av tooltips"""
+    """Klasse for visning av tooltips.
+
+    Originalkode for implementasjon av tooltips:
+    http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
+    """
 
     def __init__(self, widget):
         self.widget = widget
@@ -550,7 +566,7 @@ class ToolTip(object):
         self.x = self.y = 0
 
     def showtip(self, master, text):
-        "Viser tekst i tooltip-vindu"
+        """Viser tekst i tooltip-vindu."""
         self.text = text
         if text == "km":
             km_gyldig = lister.kilometer[master.banestrekning.get()]  # Gyldige km for gitt banestrekke
@@ -576,13 +592,14 @@ class ToolTip(object):
         label.pack(ipadx=1)
 
     def hidetip(self):
+        """Gjemmer tekst i tooltip-vindu."""
         tw = self.tipwindow
         self.tipwindow = None
         if tw:
             tw.destroy()
 
 def createToolTip(master, widget, text):
-    """Oppretter tooltip og binder det til visning ved mouse over"""
+    """Oppretter tooltip og binder det til visning ved mouse-over."""
     toolTip = ToolTip(widget)
     def enter(event):
         toolTip.showtip(master, text)
@@ -594,7 +611,7 @@ def createToolTip(master, widget, text):
 
 
 def _valider(event):
-    """Validerer programtilstand"""
+    """Validerer programtilstand."""
     print("Tilstand OK.")
     return True
 
@@ -602,8 +619,11 @@ def _valider(event):
 
 
 
-# Kjører program
-root = KL_fund()
-hovedvindu = Hovedvindu(root)
-root.mainloop()
+
+if __name__ == "__main__":
+
+    # Kjører program
+    root = KL_fund()
+    hovedvindu = Hovedvindu(root)
+    root.mainloop()
 

@@ -1,3 +1,5 @@
+"""Beregning av vindlaster, funksjoner for påføring av krefter fra vind- og snølast."""
+
 import math
 from kraft import *
 
@@ -14,8 +16,12 @@ terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 
 
 def beregn_vindkasthastighetstrykk_EC(i, z):
-    """Beregner dimensjonerende vindkasthastighetstrykk [kN/m^2]
-    med bruk av Eurokode 1 (EC1).
+    """Beregner dimensjonerende vindkasthastighetstrykk mhp. Eurokode 0.
+
+    :param Inndata i: Input fra bruker
+    :param float z: Høyde over bakken
+    :return: Vindkasthastighetstrykk i :math:`kN/m^2`
+    :rtype: :class:`float`
     """
 
     # Inngangsparametre
@@ -68,8 +74,12 @@ def beregn_vindkasthastighetstrykk_EC(i, z):
 
 
 def q_KL(i, sys):
-    """Beregner vindlast på kontaktledningen. Denne verdien brukes til
-    å beregne masteavstanden, a.
+    """Beregner vindlast på kontaktledningen.
+
+    :param Inndata i: Input fra bruker
+    :param sys: Data for ledninger og utligger
+    :return: Vindlast q
+    :rtype: :class:`float`
     """
 
     # Inngangsparametre
@@ -113,8 +123,13 @@ def q_KL(i, sys):
 
 
 def vindlast_mast(i, mast, vindretning):
-    """Definerer vindlast på mast når
-    vinden blåser normalt sporet
+    """Beregner krefter grunnet vindlast på mast.
+
+    :param Inndata i: Input fra bruker
+    :param Mast mast: Aktuell mast
+    :param int vindretning: Aktuell vindretning
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
     """
 
     # Liste over krefter som skal returneres
@@ -208,8 +223,13 @@ def vindlast_mast(i, mast, vindretning):
 
 
 def vindlast_ledninger(i, sys, vindretning):
-    """I denne funksjonen avledes krefter på 
-    mast på grunn av vindlast på ledninger.
+    """Beregner krefter grunnet vindlast på ledninger.
+
+    :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
+    :param int vindretning: Aktuell vindretning
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
     """
 
     # Liste over krefter som skal returneres
@@ -402,8 +422,12 @@ def vindlast_ledninger(i, sys, vindretning):
 
 
 def isogsno_last(i, sys):
-    """Beregner krefter på mast på grunn av is- og snølast på
-    ledninger.
+    """Beregner krefter grunnet is- og snølast.
+
+    :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
+    :return: Liste med :class:`Kraft`-objekter
+    :rtype: :class:`list`
     """
 
     a = (i.a2 + i.a1) / 2  # [m] Midlere masteavstand
@@ -535,8 +559,11 @@ def isogsno_last(i, sys):
 
 
 def _beregn_vindtrykk_NEK(i):
-    """Denne funksjonen beregner 
-    vindtrykket etter NEK EN 50119.
+    """Beregner dimensjonerende vindtrykk mhp. bransjestandard.
+
+    :param Inndata i: Input fra bruker
+    :return: Vindtrykk
+    :rtype: :class:`float`
     """
 
     """
@@ -566,11 +593,11 @@ def _beregn_vindtrykk_NEK(i):
 
 
 def _g_sno(ec3, isklasse, d):
-    """
-    Beregner snø- og islast [N/m] etter valgt standard.
-    :param ec3: Henter brukerens valg av standard (EC / NEK) 
-    :param d: Ledningens diameter [mm]
-    :return: snølast på ledningen, g_sno [N/m]
+    """Beregner linjelast fra snø/is på en ledning.
+    :param Boolean ec3: Brukerens valg av beregningsmetode
+    :param float d: Ledningens diameter [mm]
+    :return: Last på ledningen i :math:`N/m`
+    :rtype: :class:`float`
     """
 
     if ec3:
@@ -585,12 +612,20 @@ def _g_sno(ec3, isklasse, d):
         else:
             return 15
 
-def _D_ledning(ec3, q_sno, d):
+def _D_ledning(ec3, g_sno, d):
+    """Beregner effektiv økning av en lednings vindareal grunnet snø/is.
+
+    :param Boolean ec3: Brukerens valg av beregningsmetode
+    :param float g_sno: Linjelast fra snø/is
+    :param float d: Ledningens initielle diameter
+    :return: Ledningens tilleggsareal grunnet snø/is
+    :rtype: :class:`float`
+    """
 
     if ec3:
         return 0
     else:
         d /= 1000
         rho = 500 * 9.81
-        return math.sqrt(d**2 + 4*q_sno/(math.pi*rho)) - d
+        return math.sqrt(d**2 + 4*g_sno/(math.pi*rho)) - d
 
