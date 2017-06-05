@@ -17,52 +17,59 @@ if __name__ == "__main__":
 
     values = []
 
-    for iterasjon in range(1):
+    with open("input.ini", "r") as ini:
+        # Oppretter inndataobjekt med data fra .ini-fil
+        i = inndata.Inndata(ini)
+        master = beregning.beregn(i)
 
-        with open("input.ini", "r") as ini:
-            # Oppretter inndataobjekt med data fra .ini-fil
-            i = inndata.Inndata(ini)
-            master = beregning.beregn(i)
+    for mast in master:
+        mast.sorter(0)
+    master_sortert = sorted(master, key=lambda mast:mast.bruddgrense[0].utnyttelsesgrad, reverse=True)
 
-        for mast in master:
-            mast.sorter(0)
-        master_sortert = sorted(master, key=lambda mast:mast.bruddgrense[0].utnyttelsesgrad, reverse=True)
+    for mast in master_sortert:
+        print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
 
-        for mast in master_sortert:
-            print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
-
-        mastetype = "g"  # g for gitter, b for bjelke
-        mast = None
-        for m in master_sortert:
-            if mastetype == "g":
-                if (m.type == "B" or m.type == "H") \
-                        and m.h_max >= m.h \
-                        and m.bruddgrense[0].utnyttelsesgrad <= 1.0:
-                    mast = m
-                    break
-            else:
-                if m.type == "bjelke" \
-                        and m.h_max >= m.h \
-                        and m.bruddgrense[0].utnyttelsesgrad <= 1.0:
-                    mast = m
-                    break
-
-        #resultater.skriv_bidrag(i, mast)
-
-        mast.sorter_grenseverdier()
-        print()
-        print("Anbefalt mast:")
-        print()
-        print(mast)
-        print()
+    mastetype = "g"  # g for gitter, b for bjelke
+    mast = None
+    for m in master_sortert:
 
 
-        UR = mast.bruddgrense[0].utnyttelsesgrad
-        current_values = [UR, mast.bruddgrense[0].My_kap,
-                  mast.bruddgrense[0].Mz_kap, mast.bruddgrense[0].N_kap]
-        values.append(current_values)
+        # Henter ut H5 for sammenlikning med KL_fund
+        if m.navn == "H5":
+            mast = m
 
 
+        """
+        if mastetype == "g":
+            if (m.type == "B" or m.type == "H") \
+                    and m.h_max >= m.h \
+                    and m.bruddgrense[0].utnyttelsesgrad <= 1.0:
+                mast = m
+                break
+        else:
+            if m.type == "bjelke" \
+                    and m.h_max >= m.h \
+                    and m.bruddgrense[0].utnyttelsesgrad <= 1.0:
+                mast = m
+                break
+        """
+
+    #resultater.skriv_bidrag(i, mast)
+
+    mast.sorter_grenseverdier()
+    print()
+    print("Anbefalt mast:")
+    print()
+    print(mast)
+    print()
+
+
+
+
+    UR = mast.bruddgrense[0].utnyttelsesgrad
+    current_values = [UR, mast.bruddgrense[0].My_kap,
+              mast.bruddgrense[0].Mz_kap, mast.bruddgrense[0].N_kap]
+    values.append(current_values)
 
     #resultater.barplot(values)
 

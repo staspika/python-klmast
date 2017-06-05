@@ -594,6 +594,7 @@ def _beregn_vindtrykk_NEK(i):
 
 def _g_sno(ec3, isklasse, d):
     """Beregner linjelast fra snø/is på en ledning.
+
     :param Boolean ec3: Brukerens valg av beregningsmetode
     :param float d: Ledningens diameter [mm]
     :return: Last på ledningen i :math:`N/m`
@@ -603,14 +604,17 @@ def _g_sno(ec3, isklasse, d):
     if ec3:
         return 2 + 0.5 * d
     else:
-        if isklasse == 0:
-            return 0
-        elif isklasse == 1:
-            return 3.5
-        elif isklasse == 2:
-            return 7.5
-        else:
+        if d > 20:
             return 15
+        else:
+            if isklasse == 0:
+                return 0
+            elif isklasse == 1:
+                return 3.5
+            elif isklasse == 2:
+                return 7.5
+            else:
+                return 15
 
 def _D_ledning(ec3, g_sno, d):
     """Beregner effektiv økning av en lednings vindareal grunnet snø/is.

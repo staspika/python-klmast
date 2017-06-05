@@ -147,7 +147,6 @@ def beregn(i):
                 # TO DO:
                 #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
                 #        * Sjekke gyldigheten av R- og D-beregninger når e er negativ
-                #        * Oversett deformasjon_M til eksakt beregning av Iy/Iz
 
 
 
