@@ -1,4 +1,71 @@
-"""Overordnet beregningsprosedyre for master."""
+"""Overordnet beregningsprosedyre for master.
+
+Styrer beregning av reaksjonskrefter og forskyvninger for samtlige
+master i systemet. Ut fra tredimensjonale ``numpy.array``-objekter
+R og D for henholdsvis reaksjonskrefter ved masteinnspenning
+og forskyvninger i kontakttrådhøyde utføres lastfaktoranalyse
+for alle gyldige lastsituasjoner i valgt beregningsprosedyre.
+Mastenes tredje dimensjon ikke gjengitt ved de plane figurene
+nedenfor, refereres for enkelhets skyld til som etasjer.
+
+::
+
+    Indeksering av 3D-matriser:
+    [etasje, rad, kolonne]
+
+
+==
+R
+==
+Reaksjonskrefter :math:`[N]` og momenter :math:`[Nm]` ved mastens innspenning
+------------------------------------------------------------------------------
+
+::
+
+            Indekser:
+       0   1   2   3   4   5
+       My  Vy  Mz  Vz  N   T
+     ________________________
+    |                        | 0  Mast + utligger
+    |                        | 1  Kontaktledning
+    |                        | 2  Fixline
+    |                        | 3  Avspenning
+    |                        | 4  Bardunering
+    |                        | 5  Fastavspente (sidemontert)
+    |                        | 6  Fastavspente (toppmontert)
+    |                        | 7  Brukerdefinert last
+     ------------------------
+
+    Etasjer: 0 = egenvekt, 1 = strekk,
+             2 = temperatur, 3 = snø, 4 = vind
+
+
+==
+D
+==
+Forskyvning :math:`[mm]` og rotasjon :math:`[^{\\circ}]` av mast i kontakttrådhøyde
+------------------------------------------------------------------------------------
+
+::
+
+      Indekser:
+      0   1   2
+      Dy  Dz  phi
+     _____________
+    |             | 0  Mast + utligger
+    |             | 1  Kontaktledning
+    |             | 2  Fixline
+    |             | 3  Avspenning
+    |             | 4  Bardunering
+    |             | 5  Fastavspente (sidemontert)
+    |             | 6  Fastavspente (toppmontert)
+    |             | 7  Brukerdefinert last
+     -------------
+
+    Etasjer: 0 = egenvekt, 1 = strekk,
+             2 = temperatur, 3 = snø, 4 = vind
+
+"""
 
 import numpy
 import system
@@ -8,7 +75,7 @@ import klima
 import tilstand
 import TEST
 import deformasjon
-
+import kraft
 
 def beregn(i):
     """Gjennomfører beregning og returnerer masteobjekter med resultater.
@@ -17,59 +84,15 @@ def beregn(i):
     :return: Liste med master
     :rtype: :class:`list`
     """
-    import mast
 
-    # Indeksering av 3D-matriser:
-    # [etasje, rad, kolonne]
-    #
-    #
-    # R = reaksjonskrefter ved mastens innspenning
-    #
-    #              R
-    #
-    #          Indekser:
-    #   0   1   2   3   4   5
-    #   My  Vy  Mz  Vz  N   T
-    #  ________________________
-    # |                        | 0  Mast + utligger
-    # |                        | 1  Kontaktledning
-    # |                        | 2  Fixline
-    # |                        | 3  Avspenning
-    # |                        | 4  Bardunering
-    # |                        | 5  Fastavspente (sidemontert)
-    # |                        | 6  Fastavspente (toppmontert)
-    # |                        | 7  Brukerdefinert last
-    #  ------------------------
-    #
-    # Etasjer: 0 = egenvekt, 1 = strekk,
-    #          2 = temperatur, 3 = snø, 4 = vind
-    #
-    #
-    # D = forskyvning av mast i kontakttrådhøyde FH
-    #
-    #       D
-    #
-    #   Indekser:
-    #   0   1   2
-    #   Dy  Dz  phi
-    #  _____________
-    # |             | 0  Mast + utligger
-    # |             | 1  Kontaktledning
-    # |             | 2  Fixline
-    # |             | 3  Avspenning
-    # |             | 4  Bardunering
-    # |             | 5  Fastavspente (sidemontert)
-    # |             | 6  Fastavspente (toppmontert)
-    # |             | 7  Brukerdefinert last
-    #  -------------
-    #
-    # Etasjer: 0 = egenvekt, 1 = strekk,
-    #          2 = temperatur, 3 = snø, 4 = vind
+    import mast
 
     # Oppretter masteobjekt med brukerdefinert høyde
     master = mast.hent_master(i.h, i.s235, i.materialkoeff)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
+    # Setter brukervalgt sporhoyde_e for modifikasjon av lasthøyder
+    kraft.sporhoyde_e = i.e
 
     iterasjon = 0
 
@@ -77,11 +100,10 @@ def beregn(i):
     for mast in master:
 
         F = []
-        F.extend(laster.egenvekt_mast(mast))
+        F.extend(laster.egenvekt_mast(i, mast))
         F.extend(laster.beregn(i, sys, mast))
         F.extend(klima.isogsno_last(i, sys))
 
-        # Vindretning 0 = Vind fra mast, mot spor
         for vindretning in range(3):
 
             # Setter på vindlast med korrekt lastretning ift. vindretning
@@ -147,6 +169,7 @@ def beregn(i):
                 # TO DO:
                 #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
                 #        * Sjekke gyldigheten av R- og D-beregninger når e er negativ
+                #        * Sjekke enheterfor samtlige tallverdier i docstrings
 
 
 
@@ -195,13 +218,6 @@ def beregn(i):
             iterasjon += 1
 
 
-
-
-
-
-    # Antall gjennomkjøringer
-    print("\nAntall iterasjoner totalt: {}\nIterasjoner per mast: {}".format(iterasjon,iterasjon/len(master)))
-
     # Sjekker minnebruk (TEST)
     TEST.print_memory_info()
 
@@ -209,7 +225,7 @@ def beregn(i):
 
 
 def _beregn_reaksjonskrefter(F):
-    """Beregner reaksjonskrefter ved masteinnspenning grunnet krefter i F.
+    """Beregner reaksjonskrefter ved masteinnspenning grunnet krefter i ``F``.
 
     :param list F: Liste med :class:`Kraft`-objekter påført systemet
     :return: Matrise med reaksjonskrefter
@@ -238,7 +254,7 @@ def _beregn_reaksjonskrefter(F):
 
 
 def _beregn_deformasjoner(i, mast, F):
-    """Beregner forskyvninger i kontakttrådhøyde grunnet krefter i F.
+    """Beregner forskyvninger i kontakttrådhøyde grunnet krefter i ``F``.
 
     :param Inndata i: Input fra bruker
     :param Mast mast: Aktuell mast som beregnes
@@ -247,6 +263,8 @@ def _beregn_deformasjoner(i, mast, F):
     :rtype: :class:`numpy.array`
     """
 
+    # Konverterer systemhøyde ``fh`` til mastens aksesystem
+    fh_korrigert = i.fh + i.e
 
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))
@@ -254,15 +272,12 @@ def _beregn_deformasjoner(i, mast, F):
     for j in F:
         D_0 = numpy.zeros((5, 8, 3))
 
-        # Egenvekt og strekk statiske laster, resten dynamiske
-
-        D_0 += deformasjon.bjelkeformel_P(mast, j, i.fh) \
-             + deformasjon.bjelkeformel_q(mast, j, i.fh)
-            # + deformasjon.bjelkeformel_M(mast, j, i.fh)
-
+        D_0 += deformasjon.bjelkeformel_P(mast, j, fh_korrigert) \
+             + deformasjon.bjelkeformel_q(mast, j, fh_korrigert)
+            # + deformasjon.bjelkeformel_M(mast, j, fh_korrigert)
 
         if mast.type == "bjelke":
-            D_0 += deformasjon.torsjonsvinkel(mast, j, i.fh)
+            D_0 += deformasjon.torsjonsvinkel(mast, j, fh_korrigert)
 
         D += D_0
 
@@ -270,6 +285,10 @@ def _beregn_deformasjoner(i, mast, F):
 
 def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
     """Returnerer deformasjonsbidrag fra :func:`deformasjon.utliggerbidrag`.
+
+    Resultatene multipliseres med :math:`0.5` for å ta hensyn til at de tabulerte
+    deformasjonsbidragene :func:`deformasjon.utliggerbidrag` er basert på gjelder
+    for strekk i både kontakttråd og bæreline samtidig.
 
     :param System sys: Data for ledninger og utligger
     :param list sidekrefter: Liste med :class:`Kraft`-objekter som gir sidekrefter
@@ -281,7 +300,7 @@ def _beregn_sidekraftbidrag(sys, sidekrefter, etasje):
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))
 
-    D += deformasjon.utliggerbidrag(sys, sidekrefter, etasje)
+    D += 0.0 * deformasjon.utliggerbidrag(sys, sidekrefter, etasje)
 
     return D
 

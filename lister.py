@@ -2,6 +2,7 @@
 
 def _hent_tall(str):
     """Henter ut tallverdi fra string for sortering."""
+
     tall = [int(s) for s in str.split() if s.isdigit()]
     return tall
 
@@ -188,7 +189,7 @@ def hent_lastkombinasjoner(ec3):
     """Henter last- og kombinasjonsfaktorer til utregning av dimensjonerene laster.
 
     :param Boolean ec3: Brukerens valg av beregningsmetode
-    :return: Lastsituasjoner (kombinasjonsfaktorer), lastfaktorer
+    :return: ``lastsituasjoner`` (kombinasjonsfaktorer), ``lastfaktorer``
     :rtype: :class:`dict`, :class:`dict`
     """
     if ec3:

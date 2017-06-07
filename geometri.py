@@ -8,8 +8,8 @@ def beregn_sikksakk(sys, radius):
     """Beregner sikksakk og max tillat utblåsning av KL.
 
     :param System sys: Data for ledninger og utligger
-    :param int radius: Sporkurvaturens radius
-    :return: Sikksakkverdier ``B1`` og ``B1``, max tillatt utblåsning ``e_max``
+    :param int radius: Sporkurvaturens radius :math:`[m]`
+    :return: Sikksakkverdier ``B1`` og ``B1`` :math:`[m]`, max tillatt utblåsning ``e_max`` :math:`[m]`
     :rtype: :class:`float`, :class:`float`, :class:`float`
     """
 
@@ -60,12 +60,12 @@ def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
     """Beregner max tillatt masteavstand.
 
     :param System sys: Data for ledninger og utligger
-    :param int radius: Sporkurvaturens radius
-    :param float B1: Første sikksakkverdi
-    :param float B2: Andre sikksakkverdi
-    :param float e_max: Max tillatt utblåsning
-    :param float q: Vindlast på kontaktledningen
-    :return: Max tillatt masteavstand
+    :param int radius: Sporkurvaturens radius :math:`[m]`
+    :param float B1: Første sikksakkverdi :math:`[m]`
+    :param float B2: Andre sikksakkverdi :math:`[m]`
+    :param float e_max: Max tillatt utblåsning :math:`[m]`
+    :param float q: Vindlast på kontaktledningen :math:`[\\frac{N}{m}]`
+    :return: Max tillatt masteavstand :math:`[m]`
     :rtype: :class:`float`
     """
 
@@ -98,11 +98,11 @@ def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
 def beregn_arm(radius, sms, fh, B1):
     """Beregner momentarm for utligger.
 
-    :param int radius: Sporkurvaturens radius
-    :param float sms: Avstand senter mast - senter spor
-    :param float fh: Kontakttrådhøyde
-    :param float B1: Første sikksakkverdi
-    :return: Momentarm ``a_T`` (strekkutligger), ``a_T_dot`` (trykkutligger)
+    :param int radius: Sporkurvaturens radius :math:`[m]`
+    :param float sms: Avstand senter mast - senter spor :math:`[m]`
+    :param float fh: Kontakttrådhøyde :math:`[m]`
+    :param float B1: Første sikksakkverdi :math:`[m]`
+    :return: Momentarmer ``a_T`` og ``a_T_dot`` :math:`[m]`
     :rtype: :class:`float`
     """
 

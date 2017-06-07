@@ -35,11 +35,11 @@ if __name__ == "__main__":
 
 
         # Henter ut H5 for sammenlikning med KL_fund
-        if m.navn == "H5":
+        if m.navn == "HE200B":
             mast = m
 
-
         """
+        
         if mastetype == "g":
             if (m.type == "B" or m.type == "H") \
                     and m.h_max >= m.h \

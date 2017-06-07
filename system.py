@@ -8,7 +8,26 @@ class System(object):
                  forbigangsledning, returledning, matefjernledning,
                  y_line, hengetraad, fiberoptisk, at_ledning,
                  jordledning, utligger, radius, sms, fh):
-        """Initierer objekt med dictionaries som inngangsparametre"""
+        """Initialiserer :class:`System`-objekt.
+
+        :param str navn: Systemets navn (20A, 20B, 25, 35)
+        :param dict baereline: Systemets bæreline
+        :param dict kontakttraad: Systemets kontakttråd
+        :param dict fixline: Systemets fixline
+        :param dict forbigangsledning: Systemets forbigangsledning
+        :param dict returledning: Systemets returledning
+        :param dict matefjernledning: Systemets mate-/fjernledning
+        :param dict y_line: Systemets y-line
+        :param dict hengetraad: Systemets hengetråd
+        :param dict fiberoptisk: Systemets fiberoptiske kabel
+        :param dict at_ledning: Systemets AT-ledning
+        :param dict jordledning: Systemets jordledning
+        :param dict utligger: Systemets utligger
+        :param int radius: Sporkurvaturens radius :math:`[m]`
+        :param float sms: Avstand senter mast - senter spor :math:`[m]`
+        :param float fh: Kontakttrådhøyde :math:`[m]`
+        """
+
         self.navn = navn
         self.baereline = baereline
         self.kontakttraad = kontakttraad
@@ -233,10 +252,9 @@ def hent_system(i):
 def _strekkraft(a, b, masteavstand):
     """Beregner strekkraft i fastavspent ledning mhp. masteavstand.
     
-    :param float a: Strekk ved 30m masteavstand [kN]
-    :param float b: Strekk ved 70m masteavstand [kN]
-    :param float masteavstand: Faktisk masteavstand [m]
-    :return: Strekkraft ved faktisk masteavstand [N]
+    :param float b: Strekk ved 70m masteavstand :math:`[kN]`
+    :param float masteavstand: Faktisk masteavstand :math:`[m]`
+    :return: Strekkraft ved faktisk masteavstand :math:`[N]`
     :rtype: :class:`float`
     """
 
@@ -255,15 +273,15 @@ def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
     Løsning returneres dersom feilkriteriet ``e`` er innenfor
     valgt grense eller antall iterasjoner overgår 100.
 
-    :param float H_0: Initiell spennkraft i kabel [N]
-    :param float E: Kabelens E-modul [N/mm^2]
-    :param float A: Kabelens tverrsnittsareal [mm^2]
-    :param float G_0: Kabelens egenvekt [N/m]
-    :param float G_x: Kabelens egenvekt + eventuell snølast [N/m]
-    :param float L: Masteavstand [m]
-    :param float alpha: Lengdeutvidelseskoeffisient [1/C]
-    :param float T: Lufttemperatur [C]
-    :return: Endelig kabelstrekk [N], antall iterasjoner, kabelstrekk ved hver iterasjon
+    :param float H_0: Initiell spennkraft i kabel :math:`[N]`
+    :param float E: Kabelens E-modul :math:`[\\frac{N}{mm^2}]`
+    :param float A: Kabelens tverrsnittsareal :math:`[mm^2]`
+    :param float G_0: Kabelens egenvekt :math:`[\\frac{N}{m}]`
+    :param float G_x: Kabelens egenvekt + eventuell snølast :math:`[\\frac{N}{m}]`
+    :param float L: Masteavstand :math:`[m]`
+    :param float alpha: Lengdeutvidelseskoeffisient :math:`[\\frac{1}{^{\\circ}C}]`
+    :param float T: Lufttemperatur :math:`[^{\\circ}C]`
+    :return: Endelig kabelstrekk :math:`[N]`, antall iterasjoner, kabelstrekk ved hver iterasjon :math:`[N]`
     :rtype: :class:`float`, :class:`int`, :class:`list`
     """
 
@@ -278,13 +296,13 @@ def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
     H_list = []
     delta_H_x = 0
 
-    while iterasjoner<100:
+    while iterasjoner<1000:
         H_x -= delta_H_x
         H_list.append(H_x)
         r = a - H_x**3 - b*H_x**2
         e = abs(r/a)
 
-        if e < 10**(-3):
+        if e < 10**(-2):
             return (H_x, iterasjoner, H_list)
 
         r_d = - 3*H_x**2 - 2*b*H_x

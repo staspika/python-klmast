@@ -4,6 +4,11 @@ class Inndata(object):
     """Container-klasse for enkel tilgang til inngangsparametre fra .ini-fil."""
 
     def __init__(self, ini):
+        """Initialiserer :class:`Inndata`-objekt.
+
+        :param ini: .ini-fil for avlesing av inputparametre
+        """
+
         cfg = configparser.ConfigParser()
         cfg.read("input.ini")
 

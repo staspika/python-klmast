@@ -1,3 +1,5 @@
+"""Funksjoner for testing av applikasjon"""
+
 import os
 import psutil
 import numpy
@@ -5,7 +7,7 @@ from math import *
 from string import Template
 import matplotlib.pyplot as plt
 
-"""Funksjoner for testing av applikasjon"""
+
 
 def memory_info():
     process = psutil.Process(os.getpid())

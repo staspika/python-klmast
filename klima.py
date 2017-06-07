@@ -3,9 +3,6 @@
 import math
 from kraft import *
 
-import numpy
-import deformasjon
-
 # Terrengkategorier etter EC1, NA.4.1
 kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2.0}
 kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2.0}
@@ -19,8 +16,8 @@ def beregn_vindkasthastighetstrykk_EC(i, z):
     """Beregner dimensjonerende vindkasthastighetstrykk mhp. Eurokode 0.
 
     :param Inndata i: Input fra bruker
-    :param float z: Høyde over bakken
-    :return: Vindkasthastighetstrykk i :math:`kN/m^2`
+    :param float z: Høyde over bakken :math:`[m]`
+    :return: Vindkasthastighetstrykk :math:`[\\frac{N}{m^2}]`
     :rtype: :class:`float`
     """
 
@@ -78,7 +75,7 @@ def q_KL(i, sys):
 
     :param Inndata i: Input fra bruker
     :param sys: Data for ledninger og utligger
-    :return: Vindlast q
+    :return: Vindlast på KL :math:`[\\frac{N}{m}]`
     :rtype: :class:`float`
     """
 
@@ -125,6 +122,11 @@ def q_KL(i, sys):
 def vindlast_mast(i, mast, vindretning):
     """Beregner krefter grunnet vindlast på mast.
 
+    Lastens eksentrisitet i :math:`x`-retning justeres
+    med :math:`e`-målet for å ta hensyn til at lasten
+    måles fra masteinnspenning snarere enn SOK.
+    Se også: :func:`kraft.Kraft.__init__`
+
     :param Inndata i: Input fra bruker
     :param Mast mast: Aktuell mast
     :param int vindretning: Aktuell vindretning
@@ -149,7 +151,7 @@ def vindlast_mast(i, mast, vindretning):
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                            q=[0, 0, q_normalt],
                            b=mast.h,
-                           e=[-mast.h/2, 0, 0]))
+                           e=[-mast.h / 2 + i.e, 0, 0]))
         else:
             q_K = _beregn_vindtrykk_NEK(i)
             if vindretning == 1:
@@ -165,7 +167,7 @@ def vindlast_mast(i, mast, vindretning):
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                                q=[0, 0, q_normalt],
                                b=mast.h,
-                               e=[-mast.h / 2, 0, 0]))
+                               e=[-mast.h / 2 + i.e, 0, 0]))
             else:
                 C_str = 2.0
                 if mast.type == "B":
@@ -175,7 +177,7 @@ def vindlast_mast(i, mast, vindretning):
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                                q=[0, 0, q_normalt],
                                b=mast.h,
-                               e=[-mast.h / 2, 0, 0]))
+                               e=[-mast.h / 2 + i.e, 0, 0]))
 
 
     # Vind parallelt spor
@@ -188,7 +190,7 @@ def vindlast_mast(i, mast, vindretning):
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                            q=[0, q_par, 0],
                            b=mast.h,
-                           e=[-mast.h / 2, 0, 0]))
+                           e=[-mast.h / 2 + i.e, 0, 0]))
         else:
             q_K = _beregn_vindtrykk_NEK(i)
 
@@ -208,7 +210,7 @@ def vindlast_mast(i, mast, vindretning):
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                                q=[0, q_par + q_ins, 0],
                                b=mast.h,
-                               e=[-mast.h / 2, 0, 0]))
+                               e=[-mast.h / 2 + i.e, 0, 0]))
             else:
                 # Inngangsparametre
                 C_str = 1.4  # [1] Drag faktor
@@ -217,7 +219,7 @@ def vindlast_mast(i, mast, vindretning):
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                                q=[0, q_par + q_ins, 0],
                                b=mast.h,
-                               e=[-mast.h / 2, 0, 0]))
+                               e=[-mast.h / 2 + i.e, 0, 0]))
 
     return F
 
@@ -240,7 +242,6 @@ def vindlast_ledninger(i, sys, vindretning):
 
         a = (i.a1 + i.a2) / 2  # [m] masteavstand
         a2 = i.a2  # [m] Avstand til neste mast
-        d_Y, L_Y = 0, 0   # [m] Diameter hengetråd, Y-line
 
         if i.ec3:
             q_p = i.vindkasthastighetstrykk  # [N/m^2]
@@ -562,7 +563,7 @@ def _beregn_vindtrykk_NEK(i):
     """Beregner dimensjonerende vindtrykk mhp. bransjestandard.
 
     :param Inndata i: Input fra bruker
-    :return: Vindtrykk
+    :return: Vindtrykk :math:`[\\frac{N}{m^2}]`
     :rtype: :class:`float`
     """
 
@@ -596,8 +597,8 @@ def _g_sno(ec3, isklasse, d):
     """Beregner linjelast fra snø/is på en ledning.
 
     :param Boolean ec3: Brukerens valg av beregningsmetode
-    :param float d: Ledningens diameter [mm]
-    :return: Last på ledningen i :math:`N/m`
+    :param float d: Ledningens diameter :math:`[mm]`
+    :return: Last på ledningen :math:`[\\frac{N}{m}]`
     :rtype: :class:`float`
     """
 
@@ -620,9 +621,9 @@ def _D_ledning(ec3, g_sno, d):
     """Beregner effektiv økning av en lednings vindareal grunnet snø/is.
 
     :param Boolean ec3: Brukerens valg av beregningsmetode
-    :param float g_sno: Linjelast fra snø/is
-    :param float d: Ledningens initielle diameter
-    :return: Ledningens tilleggsareal grunnet snø/is
+    :param float g_sno: Linjelast fra snø/is :math:`[\\frac{N}{m}]`
+    :param float d: Ledningens initielle diameter :math:`[mm]`
+    :return: Ledningens tilleggsareal grunnet snø/is :math:`[m]`
     :rtype: :class:`float`
     """
 

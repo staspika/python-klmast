@@ -10,13 +10,25 @@ class Tilstand(object):
 
     def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
                  G=0, L=0, T=0, S=0, V=0, iterasjon=0):
-        """Initierer tilstandsobjekt.
+        """Initialiserer :class:`Tilstand`-objekt.
+
+        Alternativer for ``vindretning``:
+
+        - 0: Vind fra mast mot spor
+        - 1: Vind fra spor mot mast
+        - 2: Vind parallelt spor
+
+        Alternativer for ``type``:
+
+        - 0: Bruddgrense
+        - 1: Bruksgrense, forskyvning totalt
+        - 2: Bruksgrense, forskyvning KL
 
         :param Mast mast: Aktuell mast
         :param Inndata i: Input fra bruker
         :param dict lastsituasjon: Aktuell lastsituasjon
         :param int vindretning: Aktuell vindretning
-        :param tuple type: (Rad, etasje) for plassering i R- og D-matrise
+        :param int type: (Rad, etasje) for plassering i R- og D-matrise
         :param list F: Liste med :class:`Kraft`-objekter påført systemet
         :param numpy.array R: Reaksjonskraftmatrise
         :param numpy.array D: Forskyvningsmatrise
@@ -27,16 +39,11 @@ class Tilstand(object):
         :param float V: Lastfaktor vind
         :param iterasjon: Iterasjon for utregning av aktuell :class:`Tilstand`
         """
+
         self.metode = "EC3" if i.ec3 else "NEK"
         self.lastsituasjon = lastsituasjon
         self.vindretning = vindretning
-        # 0: Vind fra mast mot spor
-        # 1: Vind fra spor mot mast
-        # 2: Vind parallelt spor
         self.type = type
-        # 0: Bruddgrense
-        # 1: Bruksgrense, forskyvning totalt
-        # 2: Bruksgrense, forskyvning KL
         self.iterasjon = iterasjon
 
         if self.type == 0:
@@ -105,7 +112,7 @@ class Tilstand(object):
         vindlastens, mens B angir punktlastenes
         andel av bidrag til kritisk moment.
 
-        :return: Ekvivalent mastelengde, momentandeler A og B
+        :return: Ekvivalent mastelengde ``L_e`` :math:`[mm]`, momentandeler ``A`` og ``B``
         :rtype: :class:`float`, :class:`float`, :class:`float`
         """
 
@@ -148,14 +155,15 @@ class Tilstand(object):
     def _reduksjonsfaktor_knekking(self, mast, L_cr, akse):
         """Beregner faktorer for aksialkraftkapasitet etter EC3, 6.3.1.2.
 
-        ``akse`` kan oppgis for å regne om hhv. sterk og svak akse:
-        **0** = y
-        **1** = z
+        ``akse`` styrer beregning om hhv. sterk og svak akse:
+
+        - 0: Beregner knekkfaktorer om y-aksen
+        - 1: Beregner knekkfaktorer om z-aksen
 
         :param Mast mast: Aktuell mast
-        :param float L_cr: Effektiv mastelengde
-        :param int akse:
-        :return: Reduksjonsfaktor X for knekking, slankhet lam
+        :param float L_cr: Effektiv mastelengde :math:`[mm]`
+        :param int akse: Aktuell akse
+        :return: Reduksjonsfaktor ``X`` for knekking, slankhet ``lam``
         :rtype: :class:`float`, :class:`float`
         """
 
@@ -180,10 +188,10 @@ class Tilstand(object):
         """Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3.
 
         :param Mast mast: Aktuell mast
-        :param float L_e: Effektiv mastelengde
+        :param float L_e: Effektiv mastelengde :math:`[mm]`
         :param float A: Momentandel fra vindlast
         :param float B: Momentandel fra punktlaster
-        :return: Reduksjonsfaktor X_LT for vipping
+        :return: Reduksjonsfaktor for vipping
         :rtype: :class:`float`
         """
 
@@ -199,7 +207,7 @@ class Tilstand(object):
 
             M_cr = A * M_cr_vind + B * M_cr_punkt
 
-            lam_LT = math.sqrt(mast.My_Rk() / M_cr)
+            lam_LT = math.sqrt(mast.My_Rk / M_cr)
             lam_0, beta = 0.4, 0.75
             if lam_LT > lam_0 and (My_Ed / M_cr) > lam_0 ** 2:
                 if mast.type == "B":
@@ -223,11 +231,11 @@ class Tilstand(object):
 
         :param Mast mast: Aktuell mast
         :param float lam_y: Relativ slankhet for knekking om y-aksen
-        :param float N_Ed: Dimensjonerende aksialkraft
+        :param float N_Ed: Dimensjonerende aksialkraft :math:`[N]`
         :param float X_y: Reduksjonsfaktor for knekking om y-aksen
         :param float X_z: Reduksjonsfaktor for knekking om z-aksen
         :param float lam_z: Relativ slankhet for knekking om y-aksen
-        :return: Interaksjonsfaktorer k_yy, k_yz, k_zy, k_zz
+        :return: Interaksjonsfaktorer ``k_yy``, ``k_yz``, ``k_zy``, ``k_zz``
         :rtype: :class:`float`, :class:`float`, :class:`float`, :class:`float`
         """
 
@@ -264,7 +272,7 @@ class Tilstand(object):
         :param Inndata i: Input fra bruker
         :param Mast mast: Aktuell mast
         :param list K: Liste med dimensjonerende reaksjonskrefter
-        :return: Mastens utnyttelsesgrad UR
+        :return: Mastens utnyttelsesgrad
         :rtype: :class:`float`
         """
 
@@ -283,7 +291,7 @@ class Tilstand(object):
         X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
         X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B, My_Ed)
 
-        My_Rk, Mz_Rk, N_Rk = mast.My_Rk(), mast.Mz_Rk(), mast.A * mast.fy
+        My_Rk, Mz_Rk, N_Rk = mast.My_Rk, mast.Mz_Rk, mast.A * mast.fy
 
         k_yy, k_yz, k_zy, k_zz = self._interaksjonsfaktorer(mast, lam_y, N_Ed, X_y, X_z, lam_z)
 

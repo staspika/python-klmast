@@ -7,6 +7,7 @@ def _tilpass(a, b):
     """Formaterer teksstrenger a, b og c med korrekt antall mellomrom
     mellom verdier for å sikre lett lesbarhet av bidrag.
     """
+
     abc = a
     for spaces in range(57-len(a)):
         abc += " "
@@ -64,6 +65,7 @@ def skriv_bidrag(i, mast):
     """Skriver bidrag fra dimensjonerende tilfelle for aktuell mast
     til tekstfilen bidrag.txt.
     """
+
     s = []  # String-liste
 
     # Normalkrefter (N)

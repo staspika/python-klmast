@@ -555,8 +555,10 @@ class Hovedvindu(tk.Frame):
 class ToolTip(object):
     """Klasse for visning av tooltips.
 
-    Originalkode for implementasjon av tooltips:
-    http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
+    Originalkode for implementasjon av tooltips hentet fra Voidspace_.
+
+    .. _Voidspace: http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
+
     """
 
     def __init__(self, widget):
@@ -567,6 +569,7 @@ class ToolTip(object):
 
     def showtip(self, master, text):
         """Viser tekst i tooltip-vindu."""
+
         self.text = text
         if text == "km":
             km_gyldig = lister.kilometer[master.banestrekning.get()]  # Gyldige km for gitt banestrekke
@@ -593,6 +596,7 @@ class ToolTip(object):
 
     def hidetip(self):
         """Gjemmer tekst i tooltip-vindu."""
+
         tw = self.tipwindow
         self.tipwindow = None
         if tw:

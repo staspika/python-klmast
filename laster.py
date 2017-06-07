@@ -5,23 +5,22 @@ from kraft import *
 def _utliggerkrefter(i, sys, mast, e_t=0):
     """Beregner krefter fra utstyr montert på utligger.
 
-    *Tilfelle* ``e_t`` *= 0*:
-    Beregner krefter for tilfelle med én utligger på systemet.
+    Kraftsett som påføres avhenger av traversens eksentrisitetsverdi ``e_t``:
 
-    *Tilfelle* ``e_t`` *> 0*:
-    Beregner krefter for en normalt konfigurert utligger
-    dersom systemet har to utliggere.
+    - ``e_t`` = 0: Beregner krefter for tilfelle med én utligger på systemet.
 
-    *Tilfelle* ``e_t`` *< 0*:
-    Beregner krefter for en normalt konfigurert utligger
-    dersom systemet har to utliggere, eller utligger
-    med KL til avspenning dersom masten er angitt å være
-    siste seksjonsmast før avspenning.
+    - ``e_t`` > 0: Beregner krefter for en normalt konfigurert utligger
+      dersom systemet har to utliggere.
+
+    - ``e_t`` < 0: Beregner krefter for en normalt konfigurert utligger
+      dersom systemet har to utliggere, eller utligger
+      med KL til avspenning dersom masten er angitt å være
+      siste seksjonsmast før avspenning.
 
     :param Inndata i: Input fra bruker
     :param System sys: Data for ledninger og utligger
     :param Mast mast: Aktuell mast
-    :param e_t: Traversens eksentrisitet i y-retning
+    :param e_t: Traversens eksentrisitet i y-retning :math:`[m]`
     :return: Liste med :class:`Kraft`-objekter
     :rtype: :class:`list`
     """
@@ -415,9 +414,15 @@ def beregn(i, sys, mast):
     return F
 
 
-def egenvekt_mast(mast):
+def egenvekt_mast(i, mast):
     """Beregner last grunnet mastens egenvekt.
 
+    Lastens eksentrisitet i :math:`x`-retning justeres
+    med :math:`e`-målet for å ta hensyn til at denne lasten
+    måles fra masteinnspenning snarere enn SOK.
+    Se også: :func:`kraft.Kraft.__init__`
+
+    :param Inndata i: Input fra bruker
     :param Mast mast: Aktuell mast
     :return: Liste med :class:`Kraft`-objekt for mastens egenvekt
     :rtype: :class:`list`
@@ -428,7 +433,8 @@ def egenvekt_mast(mast):
     F = []
 
     F.append(Kraft(navn="Egenvekt: Mast", type=(0, 0),
-                   f=[mast.egenvekt * mast.h, 0, 0]))
+                   f=[mast.egenvekt * mast.h, 0, 0],
+                   e=[i.e, 0, 0]))
     return F
 
 
