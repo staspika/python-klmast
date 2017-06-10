@@ -5,7 +5,37 @@ import time
 import inndata
 
 
+def beregn_master(ini):
+    """Kjører beregningsprosedyre.
+
+    Mastene deles opp i gittermaster og bjelkemaster før de
+    sorteres mhp. utnyttelsesgrad og returneres i to separate lister.
+
+    :return: Lister med ferdige beregnede gittermaster og bjelkemaster
+    :rtype: class`list`, class`list`
+    """
+
+    masteliste = []
+
+    # Oppretter inndataobjekt med data fra .ini-fil
+    i = inndata.Inndata(ini)
+    masteliste.extend(beregning.beregn(i))
+
+    for mast in masteliste:
+        mast.sorter_grenseverdier()
+
+    gittermaster = masteliste[0:7]
+    bjelkemaster = masteliste[7:]
+    gittermaster_sortert = sorted(gittermaster, key=lambda mast: mast.tilstand_UR_max.utnyttelsesgrad, reverse=True)
+    bjelkemaster_sortert = sorted(bjelkemaster, key=lambda mast: mast.tilstand_UR_max.utnyttelsesgrad, reverse=True)
+
+    return gittermaster_sortert, bjelkemaster_sortert
+
+
+
+
 if __name__ == "__main__":
+    # Kjører kun ved direkte kjøring av main.py
 
     # Tester kjøretid
     start_time = time.clock()

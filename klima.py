@@ -123,9 +123,12 @@ def vindlast_mast(i, mast, vindretning):
     """Beregner krefter grunnet vindlast på mast.
 
     Lastens eksentrisitet i :math:`x`-retning justeres
-    med :math:`e`-målet for å ta hensyn til at lasten
+    med :math:`e`-målet for å ta hensyn til at denne lasten
     måles fra masteinnspenning snarere enn SOK.
     Se også: :func:`kraft.Kraft.__init__`
+
+    Funksjonen beregner også lastbidrag grunnet
+    vindlast på brukerdefinert last.
 
     :param Inndata i: Input fra bruker
     :param Mast mast: Aktuell mast
@@ -141,7 +144,7 @@ def vindlast_mast(i, mast, vindretning):
     if vindretning < 2:
 
         if i.ec3:
-            q_p = i.vindkasthastighetstrykk   # [N/m^2]
+            q_p = i.vindkasthastighetstrykk    # [N/m^2]
             cf = 2.2                           # [1] Vindkraftfaktor mast
             q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
@@ -152,13 +155,19 @@ def vindlast_mast(i, mast, vindretning):
                            q=[0, 0, q_normalt],
                            b=mast.h,
                            e=[-mast.h / 2 + i.e, 0, 0]))
+
+            if i.brukerdefinert_last:
+                F.append(Kraft(navn="Vindlast: Brukerdefinert vindareal", type=(7, 4),
+                               f=[0, 0, q_p * i.a_vind],
+                               e=[- i.e_x + i.e, i.e_y, i.e_z]))
+
         else:
             q_K = _beregn_vindtrykk_NEK(i)
+
             if vindretning == 1:
                 q_K = -q_K
 
             if mast.type == "H":
-                # Inngangsparametre
                 G_lat = 1.05  # [1] Resonans faktor
                 C_lat = 2.80  # [1] Drag faktor
                 A_lat = mast.A_ref  # [m^2 / m] Mastens referanseareal
@@ -179,6 +188,11 @@ def vindlast_mast(i, mast, vindretning):
                                b=mast.h,
                                e=[-mast.h / 2 + i.e, 0, 0]))
 
+            if i.brukerdefinert_last:
+                F.append(Kraft(navn="Vindlast: Brukerdefinert vindareal", type=(7, 4),
+                               f=[0, 0, q_K * i.a_vind],
+                               e=[- i.e_x, i.e_y, i.e_z]))
+
 
     # Vind parallelt spor
     else:
@@ -191,14 +205,14 @@ def vindlast_mast(i, mast, vindretning):
                            q=[0, q_par, 0],
                            b=mast.h,
                            e=[-mast.h / 2 + i.e, 0, 0]))
+
+            if i.brukerdefinert_last:
+                F.append(Kraft(navn="Vindlast: Brukerdefinert vindareal", type=(7, 4),
+                               f=[0, q_p * i.a_vind, 0],
+                               e=[- i.e_x, i.e_y, i.e_z]))
+
         else:
             q_K = _beregn_vindtrykk_NEK(i)
-
-            # Vindlast på isolator når vinden blåser parallelt sporet.
-            A_ins = 0.001  # [m^2] ????????????????????????????????????????????
-            G_ins = 1.05  # [1] Resonans faktor
-            C_ins = 1.20  # [1] Drag faktor
-            q_ins = q_K * G_ins * C_ins * A_ins
 
             if mast.type == "H":
                 # Inngangsparametre
@@ -208,7 +222,7 @@ def vindlast_mast(i, mast, vindretning):
                 q_par = q_K * G_lat * (1.0 + 0.2 * (math.sin(2 * (math.pi / 2)) ** 2)) * C_lat * A_lat
 
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                               q=[0, q_par + q_ins, 0],
+                               q=[0, q_par, 0],
                                b=mast.h,
                                e=[-mast.h / 2 + i.e, 0, 0]))
             else:
@@ -217,9 +231,14 @@ def vindlast_mast(i, mast, vindretning):
                 q_par = q_K * C_str * mast.A_ref_par
 
                 F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
-                               q=[0, q_par + q_ins, 0],
+                               q=[0, q_par, 0],
                                b=mast.h,
                                e=[-mast.h / 2 + i.e, 0, 0]))
+
+            if i.brukerdefinert_last:
+                F.append(Kraft(navn="Vindlast: Brukerdefinert vindareal", type=(7, 4),
+                               f=[0, q_K * i.a_vind, 0],
+                               e=[- i.e_x, i.e_y, i.e_z]))
 
     return F
 
@@ -294,7 +313,7 @@ def vindlast_ledninger(i, sys, vindretning):
         # Y-line
         if not sys.y_line == None:  # Sjekker at systemet har Y-line
             L = 0
-            if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+            if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
                 L = 14
             elif sys.navn == "25" and i.radius >= 1200:
                 L = 18
@@ -448,10 +467,6 @@ def isogsno_last(i, sys):
     if i.siste_for_avspenning or i.linjemast_utliggere == 2:
         n = 2
 
-        # Traverser: Ingen snølast.
-
-    # Utliggere: Ingen snølast.
-
     # Bæreline
     g_sno = _g_sno(i.ec3, i.isklasse, sys.baereline["Diameter"])
     F.append(Kraft(navn="Islast: Bæreline", type=(1, 3),
@@ -470,7 +485,7 @@ def isogsno_last(i, sys):
     if not sys.y_line == None:  # Sjekker at systemet har Y-line
         # L = lengde Y-line
         L = 0
-        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+        if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
             L = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L = 18
@@ -559,6 +574,7 @@ def isogsno_last(i, sys):
     return F
 
 
+
 def _beregn_vindtrykk_NEK(i):
     """Beregner dimensjonerende vindtrykk mhp. bransjestandard.
 
@@ -595,6 +611,12 @@ def _beregn_vindtrykk_NEK(i):
 
 def _g_sno(ec3, isklasse, d):
     """Beregner linjelast fra snø/is på en ledning.
+
+    Linjelastene som hentes ut basert på isklasse ved
+    NEK-beregning gjelder for ledninger med diametere mellom
+    :math`10` og :math:`20 mm`, derfor settes linjelasten
+    for ledninger med større diametere til maksimalverdien
+    :math:`[15 \\frac{N}{m}]`.
 
     :param Boolean ec3: Brukerens valg av beregningsmetode
     :param float d: Ledningens diameter :math:`[mm]`

@@ -183,7 +183,7 @@ def utliggerbidrag(sys, sidekrefter, etasje):
 
     D = numpy.zeros((5, 8, 3))
 
-    if sys.navn == "20a" or sys.navn == "20b":
+    if sys.navn == "20A" or sys.navn == "20B":
         for s in sidekrefter:
             D[etasje, 0, 1] += 20/2500 * s
     elif sys.navn == "25":

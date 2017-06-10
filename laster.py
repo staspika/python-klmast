@@ -68,7 +68,7 @@ def _utliggerkrefter(i, sys, mast, e_t=0):
     # Y-line(er)
     if not sys.y_line == None:
         L = 0
-        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+        if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
             L = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L = 18
@@ -255,7 +255,7 @@ def beregn(i, sys, mast):
         s = sys.forbigangsledning["Strekk -40C"] - sys.forbigangsledning["Strekk 5C"]
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = sys.forbigangsledning["Differansestrekk"]
+        f_diff = sys.forbigangsledning["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
         F.append(Kraft(navn="Temperatur: Forbigangsledning", type=(kategori, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hf, 0, e_z]))
@@ -283,7 +283,7 @@ def beregn(i, sys, mast):
         s = 2 * (sys.returledning["Strekk -40C"] - sys.returledning["Strekk 5C"])
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = 2 * sys.returledning["Differansestrekk"]
+        f_diff = 2 * sys.returledning["Differansestrekk"] if i.auto_differansestrekk else 2 * i.differansestrekk
         F.append(Kraft(navn="Temperatur: Returledninger", type=(5, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hr, 0, e_z]))
@@ -311,7 +311,7 @@ def beregn(i, sys, mast):
         s = sys.fiberoptisk["Strekk -40C"] - sys.fiberoptisk["Strekk 5C"]
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = sys.fiberoptisk["Differansestrekk"]
+        f_diff = sys.fiberoptisk["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
         F.append(Kraft(navn="Temperatur: Fiberoptisk ledning", type=(5, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hf, 0, e_z]))
@@ -340,7 +340,7 @@ def beregn(i, sys, mast):
         s = n * (sys.matefjernledning["Strekk -40C"] - sys.matefjernledning["Strekk 5C"])
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = n * sys.matefjernledning["Differansestrekk"]
+        f_diff = n * sys.matefjernledning["Differansestrekk"] if i.auto_differansestrekk else n * i.differansestrekk
         F.append(Kraft(navn="Temperatur: Mate-/fjernledning{}".format(er), type=(6, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hfj, 0, 0]))
@@ -367,7 +367,7 @@ def beregn(i, sys, mast):
         s = 2 * (sys.at_ledning["Strekk -40C"] - sys.at_ledning["Strekk 5C"])
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = 2 * sys.at_ledning["Differansestrekk"]
+        f_diff = 2 * sys.at_ledning["Differansestrekk"] if i.auto_differansestrekk else 2 * i.differansestrekk
         F.append(Kraft(navn="Temperatur: AT-ledninger", type=(6, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hfj, 0, 0]))
@@ -399,7 +399,7 @@ def beregn(i, sys, mast):
         s = sys.jordledning["Strekk -40C"] - sys.jordledning["Strekk 5C"]
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
-        f_diff = sys.jordledning["Differansestrekk"]
+        f_diff = sys.jordledning["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
         F.append(Kraft(navn="Temperatur: Jordledning", type=(kategori, 2),
                        f=[0, f_diff, f_z],
                        e=[-i.hj, 0, e_z]))
@@ -422,6 +422,9 @@ def egenvekt_mast(i, mast):
     måles fra masteinnspenning snarere enn SOK.
     Se også: :func:`kraft.Kraft.__init__`
 
+    Funksjonen beregner også lastbidrag grunnet
+    brukerdefinert last.
+
     :param Inndata i: Input fra bruker
     :param Mast mast: Aktuell mast
     :return: Liste med :class:`Kraft`-objekt for mastens egenvekt
@@ -435,6 +438,12 @@ def egenvekt_mast(i, mast):
     F.append(Kraft(navn="Egenvekt: Mast", type=(0, 0),
                    f=[mast.egenvekt * mast.h, 0, 0],
                    e=[i.e, 0, 0]))
+
+    if i.brukerdefinert_last:
+        F.append(Kraft(navn="Egenvekt: Brukerdefinert lastvektor", type=(7, 0),
+                       f=[abs(i.f_x), abs(i.f_y), i.f_z],
+                       e=[- i.e_x + i.e, i.e_y, i.e_z]))
+
     return F
 
 
@@ -467,7 +476,7 @@ def ulykkeslast_KL(i, sys, mast):
     # F = liste over krefter som skal returneres
     F = []
 
-    e_t = i.traverslengde/2
+    e_t = i.traverslengde
     # Sidekrefter pga. ledningsføring
     s_b = 1000 * sys.baereline["Strekk i ledning"]
     s_kl = 1000 * sys.kontakttraad["Strekk i ledning"]
@@ -515,7 +524,7 @@ def ulykkeslast_KL(i, sys, mast):
     # Y-line(er)
     if not sys.y_line == None:
         L = 0
-        if (sys.navn == "20a" or sys.navn == "35") and i.radius >= 800:
+        if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
             L = 14
         elif sys.navn == "25" and i.radius >= 1200:
             L = 18

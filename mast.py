@@ -310,9 +310,9 @@ class Mast(object):
         return x / self.Iz(x / 1000, delta_topp=delta_topp)
 
     def sorter_grenseverdier(self):
-        """Lagrer høyeste verdier av utvalgte parametre i egne variabler.
+        """Lagrer høyeste absoluttverdier av utvalgte parametre i egne variabler.
 
-        Tilstander med høyeste registrerte verdi av gitte parametre sorteres ut
+        Tilstander med høyeste registrerte absoluttverdi av gitte parametre sorteres ut
         og lagres i egne variabler tilknyttet :class:`Mast`-objektet.
 
         Tilstandsparametre for utvelgelse blant bruddgrensetilstander:
@@ -434,33 +434,40 @@ def hent_master(hoyde, s235, materialkoeff):
     """
 
     # B-master
-    B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,
-              Iy_profil=3.64 * 10 ** 6, Iz_profil=4.32 * 10 ** 5, Wyp=7.46 * 10 ** 4, It=4.15 * 10 ** 4,
-              noytralakse=17.45, toppmaal=150, stigning=14 / 1000, d_h=50, d_b=10, h_max=8.0, h=hoyde,
-              s235=s235, materialkoeff=materialkoeff)
-    B3 = Mast(navn="B3", type="B", egenvekt=510, A_profil=2.04 * 10 ** 3, A_ref=0.14,
-              Iy_profil=6.05 * 10 ** 6, Iz_profil=6.27 * 10 ** 5, Wyp=1.05 * 10 ** 5, It=5.68 * 10 ** 4,
-              noytralakse=19.09, toppmaal=255, stigning=23 / 1000, d_h=50, d_b=10, h_max=9.5, h=hoyde,
-              s235=s235, materialkoeff=materialkoeff)
-    B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3, A_ref=0.16,
-              Iy_profil=9.25 * 10 ** 6, Iz_profil=8.53 * 10 ** 5, Wyp=1.38 * 10 ** 5, It=7.39 * 10 ** 4,
-              noytralakse=20.05, toppmaal=255, stigning=23 / 1000, d_h=60, d_b=10, h_max=11.0, h=hoyde,
-              s235=s235, materialkoeff=materialkoeff)
-    B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3, A_ref=0.20,
-              Iy_profil=1.91 * 10 ** 7, Iz_profil=1.48 * 10 ** 6, Wyp=2.28 * 10 ** 5, It=1.19 * 10 ** 5,
-              noytralakse=22.01, toppmaal=255, stigning=23 / 1000, d_h=100, d_b=12, h_max=13.0, h=hoyde,
-              s235=s235, materialkoeff=materialkoeff)
+    B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3,
+              A_ref=0.12, Iy_profil=3.64 * 10 ** 6, Iz_profil=4.32 * 10 ** 5,
+              Wyp=7.46 * 10 ** 4, It=4.15 * 10 ** 4, noytralakse=17.45,
+              toppmaal=150, stigning=14 / 1000, d_h=50, d_b=10, h_max=8.0,
+              h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    B3 = Mast(navn="B3", type="B", egenvekt=510, A_profil=2.04 * 10 ** 3,
+              A_ref=0.14, Iy_profil=6.05 * 10 ** 6, Iz_profil=6.27 * 10 ** 5,
+              Wyp=1.05 * 10 ** 5, It=5.68 * 10 ** 4, noytralakse=19.09,
+              toppmaal=255, stigning=23 / 1000, d_h=50, d_b=10, h_max=9.5,
+              h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3,
+              A_ref=0.16, Iy_profil=9.25 * 10 ** 6, Iz_profil=8.53 * 10 ** 5,
+              Wyp=1.38 * 10 ** 5, It=7.39 * 10 ** 4, noytralakse=20.05,
+              toppmaal=255, stigning=23 / 1000, d_h=60, d_b=10, h_max=11.0,
+              h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3,
+              A_ref=0.20, Iy_profil=1.91 * 10 ** 7, Iz_profil=1.48 * 10 ** 6,
+              Wyp=2.28 * 10 ** 5, It=1.19 * 10 ** 5, noytralakse=22.01,
+              toppmaal=255, stigning=23 / 1000, d_h=100, d_b=12, h_max=13.0,
+              h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     # H-master
-    H3 = Mast(navn="H3", type="H", egenvekt=520, A_profil=1.15 * 10 ** 3, A_ref=0.20,
-              Iy_profil=5.89 * 10 ** 5, noytralakse=21.69, toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10,
-              k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
-    H5 = Mast(navn="H5", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3, A_ref=0.20,
-              Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10,
-              k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
-    H6 = Mast(navn="H6", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3, A_ref=0.20,
-              Iy_profil=5.89 * 10 ** 5, noytralakse=22.41, toppmaal=200, stigning=20 / 1000,
-              k_g=0.85, k_d=0.55, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    H3 = Mast(navn="H3", type="H", egenvekt=520, A_profil=1.15 * 10 ** 3,
+              A_ref=0.20, Iy_profil=5.89 * 10 ** 5, noytralakse=21.69,
+              toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10, k_g=0.85, k_d=0.55,
+              h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    H5 = Mast(navn="H5", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3,
+              A_ref=0.20, Iy_profil=5.89 * 10 ** 5, noytralakse=22.41,
+              toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10, k_g=0.85, k_d=0.55,
+              h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
+    H6 = Mast(navn="H6", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3,
+              A_ref=0.20, Iy_profil=5.89 * 10 ** 5, noytralakse=22.41,
+              toppmaal=200, stigning=20 / 1000, k_g=0.85, k_d=0.55,
+              h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     # Bjelkemaster
     HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81 * 10 ** 3,
@@ -493,50 +500,6 @@ def hent_master(hoyde, s235, materialkoeff):
     master.extend([HE200B, HE220B, HE240B, HE260B, HE280B, HE260M])
 
     return master
-
-
-
-if __name__ == "__main__":
-    master = hent_master(8, True, 1.05)
-    mazt = master[6]
-    x = []
-    y_ny = []
-    y_gammel = []
-    y_ekv = []
-    print("Mast: {}\n".format(mazt.navn))
-    for h in range(80, 135, 5):
-        h *= 1/10
-        Iy_ny = mazt.Iy(2/3*h)
-        Iy_gammel = mazt.Iy_KL_fund(2/3*h)
-
-        delta_topp = 0
-        L = (h-delta_topp) * 1000  # FH + SH/2
-
-        delta = integrate.quad(mazt.Iy_int_P, 0, L, args=(delta_topp,))
-        Iy_ekv = L ** 3 / (3 * delta[0])
-
-        x.append(h)
-        y_ny.append(Iy_ny)
-        y_gammel.append(Iy_gammel)
-        y_ekv.append(Iy_ekv)
-
-        print("")
-        print("I_ekv =")
-        print("H = {} m".format(h))
-        print("Iy, ny beregning = {:.3g}".format((Iy_ny)))
-        print("Iy, gammel beregning = {:.3g}".format((Iy_gammel)))
-        print("Iy_ekv = {:.3g}".format(Iy_ekv))
-
-
-    ny, = plt.plot(x, y_ny, "b--", label="Eksakt i 1/3-dels punkt")
-    plt.hold(True)
-    gammel, = plt.plot(x, y_gammel, "r", label="Stivhet KL_fund")
-    ekv, = plt.plot(x, y_ekv, "g", label="Midlere stivhet, kontakttrådhøyde")
-    plt.title("Iy for mast {}".format(mazt.navn))
-    first_legend = plt.legend(handles=[ny, gammel, ekv], loc=0)
-    plt.ylabel("Annet arealmoment [mm^4]")
-    plt.xlabel("Mastehøyde [m]")
-    plt.show()
 
 
 

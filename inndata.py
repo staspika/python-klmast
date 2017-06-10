@@ -43,6 +43,7 @@ class Inndata(object):
         self.jord_type = cfg.get("Fastavspent", "jord_type")
         self.fiberoptisk_ledn = cfg.getboolean("Fastavspent", "fiberoptisk_ledn")
         self.retur_ledn = cfg.getboolean("Fastavspent", "retur_ledn")
+        self.auto_differansestrekk = cfg.getboolean("Fastavspent", "auto_differansestrekk")
         self.differansestrekk = cfg.getfloat("Fastavspent", "differansestrekk")
 
         # System
@@ -74,4 +75,16 @@ class Inndata(object):
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
         self.ec3 = cfg.getboolean("Div", "ec3")
         self.isklasse = cfg.getint("Div", "isklasse")
+
+        # Brukerdefinert last
+        self.brukerdefinert_last = cfg.getboolean("Brukerdefinert last", "brukerdefinert_last")
+        self.f_x = cfg.getfloat("Brukerdefinert last", "f_x")
+        self.f_y = cfg.getfloat("Brukerdefinert last", "f_y")
+        self.f_z = cfg.getfloat("Brukerdefinert last", "f_z")
+        self.e_x = cfg.getfloat("Brukerdefinert last", "e_x")
+        self.e_y = cfg.getfloat("Brukerdefinert last", "e_y")
+        self.e_z = cfg.getfloat("Brukerdefinert last", "e_z")
+        self.a_vind = cfg.getfloat("Brukerdefinert last", "a_vind")
+        self.a_vind_par = cfg.getfloat("Brukerdefinert last", "a_vind_par")
+
 

@@ -99,13 +99,8 @@ for k in kilometer:
     kilometer_list.append(k)
 kilometer_list.sort(key=_hent_tall)
 
-# Liste over stålkvaliteter
-staal_list = ["S235", "S355"]
-
 # Liste over AT-ledninger
-at_list = ["Al 400-37 uisolert", "Al 240-19 uisolert",
-		   "Al 150-19 uisolert", "BLX-T 241-19 isolert",
-		   "BLX-T 209,9-19 isolert", "BLX-T 111,3-7 isolert"]
+at_list = ["Al 400-37", "Al 240-19", "Al 150-19"]
 
 # Liste over jordledninger
 jord_list = ["KHF-70", "KHF-95"]

@@ -1,5 +1,5 @@
 import geometri
-import matplotlib.pyplot as plt
+import klima
 
 class System(object):
     """Klasse for å representere alle valg av system."""
@@ -50,7 +50,12 @@ class System(object):
 
 
 def hent_system(i):
-    """Henter :class:`System` med data for ledninger og utliggere
+    """Henter :class:`System` med data for ledninger og utliggere.
+
+    Ledningenes strekkraft ved snøfri line og :math:`T = -40^{\\circ}C`
+    samt strekk ved snøbelastet line og :math:`T = -25^{\\circ}C` beregnes
+    ved hjelp av Newton-Raphson-iterasjon ut fra tabulerte verdier for
+    kabelstrekk ved :math:`T = 5^{\\circ}C`.
 
     :param Inndata i: Input fra bruker
     :return: Systemkonfigurasjon
@@ -165,7 +170,7 @@ def hent_system(i):
         E = ledning["E-modul"]
         A = ledning["Tverrsnitt"]
         G_0 = ledning["Egenvekt"]
-        G_sno = 2 + 0.5 * ledning["Diameter"]
+        G_sno = klima._g_sno(i.ec3, i.isklasse, ledning["Diameter"])
         L = a
         alpha = ledning["Lengdeutvidelseskoeffisient"]
 
@@ -210,29 +215,30 @@ def hent_system(i):
             jordledning = ledning
             break
 
+    systemnavn = str.split(i.systemnavn)[1] if i.systemnavn.startswith("System") else i.systemnavn
+
     # Setter utligger
     utligger = utligger_s2x
-    if i.systemnavn=="35":
+    if systemnavn=="35":
         utligger = utligger_s3x
 
-
-    if i.systemnavn == "20a":
-        return System(navn="20a", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
+    if systemnavn == "20A":
+        return System(navn="20A", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger,
                       radius=i.radius, sms=i.sms, fh=i.fh)
-    elif i.systemnavn == "20b":
-        return System(navn="20b", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
+    elif systemnavn == "20B":
+        return System(navn="20B", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
                       fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=None, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                       jordledning=jordledning, utligger=utligger,
                       radius=i.radius, sms=i.sms, fh=i.fh)
-    elif i.systemnavn == "25":
+    elif systemnavn == "25":
         return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
                      fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
@@ -240,7 +246,7 @@ def hent_system(i):
                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
                      jordledning=jordledning, utligger=utligger,
                       radius=i.radius, sms=i.sms, fh=i.fh)
-    elif i.systemnavn == "35":
+    elif systemnavn == "35":
         return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
@@ -251,7 +257,11 @@ def hent_system(i):
 
 def _strekkraft(a, b, masteavstand):
     """Beregner strekkraft i fastavspent ledning mhp. masteavstand.
-    
+
+    Strekkraften beregnes ut fra lineærinterpolering mellom
+    tabulerte verdier for strekkrefter ``a`` og ``b``
+
+    :param float a: Strekk ved 30m masteavstand :math:`[kN]`
     :param float b: Strekk ved 70m masteavstand :math:`[kN]`
     :param float masteavstand: Faktisk masteavstand :math:`[m]`
     :return: Strekkraft ved faktisk masteavstand :math:`[N]`
@@ -267,11 +277,16 @@ def _strekkraft(a, b, masteavstand):
 def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
     """Numerisk løsning av kabelstrekk i fastavspente ledninger.
 
+    Følgende likevektsligning ligger til grunn for beregningene:
+
+    :math:`H_x^2 [H_x - H_0 + \\frac{EA(G_0 L)^2}{24H_0^2} + EA\\alpha \\Delta_T]
+    = \\frac{EA(G_x L)^2}{24}`
+
     Løsningen finnes ved hjelp av Newton-Raphson-iterasjoner
     for en residualfunksjon utledet fra likevekstligningen
     til en fastavspent kabel.
     Løsning returneres dersom feilkriteriet ``e`` er innenfor
-    valgt grense eller antall iterasjoner overgår 100.
+    valgt grense eller antall iterasjoner overgår 1000.
 
     :param float H_0: Initiell spennkraft i kabel :math:`[N]`
     :param float E: Kabelens E-modul :math:`[\\frac{N}{mm^2}]`
@@ -281,7 +296,8 @@ def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):
     :param float L: Masteavstand :math:`[m]`
     :param float alpha: Lengdeutvidelseskoeffisient :math:`[\\frac{1}{^{\\circ}C}]`
     :param float T: Lufttemperatur :math:`[^{\\circ}C]`
-    :return: Endelig kabelstrekk :math:`[N]`, antall iterasjoner, kabelstrekk ved hver iterasjon :math:`[N]`
+    :return: Endelig kabelstrekk ``H_x`` :math:`[N]`, antall iterasjoner ``iterasjoner``,
+     kabelstrekk ved hver iterasjon ``H_list`` :math:`[N]`
     :rtype: :class:`float`, :class:`int`, :class:`list`
     """
 

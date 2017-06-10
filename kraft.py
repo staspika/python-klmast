@@ -5,8 +5,8 @@ sporhoyde_e = 0
 class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster."""
 
-    def __init__(self, navn="", type=(0, 0), f=[0,0,0],
-                 q=[0,0,0], b=0, e=[0,0,0]):
+    def __init__(self, navn="", type=(0, 0), f=[0, 0, 0],
+                 q=[0, 0, 0], b=0, e=[0, 0, 0]):
         """Initialiserer :class:`Kraft`-objekt.
 
         ``sporhoyde_e`` trekkes fra ``e[0]`` for å konvertere

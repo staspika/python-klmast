@@ -73,7 +73,6 @@ import lister
 import laster
 import klima
 import tilstand
-import TEST
 import deformasjon
 import kraft
 
@@ -162,21 +161,6 @@ def beregn(i):
                                     iterasjon += 1
 
 
-
-
-
-
-                # TO DO:
-                #        * Implementere vilkårlig, brukerdefinert last m/ snø- og vindareal
-                #        * Sjekke gyldigheten av R- og D-beregninger når e er negativ
-                #        * Sjekke enheterfor samtlige tallverdier i docstrings
-
-
-
-
-
-
-
                 # Bruksgrense, forskyvning totalt
                 R = numpy.zeros((5, 8, 6))
                 R[0:2, :, :] = R_0[0:2, :, :]
@@ -216,10 +200,6 @@ def beregn(i):
             mast.lagre_tilstand(t)
             
             iterasjon += 1
-
-
-    # Sjekker minnebruk (TEST)
-    TEST.print_memory_info()
 
     return master
 

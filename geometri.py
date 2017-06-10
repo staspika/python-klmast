@@ -19,7 +19,7 @@ def beregn_sikksakk(sys, radius):
     # Systemavhengige sikksakk-verdier til input i max masteavstand.
     # struktur i sikksakk-ordbøker under: { "radius": [B1, B2] } i [m]
     # max tillatt utblåsning e_max i [m], bestemmes i indre if-setning.
-    if sys.navn == "20a" or sys.navn == "20b":
+    if sys.navn == "20A" or sys.navn == "20B":
         sikksakk = lister.sikksakk_20
         if r <= 1000:
             e_max = 0.42
@@ -87,8 +87,8 @@ def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
         print(a)
 
     if a > 65 and (sys.navn == "25" or
-                     sys.navn == "20a" or
-                     sys.navn == "20b"):
+                     sys.navn == "20A" or
+                     sys.navn == "20B"):
         a = 65
         print(a)
 
