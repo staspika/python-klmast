@@ -1055,13 +1055,13 @@ class Avansert(tk.Frame):
         tk.Label(areal_frame, text="Effektivt areal for vind...",
                  font=plain).grid(row=0, column=0, columnspan=3)
 
-        tk.Label(areal_frame, text="Normalt sporet (A_xy):",
+        tk.Label(areal_frame, text="normalt sporet (A_xy):",
                  font=plain).grid(row=1, column=0, sticky="E")
         tk.Entry(areal_frame, textvariable=self.M.master.a_vind,
                  font=plain, width=10).grid(row=1, column=1)
         tk.Label(areal_frame, text="[m^2]",
                  font=plain).grid(row=1, column=2, sticky="W")
-        tk.Label(areal_frame, text="Parallelt sporet (A_xz):",
+        tk.Label(areal_frame, text="parallelt sporet (A_xz):",
                  font=plain).grid(row=2, column=0, sticky="E")
         tk.Entry(areal_frame, textvariable=self.M.master.a_vind_par,
                  font=plain, width=10).grid(row=2, column=1)
