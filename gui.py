@@ -1168,7 +1168,7 @@ class Resultater(tk.Frame):
         t += "Vz = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[3] / 1000)
         t += "N = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[4] / 1000)
         t += "T = {:.2f}\n\n".format(mast.tilstand_phi_kl_max.K[5] / 1000)
-        t += "(3) Bruksgrense (forskyvning total): \n"
+        t += "(3) Bruksgrense (forskyvning totalt): \n"
         t += "My = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[0] / 1000)
         t += "Mz = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[2] / 1000)
         t += "Vy = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[1] / 1000)
