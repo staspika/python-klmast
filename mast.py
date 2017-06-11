@@ -318,13 +318,13 @@ class Mast(object):
         Tilstandsparametre for utvelgelse blant bruddgrensetilstander:
 
         - Utnyttelsesgrad
-        - My_max
-        - T_max
+        - :math:`M_{y,max}`
+        - :math:`T_{max}`
 
         Tilstandsparametre for utvelgelse blant forskyvningstilstander (både total og KL):
 
-        - Dz_max
-        - phi_max
+        - :math:`D_{z,max}`
+        - :math:`\\phi_{max}`
         """
 
         #Bruddgrense
@@ -395,7 +395,7 @@ class Mast(object):
 
         ``kriterie`` oppgis for å styre sortering av bruddgrensetilstander:
 
-        - 0: Sortering mhp. My
+        - 0: Sortering mhp. :math:`M_y`
         - 1: Sortering mhp. utnyttelsesgrad
 
         :param int kriterie: Kriterie for sortering

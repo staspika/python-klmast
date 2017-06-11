@@ -614,7 +614,7 @@ def _g_sno(ec3, isklasse, d):
 
     Linjelastene som hentes ut basert på isklasse ved
     NEK-beregning gjelder for ledninger med diametere mellom
-    :math`10` og :math:`20 mm`, derfor settes linjelasten
+    :math:`10` og :math:`20 mm`, derfor settes linjelasten
     for ledninger med større diametere til maksimalverdien
     :math:`[15 \\frac{N}{m}]`.
 
