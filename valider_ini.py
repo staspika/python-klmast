@@ -95,16 +95,12 @@ def hoyde_mast(i):
 
 def sjekk_h(H):
     """Kontrollerer høyde av KL-mast."""
+
     if (H - 1.5) < H < (H + 5.0):
         return True
     return False
 
 
-# ===============================!!NB!!=======================================#
-#
-#               sjekk ut formel for Hfj: les tilbakemelding fra Mirza !!
-#
-# ============================================================================#
 def hoyde_fjernledn(i):
     """Høyde av mate-/fjern- eller AT-ledning målt fra SOK."""
 
@@ -121,6 +117,7 @@ def hoyde_fjernledn(i):
 
 def sjekk_atledn(i):
     """AT-ledningen kan ikke henge lavere enn Hfj = FH + SH + 3.3m."""
+
     if i.at_ledn:
         if i.hfj < (i.fh + i.sh + 3.3):
             print("Kritisk liten avstand mellom AT-ledning og KL-anlegget")
@@ -205,27 +202,3 @@ def hoyde_returledn(i):
         elif hr < (hr - 1.0):
             return False
 
-
-# ================================NB!!================================#
-#
-# Få svar fra Mirza på gyldige intervaller for jordledningen
-# Runde av delsvar til nærmeste 0.5m. Master produseres pr. 0.5m
-#
-# ====================================================================#
-"""
-# høyde for jordledning målt fra SOK.
-def hoyde_jordledn (FH, SH):
-    # forbigangsledning og returledning i masten.
-    if forbigang_ledn and retur_ledn:
-        return (0.5*(Hf + Hr))
-    # mate-/fjern- eller AT-ledning i toppen av mast => Hj i bakkant.
-    elif matefjern_ledn or at_ledn:
-        return ()
-    # ingen andre ledninger enn jord- og kontakledning i masten.
-    else:
-        return ()
-"""
-
-"""Master produseres i intervall-lengder på 0.5m.
-   Mastehøyde forhøyes ALLTID opp til nærmeste 0.5m.
-   """

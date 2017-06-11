@@ -9,6 +9,7 @@ from collections import OrderedDict
 from datetime import date
 import main
 import numpy
+from astropy.table import Table, Column
 
 
 # Fonter
@@ -650,22 +651,28 @@ class Hovedvindu(tk.Frame):
 
 
     def _klima(self):
+        """Oppretter vindu for klima."""
+
         klima_root = tk.Toplevel(self)
         klima_vindu = Klima(klima_root)
 
     def _avansert(self):
+        """Oppretter vindu for avansert."""
+
         avansert_root = tk.Toplevel(self)
         avansert_vindu = Avansert(avansert_root)
 
     def _resultater(self):
+        """Oppretter vindu for resultater."""
+
         resultater_root = tk.Toplevel(self)
         resultater_vindu = Resultater(resultater_root)
-        pass
 
     def _bidrag(self):
+        """Oppretter vindu for bidrag."""
+
         bidrag_root = tk.Toplevel(self)
         bidrag_vindu = Bidrag(bidrag_root)
-        pass
 
     def _beregn(self):
         """Setter manglende inputparametre og kaller skriving av .ini-fil."""
@@ -887,7 +894,8 @@ class Klima(tk.Frame):
         lukk_btn.pack(padx=5, pady=5)
 
     def _lukk_vindu(self):
-        # lagrer verdier fra spinboxer
+        """Lagrer verdier fra spinboxer og lukker vindu."""
+
         self.M.refvindhastighet.set(self.refvind_spinbox.get())
         self.M.c_dir.set(self.c_dir_spinbox.get())
         self.M.c_season.set(self.c_season_spinbox.get())
@@ -1075,7 +1083,8 @@ class Avansert(tk.Frame):
         lukk_btn.pack(padx=5, pady=5)
 
     def _lukk_vindu(self):
-        # lagrer verdier fra spinboxer
+        """Lagrer verdier fra spinboxer og lukker vindu."""
+
         self.M.master.materialkoeff.set(self.materialkoeff_spinbox.get())
         self.M.master.traverslengde.set(self.traverslengde_spinbox.get())
         self.M.master.differansestrekk.set(self.differansestrekk_spinbox.get())
@@ -1130,14 +1139,16 @@ class Resultater(tk.Frame):
         bidrag_btn = tk.Button(knapper_frame, text="Vis kraftbidrag", font=bold,
                                command=self.M._bidrag)
         bidrag_btn.pack(padx=20, pady=5, side="left")
-        eksporter_btn = tk.Button(knapper_frame, text="Eksporter til Fundamast",
+        self.eksporter_btn = tk.Button(knapper_frame, text="Eksporter til Fundamast",
                                   font=bold, command=self._eksporter_fundamast)
-        eksporter_btn.pack(padx=20, pady=5, side="left")
+        self.eksporter_btn.pack(padx=20, pady=5, side="left")
         lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
                              font=bold, command=self.master.destroy)
         lukk_btn.pack(padx=20, pady=5, side="left")
 
     def _skriv_krefter(self):
+        """Skriver krefter til tekstboks."""
+
         mast = None
         for m in self.M.gittermaster:
             if m.navn=="H5":
@@ -1197,6 +1208,8 @@ class Resultater(tk.Frame):
         self.masteboks.insert("end", t)
 
     def _eksporter_fundamast(self):
+        """Eksporterer krefter til FUNDAMAST.DAT."""
+
         mast = None
         for m in self.M.gittermaster:
             if m.navn == "H5":
@@ -1228,6 +1241,7 @@ class Resultater(tk.Frame):
         with open("FUNDAMAST.DAT", "w+") as fil:
             fil.write(s)
 
+        self.eksporter_btn.config(text="Eksport fullført!", font=plain)
 
 
 
@@ -1260,7 +1274,7 @@ class Bidrag(tk.Frame):
 
 
     def _skriv_bidrag(self):
-        """Skriver bidrag UTEN kombinasjonsfaktorer."""
+        """Skriver bidrag med lastfaktorer, UTEN kombinasjonsfaktorer."""
 
         mast = None
         for m in self.M.gittermaster:
@@ -1268,9 +1282,12 @@ class Bidrag(tk.Frame):
                 mast = m
                 break
 
-        t = "Navn              My     Vy     Mz     Vz     N      T\n"
+        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
+        navneliste = []
+        krefter = None
         for j in mast.tilstand_My_max.F:
-            t += "{}  ".format(j.navn)
+
+            navneliste.append(j.navn)
 
             faktor = 1.0
             if j.type[1] == 0:
@@ -1285,15 +1302,15 @@ class Bidrag(tk.Frame):
                 faktor = mast.tilstand_My_max.V
 
             R = self._beregn_reaksjonskrefter(j)
-            K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0)
+            K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0) / 1000
 
-            for rk in K:
-                if rk == 0:
-                    t += "0     "
-                else:
-                    t += "{:.1f}    ".format(rk / 1000)
+            if krefter is None:
+                krefter = K
+            else:
+                krefter = numpy.vstack([krefter, K])
 
-            t += "\n"
+        t = Table(data=krefter, names=kolonner)
+        t.add_column(Column(name="Navn", data=navneliste), 0)
 
         self.bidragsboks.insert("end", t)
 
@@ -1325,17 +1342,6 @@ class Bidrag(tk.Frame):
         R += R_0
 
         return R
-
-
-
-
-
-
-
-
-
-
-
 
 
 
