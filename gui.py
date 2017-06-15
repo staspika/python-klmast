@@ -3,7 +3,6 @@
 import tkinter as tk
 import configparser
 import lister
-import ctypes
 import math
 from collections import OrderedDict
 from datetime import date
@@ -27,10 +26,6 @@ class KL_mast(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         self.title("KL-mast")
 
-        # root.state("zoomed")
-        user32 = ctypes.windll.user32
-        #self.x = int(user32.GetSystemMetrics(0) * 0.50)
-        #self.y = int(user32.GetSystemMetrics(1) * 0.50)
         self.x, self.y = 1600, 900
         self.geometry("{}x{}".format(self.x, self.y))
 
