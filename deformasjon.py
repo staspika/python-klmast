@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Funksjoner for å beregne deformasjonsbidrag fra et :class:`Kraft`-objekt."""
 
 import numpy

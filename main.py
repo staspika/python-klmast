@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Hovedmodul for styring av beregningsprosess og uthenting av resultater."""
 
 import beregning

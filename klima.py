@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Beregning av vindlaster, funksjoner for påføring av krefter fra vind- og snølast."""
 
 import math

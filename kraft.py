@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 from numpy import array, count_nonzero
 
 sporhoyde_e = 0

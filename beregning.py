@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Overordnet beregningsprosedyre for master.
 
 Styrer beregning av reaksjonskrefter og forskyvninger for samtlige

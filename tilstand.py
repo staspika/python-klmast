@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 import math
 import numpy
 import copy

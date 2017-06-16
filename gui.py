@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Grafisk brukergrensesnitt, avlesing/skriving av input til .ini-fil."""
 
 import tkinter as tk
