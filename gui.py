@@ -15,7 +15,7 @@ from astropy.table import Table, Column
 # Fonter
 skrifttype = "Helvetica"
 skriftstr = 11
-banner = (skrifttype, math.floor(skriftstr*1.3))
+banner = (skrifttype, int(math.floor(skriftstr*1.3)))
 plain = (skrifttype, skriftstr)
 bold = (skrifttype, skriftstr, "bold")
 italic = (skrifttype, skriftstr, "italic")
