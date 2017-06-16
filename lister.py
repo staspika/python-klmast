@@ -1,4 +1,4 @@
-
+# -*- coding: utf8 -*-
 
 def _hent_tall(str):
     """Henter ut tallverdi fra string for sortering."""

@@ -1,9 +1,9 @@
+# -*- coding: utf8 -*-
 """Grafisk brukergrensesnitt, avlesing/skriving av input til .ini-fil."""
 
 import tkinter as tk
 import configparser
 import lister
-import ctypes
 import math
 from collections import OrderedDict
 from datetime import date
@@ -15,7 +15,7 @@ from astropy.table import Table, Column
 # Fonter
 skrifttype = "Helvetica"
 skriftstr = 11
-banner = (skrifttype, math.floor(skriftstr*1.3))
+banner = (skrifttype, int(math.floor(skriftstr*1.3)))
 plain = (skrifttype, skriftstr)
 bold = (skrifttype, skriftstr, "bold")
 italic = (skrifttype, skriftstr, "italic")
@@ -27,10 +27,6 @@ class KL_mast(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         self.title("KL-mast")
 
-        # root.state("zoomed")
-        user32 = ctypes.windll.user32
-        #self.x = int(user32.GetSystemMetrics(0) * 0.50)
-        #self.y = int(user32.GetSystemMetrics(1) * 0.50)
         self.x, self.y = 1600, 900
         self.geometry("{}x{}".format(self.x, self.y))
 

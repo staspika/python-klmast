@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 """Funksjoner for beregning av geometriske systemdata."""
 
 import math
