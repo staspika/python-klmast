@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+from __future__ import unicode_literals
 """Overordnet beregningsprosedyre for master.
 
 Styrer beregning av reaksjonskrefter og forskyvninger for samtlige
