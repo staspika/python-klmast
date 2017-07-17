@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+from __future__ import unicode_literals
 import math
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt

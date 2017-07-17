@@ -1,4 +1,6 @@
 # -*- coding: utf8 -*-
+from __future__ import unicode_literals
+
 from numpy import array, count_nonzero
 
 sporhoyde_e = 0

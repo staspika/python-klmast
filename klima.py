@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """Beregning av vindlaster, funksjoner for påføring av krefter fra vind- og snølast."""
+from __future__ import unicode_literals
 
 import math
 from kraft import *
