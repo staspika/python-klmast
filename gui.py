@@ -681,8 +681,6 @@ class Hovedvindu(tk.Frame):
             self.master.linjemast_utliggere.set(1)
             self.master.siste_for_avspenning.set(True)
 
-        self.master.avstand_fixpunkt.set(self.fixavstand_spinbox.get())
-
         self.master.fixpunktmast.set(False)
         self.master.fixavspenningsmast.set(False)
         self.master.avspenningsmast.set(False)
@@ -695,6 +693,8 @@ class Hovedvindu(tk.Frame):
                 self.master.avspenningsmast.set(True)
 
         # lagrer verdier fra spinboxer
+        self.master.avstand_fixpunkt.set(self.fixavstand_spinbox.get())
+        self.master.matefjern_antall.set(self.matefjern_spinbox.get())
         self.master.a1.set(self.a1_spinbox.get())
         self.master.a2.set(self.a2_spinbox.get())
         self.master.h.set(self.h_spinbox.get())
