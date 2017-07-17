@@ -9,7 +9,6 @@ from collections import OrderedDict
 from datetime import date
 import main
 import numpy
-from astropy.table import Table, Column
 
 
 # Fonter
@@ -434,7 +433,7 @@ class Hovedvindu(tk.Frame):
         hogfjellsgrense.grid(row=2, column=0, sticky="W")
 
         # masteavstander
-        tk.Label(system, text="Avstandt til forrige mast:", font=plain) \
+        tk.Label(system, text="Avstand til forrige mast:", font=plain) \
             .grid(row=3, column=0, sticky="W")
         self.master.a1.set(self.master.masteavstand_range[0])
         self.master.a2.set(self.master.masteavstand_range[0])
@@ -687,12 +686,13 @@ class Hovedvindu(tk.Frame):
         self.master.fixpunktmast.set(False)
         self.master.fixavspenningsmast.set(False)
         self.master.avspenningsmast.set(False)
-        if self._alternativ_funksjon.get() == 0:
-            self.master.fixpunktmast.set(True)
-        elif self._alternativ_funksjon.get() == 1:
-            self.master.fixavspenningsmast.set(True)
-        elif self._alternativ_funksjon.get() == 2:
-            self.master.avspenningsmast.set(True)
+        if self._alternative_mastefunksjoner.get():
+            if self._alternativ_funksjon.get() == 0:
+                self.master.fixpunktmast.set(True)
+            elif self._alternativ_funksjon.get() == 1:
+                self.master.fixavspenningsmast.set(True)
+            elif self._alternativ_funksjon.get() == 2:
+                self.master.avspenningsmast.set(True)
 
         # lagrer verdier fra spinboxer
         self.master.a1.set(self.a1_spinbox.get())
@@ -1104,7 +1104,7 @@ class Resultater(tk.Frame):
 
         tk.Label(hovedvindu, text="Krefter i bruddgrensetilstand:",
                  font=plain).grid(row=0, column=0)
-        tk.Label(hovedvindu, text="M / T = [kNm]    V / N = [kN]",
+        tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
         self.kraftboks = tk.Text(hovedvindu, width=100, height=10)
@@ -1150,58 +1150,123 @@ class Resultater(tk.Frame):
             if m.navn=="H5":
                 mast = m
                 break
-        t = "(1) Bruddgrensetilstand: \n"
-        t += "My = {:.1f}  ".format(mast.tilstand_My_max.K[0] / 1000)
-        t += "Mz = {:.1f}  ".format(mast.tilstand_My_max.K[2] / 1000)
-        t += "Vy = {:.1f}  ".format(mast.tilstand_My_max.K[1] / 1000)
-        t += "Vz = {:.1f}  ".format(mast.tilstand_My_max.K[3] / 1000)
-        t += "N = {:.1f}  ".format(mast.tilstand_My_max.K[4] / 1000)
-        t += "T = {:.2f}\n\n".format(mast.tilstand_T_max.K[5] / 1000)
-        t += "(2) Bruksgrense (forskyvning KL): \n"
-        t += "My = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[0] / 1000)
-        t += "Mz = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[2] / 1000)
-        t += "Vy = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[1] / 1000)
-        t += "Vz = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[3] / 1000)
-        t += "N = {:.1f}  ".format(mast.tilstand_Dz_kl_max.K[4] / 1000)
-        t += "T = {:.2f}\n\n".format(mast.tilstand_phi_kl_max.K[5] / 1000)
-        t += "(3) Bruksgrense (forskyvning totalt): \n"
-        t += "My = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[0] / 1000)
-        t += "Mz = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[2] / 1000)
-        t += "Vy = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[1] / 1000)
-        t += "Vz = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[3] / 1000)
-        t += "N = {:.1f}  ".format(mast.tilstand_Dz_tot_max.K[4] / 1000)
-        t += "T = {:.2f}".format(mast.tilstand_phi_tot_max.K[5] / 1000)
-        self.kraftboks.insert("end", t)
+
+        grensetilstander = ("(1) Bruddgrensetilstand",
+                            "(2) Bruksgrense (forskyvning KL)",
+                            "(3) Bruksgrense (forskyvning totalt)")
+        max_bredde_tilstand = 0
+        for g in grensetilstander:
+            max_bredde_tilstand = len(g) if len(g)>max_bredde_tilstand else max_bredde_tilstand
+
+        kolonnebredde = 8
+
+        s = "Grensetilstand:".ljust(max_bredde_tilstand + 1)
+        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
+        for k in kolonner:
+            s += k.rjust(kolonnebredde)
+        s += "\n{}\n".format("-"*(max_bredde_tilstand+1+kolonnebredde*len(kolonner)))
+
+        # (1) Bruddgrensetilstand
+        s += grensetilstander[0].ljust(max_bredde_tilstand + 1)
+        K = mast.tilstand_My_max.K / 1000
+        for n in range(6):
+            if n==5:
+                K = mast.tilstand_T_max.K / 1000
+            k = str(round(K[n], 1))
+            k = "0" if k == "0.0" else k
+            s += k.rjust(kolonnebredde)
+        s += "\n"
+
+        # (2) Bruksgrense (forskyvning KL)
+        s += grensetilstander[1].ljust(max_bredde_tilstand + 1)
+        K = mast.tilstand_Dz_kl_max.K / 1000
+        for n in range(6):
+            if n==5:
+                K = mast.tilstand_phi_kl_max.K / 1000
+            k = str(round(K[n], 1))
+            k = "0" if k == "0.0" else k
+            s += k.rjust(kolonnebredde)
+        s += "\n"
+
+        # (3) Bruksgrense (forskyvning totalt)
+        s += grensetilstander[2].ljust(max_bredde_tilstand + 1)
+        K = mast.tilstand_Dz_tot_max.K / 1000
+        for n in range(6):
+            if n==5:
+                K = mast.tilstand_phi_tot_max.K / 1000
+            k = str(round(K[n], 1))
+            k = "0" if k == "0.0" else k
+            s += k.rjust(kolonnebredde)
+        s += "\n"
+
+        self.kraftboks.insert("end", s)
 
     def _skriv_master(self):
         self.masteboks.delete(1.0, "end")
         masteliste = self.M.gittermaster if self.M.gittermast.get() else self.M.bjelkemaster
-        spaces = "     " if self.M.gittermast.get() else " "
+
         anbefalt_mast = None
         for mast in masteliste:
-            if mast.h_max >= self.M.master.h.get() \
-            and mast.tilstand_UR_max.utnyttelsesgrad <= 1.0:
+            if mast.h_max>=self.M.master.h.get() and mast.tilstand_UR_max.utnyttelsesgrad<=1.0:
                 anbefalt_mast = mast
                 break
-        t = ""
+
+        s = "\n"
         if anbefalt_mast:
-            t += "\nAnbefalt mast:  {}   ".format(anbefalt_mast.navn)
-            t += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n".format(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100)
+            s += "Anbefalt mast:  {}   ".format(anbefalt_mast.navn)
+            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n".format(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100)
         else:
-            t += "Ingen master oppfyller kravene for utnyttelsesgrad og høyde.\n\n"
-        t += "Navn     UR   Dz(tot) Dz(KL) phi(tot) phi(KL) Max.lengde\n"
+            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n"
+
+        max_bredde_navn = len("Navn:")
+        for mast in masteliste:
+            max_bredde_navn = len(mast.navn) if len(mast.navn)>max_bredde_navn else max_bredde_navn
+
+        kolonnebredde = 10
+
+        s = "Navn:".ljust(max_bredde_navn + 1)
+        kolonner = ("UR", "Dz(tot)", "Dz(KL)", "phi(tot)", "phi(KL)", "Max.høyde")
+        for k in kolonner:
+            s += k.rjust(kolonnebredde)
+        s += "\n{}\n".format("-"*(max_bredde_navn+1+kolonnebredde*len(kolonner)))
+
         for mast in masteliste:
             if mast.navn=="H6" and self.M.master.s235.get():
-                t += "H6-mast kan ikke velges da stålkvaliteten er S235."
+                s += "H6-mast kan ikke velges da stålkvaliteten er S235."
             else:
-                t += "{} {}{:.1f}%  ".format(mast.navn, spaces, mast.tilstand_UR_max.utnyttelsesgrad * 100)
-                t += "{:.1f}      ".format(mast.tilstand_Dz_tot_max.K_D[1])
-                t += "{:.1f}     ".format(mast.tilstand_Dz_kl_max.K_D[1])
-                t += "{:.2f}      ".format(mast.tilstand_phi_tot_max.K_D[2])
-                t += "{:.2f}     ".format(mast.tilstand_phi_kl_max.K_D[2])
-                t += "{:.1f}\n\n".format(mast.h_max)
+                s += mast.navn.ljust(max_bredde_navn+1)
 
-        self.masteboks.insert("end", t)
+                # Utnyttelsesgrad
+                UR = round(mast.tilstand_UR_max.utnyttelsesgrad*100, 1)
+                s += str(UR).rjust(kolonnebredde)
+
+                # Forskyvning tot
+                d = str(round(mast.tilstand_Dz_tot_max.K_D[1], 1))
+                d = "0" if d == "0.0" else d
+                s += d.rjust(kolonnebredde)
+
+                # Forskyvning kl
+                d = str(round(mast.tilstand_Dz_kl_max.K_D[1], 1))
+                d = "0" if d == "0.0" else d
+                s += d.rjust(kolonnebredde)
+
+                # Torsjonsvinkel tot
+                d = str(round(mast.tilstand_phi_tot_max.K_D[2], 2))
+                d = "0" if d == "0.0" else d
+                s += d.rjust(kolonnebredde)
+
+                # Torsjonsvinkel kl
+                d = str(round(mast.tilstand_phi_kl_max.K_D[2], 2))
+                d = "0" if d == "0.0" else d
+                s += d.rjust(kolonnebredde)
+
+                # Maksimal tillatt høyde
+                h_max = round(mast.h_max, 1)
+                s += (str(h_max)+"m").rjust(kolonnebredde)
+
+                s += "\n"
+
+        self.masteboks.insert("end", s)
 
     def _eksporter_fundamast(self):
         """Eksporterer krefter til FUNDAMAST.DAT."""
@@ -1256,7 +1321,7 @@ class Bidrag(tk.Frame):
 
         tk.Label(hovedvindu, text="Kraftbidrag inkludert lastfaktorer, uten lastkombinasjonsfaktorer",
                  font=plain).grid(row=0, column=0)
-        tk.Label(hovedvindu, text="M / T = [kNm]    V / N = [kN]",
+        tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
         self.bidragsboks = tk.Text(hovedvindu, width=100, height=50)
@@ -1278,12 +1343,20 @@ class Bidrag(tk.Frame):
                 mast = m
                 break
 
-        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
-        navneliste = []
-        krefter = None
+        max_bredde_navn = 0
         for j in mast.tilstand_My_max.F:
+            max_bredde_navn = len(j.navn) if len(j.navn)>max_bredde_navn else max_bredde_navn
 
-            navneliste.append(j.navn)
+        kolonnebredde = 8
+
+        s = "Navn:".ljust(max_bredde_navn+1)
+        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
+        for k in kolonner:
+            s += k.rjust(kolonnebredde)
+        s += "\n{}\n".format("-"*(max_bredde_navn+1+kolonnebredde*len(kolonner)))
+
+        for j in mast.tilstand_My_max.F:
+            s += j.navn.ljust(max_bredde_navn+1)
 
             faktor = 1.0
             if j.type[1] == 0:
@@ -1300,15 +1373,13 @@ class Bidrag(tk.Frame):
             R = self._beregn_reaksjonskrefter(j)
             K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0) / 1000
 
-            if krefter is None:
-                krefter = K
-            else:
-                krefter = numpy.vstack([krefter, K])
+            for n in range (6):
+                k = str(round(K[n],1))
+                k = "0" if k=="0.0" else k
+                s += k.rjust(kolonnebredde)
+            s += "\n"
 
-        t = Table(data=krefter, names=kolonner)
-        t.add_column(Column(name="Navn", data=navneliste), 0)
-
-        self.bidragsboks.insert("end", t)
+        self.bidragsboks.insert("end", s)
 
 
     def _beregn_reaksjonskrefter(self, j):

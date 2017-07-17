@@ -20,4 +20,13 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    pass
+    max_bredde_navn = 20
+    kolonnebredde = 6
+
+    s = "Navn:".ljust(max_bredde_navn)
+    s += "My{0}Vy{0}Mz{0}Vz{0}N{1}T{1}".format(" " * (kolonnebredde - 2), " " * (kolonnebredde - 1))
+
+    for k in range(6):
+        print(k)
+
+    print(s)
