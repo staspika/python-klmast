@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """Funksjoner for beregning av geometriske systemdata."""
+from __future__ import unicode_literals
 
 import math
 import lister

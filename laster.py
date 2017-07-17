@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """Funksjoner for beregning av laster ikke relatert til is/snø på systemet."""
+from __future__ import unicode_literals
 
 from kraft import *
 

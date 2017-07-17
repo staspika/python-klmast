@@ -2,6 +2,7 @@
 # Dette skriptet sjekker at data i .ini-fila er gyldig                #
 # Det må kontrolleres at dette skriptet gir mening!                   #
 # ====================================================================#
+from __future__ import unicode_literals
 
 
 def sjekk_fh(i):

@@ -1,6 +1,6 @@
 # -*- coding: utf8 -*-
 """Hovedmodul for styring av beregningsprosess og uthenting av resultater."""
-
+from __future__ import unicode_literals
 import beregning
 import time
 import inndata

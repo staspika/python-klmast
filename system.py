@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+from __future__ import unicode_literals
 import geometri
 import klima
 
@@ -216,7 +217,7 @@ def hent_system(i):
             jordledning = ledning
             break
 
-    systemnavn = str.split(i.systemnavn)[1] if i.systemnavn.startswith("System") else i.systemnavn
+    systemnavn = i.systemnavn.split()[1] if i.systemnavn.startswith("System") else i.systemnavn
 
     # Setter utligger
     utligger = utligger_s2x
