@@ -189,7 +189,7 @@ def beregn(i):
 
         # Regner ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere == 2:
-            lastsituasjon = {"Ulykkeslast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0}}
+            lastsituasjon = "Ulykkeslast"
 
             F_ulykke = []
             F_ulykke[:] = [j for j in F if not j.navn in lister.ulykkeslaster_KL]

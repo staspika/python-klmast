@@ -12,7 +12,7 @@ class Tilstand(object):
      """
 
     def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
-                 G=0, L=0, T=0, S=0, V=0, iterasjon=0):
+                 G=1, L=1, T=1, S=1, V=1, iterasjon=0):
         """Initialiserer :class:`Tilstand`-objekt.
 
         Alternativer for ``vindretning``:
@@ -64,8 +64,6 @@ class Tilstand(object):
             self.My_kap = abs(1000 * self.K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))
             self.utnyttelsesgrad = self._utnyttelsesgrad(i, mast, self.K)
-            if "Ulykkeslast" in lastsituasjon:
-                self.lastsituasjon = "Ulykkeslast"
         else:
             # Bruksgrensetilstand
             self.R = R
@@ -77,8 +75,6 @@ class Tilstand(object):
         K = self.K / 1000  # Konverterer M til [kNm] og F til [kN]
         if self.type == 0:
             rep = ""
-            # for j in self.F:
-            #    rep += j.rep()
             rep += "Beregningsmetode: {}\n".format(self.metode)
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
                    "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \

@@ -9,6 +9,7 @@ from collections import OrderedDict
 from datetime import date
 import main
 import numpy
+import xlsxwriter
 
 
 # Fonter
@@ -1107,7 +1108,7 @@ class Resultater(tk.Frame):
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
-        self.kraftboks = tk.Text(hovedvindu, width=100, height=10)
+        self.kraftboks = tk.Text(hovedvindu, width=100, height=11)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
@@ -1172,8 +1173,10 @@ class Resultater(tk.Frame):
         for n in range(6):
             if n==5:
                 K = mast.tilstand_T_max.K / 1000
-            k = str(round(K[n], 1))
-            k = "0" if k == "0.0" else k
+                k = str(round(K[n],2))
+            else:
+                k = str(round(K[n],1))
+            k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
         s += "\n"
 
@@ -1184,7 +1187,7 @@ class Resultater(tk.Frame):
             if n==5:
                 K = mast.tilstand_phi_kl_max.K / 1000
             k = str(round(K[n], 1))
-            k = "0" if k == "0.0" else k
+            k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
         s += "\n"
 
@@ -1195,9 +1198,23 @@ class Resultater(tk.Frame):
             if n==5:
                 K = mast.tilstand_phi_tot_max.K / 1000
             k = str(round(K[n], 1))
-            k = "0" if k == "0.0" else k
+            k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
-        s += "\n"
+        s += "\n\n"
+
+        lastsituasjon = mast.tilstand_My_max.lastsituasjon
+        vindretning = "vind fra mast mot spor"
+        if mast.tilstand_My_max.vindretning == 1:
+            vindretning = "vind fra spor mot mast"
+        elif mast.tilstand_My_max.vindretning == 2:
+            vindretning = "vind parallelt spor"
+
+        s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
+        s += "{}\n\n".format(vindretning)
+        if mast.tilstand_T_max.lastsituasjon == "Ulykkeslast":
+            s += "T i grensetilstand (1) stammer fra ulykkeslast.\n"
+            T = round(mast.tilstand_My_max.K[5] / 1000, 2)
+            s += "Maksimal T ved normale forhold i grensetilstand (1):  {} kNm\n".format(T)
 
         self.kraftboks.insert("end", s)
 
@@ -1211,12 +1228,13 @@ class Resultater(tk.Frame):
                 anbefalt_mast = mast
                 break
 
-        s = "\n"
+        s = "\n\n"
         if anbefalt_mast:
             s += "Anbefalt mast:  {}   ".format(anbefalt_mast.navn)
-            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n".format(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100)
+            UR = round(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100, 1)
+            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n\n".format(UR)
         else:
-            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n"
+            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n\n"
 
         max_bredde_navn = len("Navn:")
         for mast in masteliste:
@@ -1224,11 +1242,14 @@ class Resultater(tk.Frame):
 
         kolonnebredde = 10
 
-        s = "Navn:".ljust(max_bredde_navn + 1)
+        s += "Navn:".ljust(max_bredde_navn + 1)
         kolonner = ("UR", "Dz(tot)", "Dz(KL)", "phi(tot)", "phi(KL)", "Max.høyde")
         for k in kolonner:
-            s += k.rjust(kolonnebredde)
-        s += "\n{}\n".format("-"*(max_bredde_navn+1+kolonnebredde*len(kolonner)))
+            if k=="Max.høyde":
+                s += k.rjust(kolonnebredde+1)
+            else:
+                s += k.rjust(kolonnebredde)
+        s += "\n{}\n".format("-"*(max_bredde_navn+2+kolonnebredde*len(kolonner)))
 
         for mast in masteliste:
             if mast.navn=="H6" and self.M.master.s235.get():
@@ -1238,31 +1259,31 @@ class Resultater(tk.Frame):
 
                 # Utnyttelsesgrad
                 UR = round(mast.tilstand_UR_max.utnyttelsesgrad*100, 1)
-                s += str(UR).rjust(kolonnebredde)
+                s += "{}%".format(UR).rjust(kolonnebredde)
 
                 # Forskyvning tot
                 d = str(round(mast.tilstand_Dz_tot_max.K_D[1], 1))
-                d = "0" if d == "0.0" else d
+                d = "0" if (d == "0.0" or d == "-0.0") else d
                 s += d.rjust(kolonnebredde)
 
                 # Forskyvning kl
                 d = str(round(mast.tilstand_Dz_kl_max.K_D[1], 1))
-                d = "0" if d == "0.0" else d
+                d = "0" if (d == "0.0" or d == "-0.0") else d
                 s += d.rjust(kolonnebredde)
 
                 # Torsjonsvinkel tot
                 d = str(round(mast.tilstand_phi_tot_max.K_D[2], 2))
-                d = "0" if d == "0.0" else d
+                d = "0" if (d == "0.0" or d == "-0.0") else d
                 s += d.rjust(kolonnebredde)
 
                 # Torsjonsvinkel kl
                 d = str(round(mast.tilstand_phi_kl_max.K_D[2], 2))
-                d = "0" if d == "0.0" else d
+                d = "0" if (d == "0.0" or d == "-0.0") else d
                 s += d.rjust(kolonnebredde)
 
                 # Maksimal tillatt høyde
                 h_max = round(mast.h_max, 1)
-                s += (str(h_max)+"m").rjust(kolonnebredde)
+                s += (str(h_max)+"m").rjust(kolonnebredde+1)
 
                 s += "\n"
 
@@ -1324,7 +1345,7 @@ class Bidrag(tk.Frame):
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
-        self.bidragsboks = tk.Text(hovedvindu, width=100, height=50)
+        self.bidragsboks = tk.Text(hovedvindu, width=100, height=40)
         self.bidragsboks.grid(row=2, column=0, columnspan=3)
 
         self._skriv_bidrag()
@@ -1374,8 +1395,11 @@ class Bidrag(tk.Frame):
             K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0) / 1000
 
             for n in range (6):
-                k = str(round(K[n],1))
-                k = "0" if k=="0.0" else k
+                if n==5:
+                    k = str(round(K[n],2))
+                else:
+                    k = str(round(K[n],1))
+                k = "0" if (k == "0.0" or k == "-0.0") else k
                 s += k.rjust(kolonnebredde)
             s += "\n"
 
