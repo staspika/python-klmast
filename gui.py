@@ -9,7 +9,6 @@ from collections import OrderedDict
 from datetime import date
 import main
 import numpy
-import xlsxwriter
 
 
 # Fonter
@@ -1108,7 +1107,7 @@ class Resultater(tk.Frame):
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
-        self.kraftboks = tk.Text(hovedvindu, width=100, height=11)
+        self.kraftboks = tk.Text(hovedvindu, width=100, height=10)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
@@ -1172,7 +1171,6 @@ class Resultater(tk.Frame):
         K = mast.tilstand_My_max.K / 1000
         for n in range(6):
             if n==5:
-                K = mast.tilstand_T_max.K / 1000
                 k = str(round(K[n],2))
             else:
                 k = str(round(K[n],1))
@@ -1212,9 +1210,8 @@ class Resultater(tk.Frame):
         s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
         s += "{}\n\n".format(vindretning)
         if mast.tilstand_T_max.lastsituasjon == "Ulykkeslast":
-            s += "T i grensetilstand (1) stammer fra ulykkeslast.\n"
-            T = round(mast.tilstand_My_max.K[5] / 1000, 2)
-            s += "Maksimal T ved normale forhold i grensetilstand (1):  {} kNm\n".format(T)
+            T = round(mast.tilstand_T_max.K[5] / 1000, 2)
+            s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n".format(T)
 
         self.kraftboks.insert("end", s)
 
@@ -1287,6 +1284,10 @@ class Resultater(tk.Frame):
 
                 s += "\n"
 
+        s += "\n"
+        s += "Dz = forskyvning av kontakttråd normalt sporretningen\n"
+        s += "phi = mastens torsjonsvinkel i kontakttrådhøyde\n"
+
         self.masteboks.insert("end", s)
 
     def _eksporter_fundamast(self):
@@ -1308,9 +1309,9 @@ class Resultater(tk.Frame):
                                                self.M.master.fh.get(),
                                                self.M.master.e.get())
         s += "*** Bruddgrense    N (kN) - V (kN) - M (kNm)\n"
-        s += "{:.1f}\n{:.1f}\n{:.1f}\n".format(abs(mast.tilstand_My_max.K[4]/1000),
-                                               abs(mast.tilstand_My_max.K[3]/1000),
-                                               abs(mast.tilstand_My_max.K[0]/1000))
+        s += "{:.1f}\n{:.1f}\n{:.1f}\n".format(abs(mast.tilstand_My_max.K[4] / 1000),
+                                               abs(mast.tilstand_My_max.K[3] / 1000),
+                                               abs(mast.tilstand_My_max.K[0] / 1000))
         s += "*** Bruksgrense 2  N (kN) - V (kN) - M (kNm)\n"
         s += "{:.1f}\n{:.1f}\n{:.1f}\n".format(abs(mast.tilstand_Dz_kl_max.K[4] / 1000),
                                                abs(mast.tilstand_Dz_kl_max.K[3] / 1000),

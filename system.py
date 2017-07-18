@@ -93,8 +93,6 @@ def hent_system(i):
 
 
     # Forbigangsledninger
-    # Det antas en oppspenningskraft på 3kN og ingen temperaturutvidelse av
-    # fiberoptisk kabel da denne er metallfri.
     Al_240_61 = {"Navn": "Al 240-61", "Egenvekt": 6.43,
                  "Diameter": 20.3, "Tverrsnitt": 242.54,
                  "E-modul": 56000, "Max tillatt spenning": 50.0,
@@ -116,6 +114,8 @@ def hent_system(i):
                      "Strekk 5C": _strekkraft(2.77, 3.06, a)}
 
     # Fiberoptiske kabler
+    # Det antas en oppspenningskraft på 3kN og ingen temperaturutvidelse av
+    # fiberoptisk kabel da denne er metallfri.
     ADSS_GRHSLLDV_9_125 = {"Navn": "ADSS GRHSLLDV 9/125",
                            "Egenvekt": 2.6, "Diameter": 18.5,
                            "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5,
@@ -163,6 +163,8 @@ def hent_system(i):
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
 
 
+    # Beregner ledningsstrekk vha. lekevektsbetraktning med Newton-Raphson-iterasjoner
+    # Fiberoptisk kabel inkluderes IKKE grunnet manglende E-modul og lengdeutvidelseskoeffisient
     ledninger = [Al_240_61, Al_240_61_iso, SAHF_120_26_7]
     ledninger.extend(at_ledninger)
     ledninger.extend(jordledninger)
