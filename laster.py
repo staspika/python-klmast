@@ -258,8 +258,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = sys.forbigangsledning["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: Forbigangsledning", type=(kategori, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hf, 0, e_z]))
         F.append(Kraft(navn="Temperatur: Forbigangsledning", type=(kategori, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hf, 0, e_z]))
         # Tilleggsbidrag grunnet snølast
         s = sys.forbigangsledning["Strekk med snø -25C"] - sys.forbigangsledning["Strekk -40C"]
@@ -286,8 +290,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = 2 * sys.returledning["Differansestrekk"] if i.auto_differansestrekk else 2 * i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: Returledninger", type=(5, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hr, 0, e_z]))
         F.append(Kraft(navn="Temperatur: Returledninger", type=(5, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hr, 0, e_z]))
         # Tilleggsbidrag grunnet snølast
         s = 2 * (sys.returledning["Strekk med snø -25C"] - sys.returledning["Strekk -40C"])
@@ -314,8 +322,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot + 2 * e_z) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = sys.fiberoptisk["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: Fiberoptisk ledning", type=(5, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hf, 0, e_z]))
         F.append(Kraft(navn="Temperatur: Fiberoptisk ledning", type=(5, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hf, 0, e_z]))
         # Tilleggsbidrag grunnet snølast
         s = sys.fiberoptisk["Strekk med snø -25C"] - sys.fiberoptisk["Strekk -40C"]
@@ -343,8 +355,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = n * sys.matefjernledning["Differansestrekk"] if i.auto_differansestrekk else n * i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: Mate-/fjernledning{}".format(er), type=(6, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hfj, 0, 0]))
         F.append(Kraft(navn="Temperatur: Mate-/fjernledning{}".format(er), type=(6, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hfj, 0, 0]))
         # Tilleggsbidrag grunnet snølast
         s = n * (sys.matefjernledning["Strekk med snø -25C"] - sys.matefjernledning["Strekk -40C"])
@@ -370,8 +386,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = 2 * sys.at_ledning["Differansestrekk"] if i.auto_differansestrekk else 2 * i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: AT-ledninger", type=(6, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hfj, 0, 0]))
         F.append(Kraft(navn="Temperatur: AT-ledninger", type=(6, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hfj, 0, 0]))
         # Tilleggsbidrag grunnet snølast
         s = 2 * (sys.at_ledning["Strekk med snø -25C"] - sys.at_ledning["Strekk -40C"])
@@ -402,8 +422,12 @@ def beregn(i, sys, mast):
         f_z = s * ((a_T + a_T_dot) / a) if i.master_bytter_side else 0
         f_z += s * a / r
         f_diff = sys.jordledning["Differansestrekk"] if i.auto_differansestrekk else i.differansestrekk
+        if abs(f_diff) > 0:
+            F.append(Kraft(navn="Differansestrekk: Jordledning", type=(kategori, 1),
+                           f=[0, f_diff, 0],
+                           e=[-i.hj, 0, e_z]))
         F.append(Kraft(navn="Temperatur: Jordledning", type=(kategori, 2),
-                       f=[0, f_diff, f_z],
+                       f=[0, 0, f_z],
                        e=[-i.hj, 0, e_z]))
         # Tilleggsbidrag grunnet snølast
         s = sys.jordledning["Strekk med snø -25C"] - sys.jordledning["Strekk -40C"]

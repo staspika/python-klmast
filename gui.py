@@ -1171,6 +1171,7 @@ class Resultater(tk.Frame):
         K = mast.tilstand_My_max.K / 1000
         for n in range(6):
             if n==5:
+                K = mast.tilstand_T_max.K / 1000
                 k = str(round(K[n],2))
             else:
                 k = str(round(K[n],1))
@@ -1209,8 +1210,8 @@ class Resultater(tk.Frame):
 
         s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
         s += "{}\n\n".format(vindretning)
-        if mast.tilstand_T_max.lastsituasjon == "Ulykkeslast":
-            T = round(mast.tilstand_T_max.K[5] / 1000, 2)
+        if mast.tilstand_T_max_ulykke is not None:
+            T = round(mast.tilstand_T_max_ulykke.K[5] / 1000, 2)
             s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n".format(T)
 
         self.kraftboks.insert("end", s)
@@ -1298,6 +1299,7 @@ class Resultater(tk.Frame):
             if m.navn == "H5":
                 mast = m
                 break
+
         s = "*** Identifikasjons tekst\n"
         s += "Banestrekning {}, Mast nr. {}, ".format(self.M.master.banestrekning.get(),
                                                       self.M.master.mastenr.get())
@@ -1365,8 +1367,11 @@ class Bidrag(tk.Frame):
                 mast = m
                 break
 
+        krefter_alfabetisk = sorted(mast.tilstand_My_max.F,
+                                 key=lambda j: j.navn)
+
         max_bredde_navn = 0
-        for j in mast.tilstand_My_max.F:
+        for j in krefter_alfabetisk:
             max_bredde_navn = len(j.navn) if len(j.navn)>max_bredde_navn else max_bredde_navn
 
         kolonnebredde = 8
@@ -1377,7 +1382,7 @@ class Bidrag(tk.Frame):
             s += k.rjust(kolonnebredde)
         s += "\n{}\n".format("-"*(max_bredde_navn+1+kolonnebredde*len(kolonner)))
 
-        for j in mast.tilstand_My_max.F:
+        for j in krefter_alfabetisk:
             s += j.navn.ljust(max_bredde_navn+1)
 
             faktor = 1.0

@@ -162,6 +162,7 @@ class Mast(object):
         self.tilstand_UR_max = None
         self.tilstand_My_max = None
         self.tilstand_T_max = None
+        self.tilstand_T_max_ulykke = None
         self.tilstand_Dz_tot_max = None
         self.tilstand_phi_tot_max = None
         self.tilstand_Dz_kl_max = None
@@ -182,6 +183,8 @@ class Mast(object):
         rep += repr(self.tilstand_My_max)
         rep += "\nSørste torsjon T:\n"
         rep += repr(self.tilstand_T_max)
+        rep += "\nSørste torsjon T (ulykkeslast):\n"
+        rep += repr(self.tilstand_T_max_ulykke)
         rep += "\nStørste forskyvning Dz (totalt):\n"
         rep += repr(self.tilstand_Dz_tot_max)
         rep += "\nStørste torsjonsvinkel phi (totalt):\n"
@@ -338,6 +341,8 @@ class Mast(object):
         self.tilstand_Dz_kl_max = self.forskyvning_kl[0]
         self.tilstand_phi_kl_max = self.forskyvning_kl[0]
 
+        ulykkeslast_initiert = False
+
         for tilstand in self.bruddgrense:
             UR_max = self.tilstand_UR_max.utnyttelsesgrad
             My_max = abs(self.tilstand_My_max.K[0])
@@ -348,6 +353,9 @@ class Mast(object):
             Mz = abs(tilstand.K[2])
             T = abs(tilstand.K[5])
 
+            if ulykkeslast_initiert:
+                T_max_ulykke = abs(self.tilstand_T_max_ulykke.K[5])
+
             if UR > UR_max:
                 self.tilstand_UR_max = tilstand
 
@@ -357,8 +365,17 @@ class Mast(object):
                 if Mz > Mz_max:
                     self.tilstand_My_max = tilstand
 
-            if T > T_max:
-                self.tilstand_T_max = tilstand
+            if tilstand.lastsituasjon == "Ulykkeslast":
+                if not ulykkeslast_initiert:
+                    self.tilstand_T_max_ulykke = self.bruddgrense[0]
+                    T_max_ulykke = abs(self.tilstand_T_max_ulykke.K[5])
+                    ulykkeslast_initiert = True
+                if T > T_max_ulykke:
+                    self.tilstand_T_max_ulykke = tilstand
+            else:
+                if T > T_max:
+                    self.tilstand_T_max = tilstand
+
 
         # Forskyvning totalt
         self.tilstand_Dz_tot_max = self.forskyvning_tot[0]
