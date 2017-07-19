@@ -1340,10 +1340,10 @@ class Bidrag(tk.Frame):
 
         self.M = self.master.master
 
-        hovedvindu = tk.LabelFrame(self, text="Bidrag fra individuelle krefter", font=bold)
+        hovedvindu = tk.LabelFrame(self, text="Bidragsliste", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Kraftbidrag inkludert lastfaktorer, uten lastkombinasjonsfaktorer",
+        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
@@ -1387,17 +1387,17 @@ class Bidrag(tk.Frame):
 
             faktor = 1.0
             if j.type[1] == 0:
-                faktor = mast.tilstand_My_max.G
+                faktor = mast.tilstand_My_max.faktorer["G"]
             elif j.type[1] == 1:
-                faktor = mast.tilstand_My_max.L
+                faktor = mast.tilstand_My_max.faktorer["L"]
             elif j.type[1] == 2:
-                faktor = mast.tilstand_My_max.T
+                faktor = mast.tilstand_My_max.faktorer["T"] * mast.tilstand_My_max.faktorer["psi_T"]
             elif j.type[1] == 3:
-                faktor = mast.tilstand_My_max.S
+                faktor = mast.tilstand_My_max.faktorer["S"] * mast.tilstand_My_max.faktorer["psi_S"]
             elif j.type[1] == 4:
-                faktor = mast.tilstand_My_max.V
+                faktor = mast.tilstand_My_max.faktorer["V"] * mast.tilstand_My_max.faktorer["psi_V"]
 
-            R = self._beregn_reaksjonskrefter(j)
+            R = self._beregn_reaksjonskrefter_enkeltvis(j)
             K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0) / 1000
 
             for n in range (6):
@@ -1412,10 +1412,10 @@ class Bidrag(tk.Frame):
         self.bidragsboks.insert("end", s)
 
 
-    def _beregn_reaksjonskrefter(self, j):
-        """Beregner reaksjonskrefter ved masteinnspenning grunnet krefter i ``F``.
+    def _beregn_reaksjonskrefter_enkeltvis(self, j):
+        """Beregner reaksjonskrefter ved masteinnspenning grunnet kraft ``j``.
 
-        :param list F: Liste med :class:`Kraft`-objekter påført systemet
+        :param list j: :class:`Kraft`-objekt påført systemet
         :return: Matrise med reaksjonskrefter
         :rtype: :class:`numpy.array`
         """

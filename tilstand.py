@@ -12,7 +12,7 @@ class Tilstand(object):
      """
 
     def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
-                 G=1, L=1, T=1, S=1, V=1, iterasjon=0):
+                 G=1, L=1, T=1, S=1, V=1, psi_T=1, psi_S=1, psi_V=1, iterasjon=0):
         """Initialiserer :class:`Tilstand`-objekt.
 
         Alternativer for ``vindretning``:
@@ -40,6 +40,9 @@ class Tilstand(object):
         :param float T: Lastfaktor temperatur
         :param float S: Lastfaktor snø/is
         :param float V: Lastfaktor vind
+        :param float psi_T: Lastkombinasjonsfaktor temperatur
+        :param float psi_S: Lastkombinasjonsfaktor snø/is
+        :param float psi_V: Lastkombinasjonsfaktor vind
         :param iterasjon: Iterasjon for utregning av aktuell :class:`Tilstand`
         """
 
@@ -54,12 +57,8 @@ class Tilstand(object):
             self.F = copy.copy(F)
             self.R = R
             self.K = numpy.sum(numpy.sum(R, axis=0), axis=0)
-            self.G = G
-            self.L = L
-            self.T = T
-            self.S = S
-            self.V = V
-            self.faktorer = {"G": G, "L": L, "T": T, "S": S, "V": V}
+            self.faktorer = {"G": G, "L": L, "T": T, "S": S, "V": V,
+                             "psi_T": psi_T, "psi_S": psi_S, "psi_V": psi_V}
             self.N_kap = abs(self.K[4] * mast.materialkoeff / (mast.fy * mast.A))
             self.My_kap = abs(1000 * self.K[0] * mast.materialkoeff / (mast.fy * mast.Wy_el))
             self.Mz_kap = abs(1000 * self.K[2] * mast.materialkoeff / (mast.fy * mast.Wz_el))

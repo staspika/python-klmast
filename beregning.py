@@ -137,6 +137,9 @@ def beregn(i):
 
             for lastsituasjon in lastsituasjoner:
                 # Dimensjonerende krefter i bruddgrensetilstand
+                psi_T = lastsituasjoner.get(lastsituasjon)["psi_T"]
+                psi_S = lastsituasjoner.get(lastsituasjon)["psi_S"]
+                psi_V = lastsituasjoner.get(lastsituasjon)["psi_V"]
                 R = numpy.zeros((5, 8, 6))
                 for G in lastfaktorer["G"]:
                     # Egenvekt
@@ -146,18 +149,18 @@ def beregn(i):
                         R[1, :, :] = R_0[1, :, :] * L
                         for T in lastfaktorer["T"]:
                             # Temperatur
-                            R[2, :, :] = R_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"] * T
+                            R[2, :, :] = R_0[2, :, :] * psi_T * T
                             for S in lastfaktorer["S"]:
                                 # Snø
-                                R[3, :, :] = R_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"] * S
+                                R[3, :, :] = R_0[3, :, :] * psi_S * S
                                 for V in lastfaktorer["V"]:
                                     # Vind
-                                    R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"] * V
+                                    R[4, :, :] = R_0[4, :, :] * psi_V * V
 
                                     t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 0,
                                                           F=F, R=R, G=G, L=L, T=T, S=S, V=V,
+                                                          psi_T=psi_T, psi_S=psi_S, psi_V=psi_V,
                                                           iterasjon=iterasjon)
-
                                     mast.lagre_tilstand(t)
 
                                     iterasjon += 1
@@ -166,14 +169,14 @@ def beregn(i):
                 # Bruksgrense, forskyvning totalt
                 R = numpy.zeros((5, 8, 6))
                 R[0:2, :, :] = R_0[0:2, :, :]
-                R[2, :, :] = R_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
-                R[3, :, :] = R_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
-                R[4, :, :] = R_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
+                R[2, :, :] = R_0[2, :, :] * psi_T
+                R[3, :, :] = R_0[3, :, :] * psi_S
+                R[4, :, :] = R_0[4, :, :] * psi_V
                 D = numpy.zeros((5, 8, 3))
                 D[0:2, :, :] = D_0[0:2, :, :]
-                D[2, :, :] = D_0[2, :, :] * lastsituasjoner.get(lastsituasjon)["psi_T"]
-                D[3, :, :] = D_0[3, :, :] * lastsituasjoner.get(lastsituasjon)["psi_S"]
-                D[4, :, :] = D_0[4, :, :] * lastsituasjoner.get(lastsituasjon)["psi_V"]
+                D[2, :, :] = D_0[2, :, :] * psi_T
+                D[3, :, :] = D_0[3, :, :] * psi_S
+                D[4, :, :] = D_0[4, :, :] * psi_V
                 t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 1, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
                 # Bruksgrense, forskyvning KL
