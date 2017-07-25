@@ -151,7 +151,7 @@ class KL_mast(tk.Tk):
                                           ("fiberoptisk_ledn", self.fiberoptisk_ledn.get()),
                                           ("retur_ledn", self.retur_ledn.get()),
                                           ("auto_differansestrekk", self.auto_differansestrekk.get()),
-                                          ("differansestrekk", self.differansestrekk.get())])
+                                          ("differansestrekk", self.differansestrekk.get()*1000)])
         cfg["System"] = OrderedDict([("systemnavn", self.systemnavn.get()),
                                      ("radius", self.radius.get()),
                                      ("hogfjellsgrense", self.hogfjellsgrense.get()),

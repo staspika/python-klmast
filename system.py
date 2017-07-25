@@ -114,13 +114,12 @@ def hent_system(i):
                      "Strekk 5C": _strekkraft(2.77, 3.06, a)}
 
     # Fiberoptiske kabler
-    # Det antas en oppspenningskraft på 3kN og ingen temperaturutvidelse av
-    # fiberoptisk kabel da denne er metallfri.
-    ADSS_GRHSLLDV_9_125 = {"Navn": "ADSS GRHSLLDV 9/125",
-                           "Egenvekt": 2.6, "Diameter": 18.5,
-                           "Tverrsnitt": 268.9, "Max tillatt spenning": 59.5,
-                           "Strekk 5C": 3.0, "Strekk -40C": 3.0,
-                           "Strekk med snø -25C": 9.0}
+    # Det antas en (konservativ) oppspenningskraft på 1.5kN for fiberoptisk kabel.
+    ADSS_GRHSLLDV_9_125 = {"Navn": "ADSS GRHSLLDV 9/125", "Egenvekt": 2.65,
+                           "Diameter": 18.5, "Tverrsnitt": 268.9,
+                           "E-modul": 12000, "Max tillatt spenning": 59.5,
+                           "Lengdeutvidelseskoeffisient": 3.94 * 10 ** (-5),
+                           "Strekk 5C": _strekkraft(1.5, 1.5, a)}
 
     # AT-ledninger
     # Ved manglende strekktabeller for Al 400-37 og 240-19 er verdier for
@@ -164,8 +163,7 @@ def hent_system(i):
 
 
     # Beregner ledningsstrekk vha. lekevektsbetraktning med Newton-Raphson-iterasjoner
-    # Fiberoptisk kabel inkluderes IKKE grunnet manglende E-modul og lengdeutvidelseskoeffisient
-    ledninger = [Al_240_61, Al_240_61_iso, SAHF_120_26_7]
+    ledninger = [Al_240_61, Al_240_61_iso, SAHF_120_26_7, ADSS_GRHSLLDV_9_125]
     ledninger.extend(at_ledninger)
     ledninger.extend(jordledninger)
 
