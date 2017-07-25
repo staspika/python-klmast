@@ -168,12 +168,22 @@ for s in sikksakk_20:
     radius_list.append(s)
 radius_list.sort(key=_hent_tall)
 
+# Terrengkategorier etter EC1, NA.4.1
+kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2.0}
+kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2.0}
+kat2 = {"k_r": 0.19, "z_0": 0.05, "z_min": 4.0}
+kat3 = {"k_r": 0.22, "z_0": 0.3, "z_min": 8.0}
+kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
+terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
+
+# Sidekrefter som gir bidrag til utliggerdeformasjon
 sidekraftbidrag_strekk = ["Strekk: Bæreline", "Strekk: Kontakttråd"]
 sidekraftbidrag_sno = ["Vindlast: Kontakttråd, økt diameter", "Vindlast: Bæreline, økt diameter",
 					   "Vindlast: Hengetråd, økt diameter", "Vindlast: Y-line, økt diameter"]
 sidekraftbidrag_vind = ["Vindlast: Kontakttråd", "Vindlast: Bæreline",
 					    "Vindlast: Hengetråd", "Vindlast: Y-line"]
 
+# Krefter som fjernes ved ulykkesberegning
 ulykkeslaster_KL = ["Egenvekt: Bæreline", "Egenvekt: Hengetråd", "Egenvekt: Kontakttråd",
                     "Egenvekt: Y-line", "Strekk: Bæreline", "Strekk: Kontakttråd",
                     "Strekk: Bæreline til avspenning", "Strekk: Kontakttråd til avspenning",

@@ -4,12 +4,13 @@ from __future__ import unicode_literals
 
 import math
 import lister
+import matplotlib.pyplot as plt
 
 
-def beregn_sikksakk(sys, radius):
+def beregn_sikksakk(navn, radius):
     """Beregner sikksakk og max tillat utblåsning av KL.
 
-    :param System sys: Data for ledninger og utligger
+    :param str navn: Systemets navn
     :param int radius: Sporkurvaturens radius :math:`[m]`
     :return: Sikksakkverdier ``B1`` og ``B1`` :math:`[m]`, max tillatt utblåsning ``e_max`` :math:`[m]`
     :rtype: :class:`float`, :class:`float`, :class:`float`
@@ -21,18 +22,19 @@ def beregn_sikksakk(sys, radius):
     # Systemavhengige sikksakk-verdier til input i max masteavstand.
     # struktur i sikksakk-ordbøker under: { "radius": [B1, B2] } i [m]
     # max tillatt utblåsning e_max i [m], bestemmes i indre if-setning.
-    if sys.navn == "20A" or sys.navn == "20B":
+    if navn == "20A" or navn == "20B":
         sikksakk = lister.sikksakk_20
+        e_max = 0.55
         if r <= 1000:
             e_max = 0.42
         elif 1000 < r <= 2000:
             e_max = 0.42 + (r - 1000) * ((0.50 - 0.42) / (2000 - 1000))
         elif 2000 < r <= 4000:
             e_max = 0.50 + (r - 2000) * ((0.55 - 0.50) / (4000 - 2000))
-        else:
-            e_max = 0.55
-    elif sys.navn == "25":
+
+    elif navn == "25":
         sikksakk = lister.sikksakk_25
+        e_max = 0.50
         if 180 <= r <= 300:
             e_max = 0.40 + (r - 180) * ((0.43 - 0.40) / (300 - 180))
         elif 300 < r <= 600:
@@ -47,14 +49,16 @@ def beregn_sikksakk(sys, radius):
             e_max = 0.45
         elif 2000 < r <= 3000:
             e_max = 0.45 + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
-        else:
-            e_max = 0.50
-    elif sys.navn == "35":
+
+    elif navn == "35":
         sikksakk = lister.sikksakk_35
         e_max = 0.7
 
-    B1 = sikksakk[str(r)][0]
-    B2 = sikksakk[str(r)][1]
+    B1 = 0
+    B2 = 0
+    if r in sikksakk:
+        B1 = sikksakk[str(r)][0]
+        B2 = sikksakk[str(r)][1]
     return B1, B2, e_max
 
 
@@ -129,4 +133,58 @@ def beregn_arm(radius, sms, fh, B1):
     a_T_dot = sms - fh * (ue[str(r)] / 1.435) + b
 
     return a_T, a_T_dot
+
+
+
+
+if __name__ == "__main__":
+
+    print()
+    print("Max. tillatt vindutblåsing beregnet via KL_mast:")
+    print()
+
+    # System 20
+    print()
+    print("System 20")
+    E = []
+    R = [4500, 4000, 2000, 1000, 700, 500, 300, 250]
+    for r in R:
+        B1, B2, e = beregn_sikksakk("20A", r)
+        e = e * 100
+        E.append(e)
+        print("E_tillatt(R={}m) = {}cm".format(r,round(e,1)))
+
+    plt.plot(R, E)
+    plt.axis([0, 4500, 35, 57])
+    plt.gca().invert_xaxis()
+    plt.grid()
+    plt.title("Max. tillatt utblåsing for System 20 (KL_mast)")
+    plt.xlabel("R [m]")
+    plt.ylabel("E_tillatt [cm]")
+    plt.show()
+
+    # System 25
+    print()
+    print("System 25")
+    E = []
+    R = [3500, 3000, 2000, 1000, 900, 700, 600, 300, 180]
+    for r in R:
+        B1, B2, e = beregn_sikksakk("25", r)
+        e = e*100
+        E.append(e)
+        print("E_tillatt(r={}m) = {}cm".format(r,round(e,1)))
+
+    plt.plot(R, E)
+    plt.axis([0, 3500, 38, 52])
+    plt.gca().invert_xaxis()
+    plt.grid()
+    plt.title("Max. tillatt utblåsing for System 25 (KL_mast)")
+    plt.xlabel("R [m]")
+    plt.ylabel("E_tillatt [cm]")
+    plt.show()
+
+
+
+
+
 

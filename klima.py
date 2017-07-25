@@ -2,16 +2,9 @@
 """Beregning av vindlaster, funksjoner for påføring av krefter fra vind- og snølast."""
 from __future__ import unicode_literals
 
+import lister
 import math
 from kraft import *
-
-# Terrengkategorier etter EC1, NA.4.1
-kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2.0}
-kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2.0}
-kat2 = {"k_r": 0.19, "z_0": 0.05, "z_min": 4.0}
-kat3 = {"k_r": 0.22, "z_0": 0.3, "z_min": 8.0}
-kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
-terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 
 
 def beregn_vindkasthastighetstrykk_EC(i, z):
@@ -35,9 +28,9 @@ def beregn_vindkasthastighetstrykk_EC(i, z):
     # Basisvindhastighet [m/s]
     v_b = c_dir * c_season * c_alt * c_prob * v_b_0
 
-    k_r = terrengkategorier[kategori]["k_r"]
-    z_0 = terrengkategorier[kategori]["z_0"]
-    z_min = terrengkategorier[kategori]["z_min"]
+    k_r = lister.terrengkategorier[kategori]["k_r"]
+    z_0 = lister.terrengkategorier[kategori]["z_0"]
+    z_min = lister.terrengkategorier[kategori]["z_min"]
     z_max = 200
     c_r = 0
 
@@ -147,7 +140,7 @@ def vindlast_mast(i, mast, vindretning):
 
         if i.ec3:
             q_p = i.vindkasthastighetstrykk    # [N/m^2]
-            cf = 2.2                           # [1] Vindkraftfaktor mast
+            cf = mast.c_f                      # [1] Vindkraftfaktor mast
             q_normalt = q_p * cf * mast.A_ref  # [N/m] Normalt spor
 
             if vindretning == 1:
@@ -199,9 +192,9 @@ def vindlast_mast(i, mast, vindretning):
     # Vind parallelt spor
     else:
         if i.ec3:
-            q_p = i.vindkasthastighetstrykk  # [N/m^2]
-            cf = 2.2  # [1] Vindkraftfaktor mast
-            q_par = q_p * cf * mast.A_ref_par  # [N/m] Parallelt spor
+            q_p = i.vindkasthastighetstrykk        # [N/m^2]
+            cf_par = mast.c_f_par                  # [1] Vindkraftfaktor mast
+            q_par = q_p * cf_par * mast.A_ref_par  # [N/m] Parallelt spor
 
             F.append(Kraft(navn="Vindlast: Mast", type=(0, 4),
                            q=[0, q_par, 0],
@@ -315,9 +308,9 @@ def vindlast_ledninger(i, sys, vindretning):
         # Y-line
         if not sys.y_line == None:  # Sjekker at systemet har Y-line
             L = 0
-            if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
+            if (sys.navn == "20A" or sys.navn == "35") and i.radius > 800:
                 L = 14
-            elif sys.navn == "25" and i.radius >= 1200:
+            elif sys.navn == "25" and i.radius > 1200:
                 L = 18
             g_sno = _g_sno(i.ec3, i.isklasse, sys.y_line["Diameter"])
             D = _D_ledning(i.ec3, g_sno, sys.y_line["Diameter"])

@@ -64,9 +64,8 @@ if __name__ == "__main__":
     mast = None
     for m in master_sortert:
 
-
         # Henter ut H5 for sammenlikning med KL_fund
-        if m.navn == "HE200B":
+        if m.navn == "H5":
             mast = m
 
         """
@@ -83,9 +82,8 @@ if __name__ == "__main__":
                     and m.bruddgrense[0].utnyttelsesgrad <= 1.0:
                 mast = m
                 break
+        
         """
-
-    #resultater.skriv_bidrag(i, mast)
 
     mast.sorter_grenseverdier()
     print()
@@ -93,16 +91,8 @@ if __name__ == "__main__":
     print()
     print(mast)
     print()
+    
 
-
-
-
-    UR = mast.bruddgrense[0].utnyttelsesgrad
-    current_values = [UR, mast.bruddgrense[0].My_kap,
-              mast.bruddgrense[0].Mz_kap, mast.bruddgrense[0].N_kap]
-    values.append(current_values)
-
-    #resultater.barplot(values)
 
     ###################################################################
 

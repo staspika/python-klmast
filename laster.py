@@ -550,9 +550,9 @@ def ulykkeslast_KL(i, sys, mast):
     # Y-line(er)
     if not sys.y_line == None:
         L = 0
-        if (sys.navn == "20A" or sys.navn == "35") and i.radius >= 800:
+        if (sys.navn == "20A" or sys.navn == "35") and i.radius > 800:
             L = 14
-        elif sys.navn == "25" and i.radius >= 1200:
+        elif sys.navn == "25" and i.radius > 1200:
             L = 18
         F.append(Kraft(navn="Egenvekt: Y-line", type=(0, 0),
                        f=[sys.y_line["Egenvekt"] * L, 0, 0],

@@ -43,7 +43,7 @@ class System(object):
         self.at_ledning = at_ledning
         self.jordledning = jordledning
         self.utligger = utligger
-        self.B1, self.B2, self.e_max = geometri.beregn_sikksakk(self, radius)
+        self.B1, self.B2, self.e_max = geometri.beregn_sikksakk(self.navn, radius)
         self.a_T, self.a_T_dot = geometri.beregn_arm(radius, sms, fh, self.B1)
 
 

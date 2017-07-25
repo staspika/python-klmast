@@ -427,7 +427,7 @@ class Hovedvindu(tk.Frame):
         tk.Label(system, text="[m]", font=plain).grid(row=1, column=1, sticky="W")
 
         # høgfjellsgrense
-        hogfjellsgrense = tk.Checkbutton(system, text="Høgfjellsgrense",
+        hogfjellsgrense = tk.Checkbutton(system, text="Vindutsatt strekning (høyfjell)",
                                         font=plain, variable=self.master.hogfjellsgrense,
                                         onvalue=True, offvalue=False)
         hogfjellsgrense.grid(row=2, column=0, sticky="W")
@@ -1102,7 +1102,7 @@ class Resultater(tk.Frame):
         hovedvindu = tk.LabelFrame(self, text="Resultater", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Krefter i bruddgrensetilstand:",
+        tk.Label(hovedvindu, text="Krefter i bruddgrensetilstand (H5-mast)",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
@@ -1343,12 +1343,12 @@ class Bidrag(tk.Frame):
         hovedvindu = tk.LabelFrame(self, text="Bidragsliste", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter",
+        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter (H5-mast)",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
 
-        self.bidragsboks = tk.Text(hovedvindu, width=100, height=40)
+        self.bidragsboks = tk.Text(hovedvindu, width=100, height=50)
         self.bidragsboks.grid(row=2, column=0, columnspan=3)
 
         self._skriv_bidrag()
@@ -1359,7 +1359,7 @@ class Bidrag(tk.Frame):
 
 
     def _skriv_bidrag(self):
-        """Skriver bidrag med lastfaktorer, UTEN kombinasjonsfaktorer."""
+        """Skriver bidrag inkl. alle lastfaktorer."""
 
         mast = None
         for m in self.M.gittermaster:
