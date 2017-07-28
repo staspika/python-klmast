@@ -10,7 +10,7 @@ class Mast(object):
     G = 80000  # N/mm^2
 
     def __init__(self, navn, type, egenvekt=0, A_profil=0, Iy_profil=0,
-                 Iz_profil=0, Wyp=0, Wzp=0, It=0, Cw=0, noytralakse=0,
+                 Iz_profil=0, Wyp=0, Wzp=0, It_profil=0, Cw_profil=0, noytralakse=0,
                  toppmaal=0, stigning=0, d_h=0, d_b=0, k_g=0, k_d=0,
                  b_f=0, A_ref=0, A_ref_par=0, h_max=0, h=0,
                  s235=False, materialkoeff=1.05):
@@ -24,8 +24,8 @@ class Mast(object):
         :param float Iz_profil: Stegprofilets annet arealmoment om lokal z-akse :math:`[mm^4]`
         :param float Wyp: Plastisk tverrsnittsmodul om profilets y-akse :math:`[mm^3]`
         :param float Wzp: Plastisk tverrsnittsmodul om profilets z-akse :math:`[mm^3]`
-        :param float It: Profilets treghetsmoment for torsjon :math:`[mm^4]`
-        :param float Cw: Profilets hvelvningskonstant :math:`[mm^6]`
+        :param float It_profil: Profilets treghetsmoment for torsjon :math:`[mm^4]`
+        :param float Cw_profil: Profilets hvelvningskonstant :math:`[mm^6]`
         :param float noytralakse: Avstand ytterkant profil - lokal z-akse :math:`[mm]`
         :param int toppmaal: Tverrsnittsbredde ved mastetopp :math:`[mm]`
         :param float stigning: Mastens helning :math:`[\\frac{1}{1000}]`
@@ -133,7 +133,7 @@ class Mast(object):
         self.Wz_el = self.Iz(h) / (self.d / 2)
 
         # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
-        self.d_L = math.sqrt((0.9 * self.bredde(h)) ** 2 + 500 ** 2)
+        self.d_L = self.diagonallengde(h, True)
         if navn == "H6":
             self.d_A = 691
             self.d_I = 9.44 * 10 ** 4
@@ -141,24 +141,17 @@ class Mast(object):
             self.d_A = d_b * d_h
             self.d_I = d_b * d_h ** 3 / 12  # Sterk akse [mm^4]
 
-        self.It = It  # St. Venants torsjonskonstant [mm^4]
-        if type == "B":
-            self.It = 2 * It + 1 / 3 * 0.9 * (self.bredde(h) * (
-                               (self.E * 1000 * 0.9 * self.bredde(h) * self.d_A) / (self.G * self.d_L ** 3)))
-        self.Cw = Cw  # Hvelvingskonstant [mm^6]
-        if type == "B":
-            self.Cw = 0.5 * self.Iy_profil * (0.9 * self.bredde(h)) ** 2
+        self.It_profil, self.Cw_profil = It_profil, Cw_profil
+        self.It, self.Cw = self.torsjonsparametre(h)  # St. Venants torsjonskonstant [mm^4]
 
-        self.My_Rk = self.Wyp * self.fy
-        if self.type == "B":
+        if self.type == "bjelke":
+            self.My_Rk = self.Wyp * self.fy
+            self.Mz_Rk = self.Wzp * self.fy
+        elif self.type == "B":
             self.My_Rk = self.A_profil * 0.9 * self.bredde(self.h) * self.fy
-        elif self.type == "H":
-            self.My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
-
-        self.Mz_Rk = self.Wzp * self.fy
-        if self.type == "B":
             self.Mz_Rk = 2 * self.Wyp * self.fy
         elif self.type == "H":
+            self.My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
             self.Mz_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
 
         # Lister for å holde last/forskvningstilstander
@@ -323,6 +316,66 @@ class Mast(object):
 
         return x / self.Iz(x / 1000, delta_topp=delta_topp)
 
+    def torsjonsparametre(self, x):
+        """Beregner mastas torsjonsparametre ved gitt høyde.
+
+        Torsjonsparametrene som beregnes er treghetsmoment for St. Venants
+        torsjon :math:`\frac{I}{T}` og hvelvingskonstanten :math:`\frac{C}{W}`
+
+        Verdien ``te`` angir ekvivalent platetykkelse av diagonalstavene
+        beregnet etter Per Kristian Larsens \textit{Dimensjonering av stålkonstruksjoner}
+        Tabell 5.1.
+
+        :param x: float x: Avstand fra mastens toppunkt :math:`[m]`
+        :return: ``It``, ``Cw``
+        :rtype: :class:`float`, :class:`float`
+        """
+
+        It, Cw = self.It_profil, self.Cw_profil
+        if self.type == "B":
+            d_L = self.diagonallengde(x, True)
+            te = (self.E / self.G) * 500 * 0.9*self.bredde(x) / (d_L**3 / self.d_A)
+            It = 2 * self.It_profil + (1/3) * 0.9*self.bredde(x) * te**3
+            Cw = 0.5 * self.Iy_profil * (0.9 * self.bredde(x)) ** 2
+
+        return It, Cw
+
+    def diagonallengde(self, x, gammel_metode):
+        """Beregner lengde av diagonal i høyde x.
+
+        Ved tilfelle B-mast er det påvist at forskjellige tilnærmelser
+        gir varierende grad av nøyaktighet for forskjellige mastehøyder.
+        Dersom :math:`x >= 6.0m` gjelder konstant innfestingsavstand
+        :math:`500mm` for diagonalene, og Pytagoras' læresetning gir
+        dermed et bedre anslag av diagonallengde enn antakelsen om
+
+        Dersom masta ikke har diagonaler (bjelkemast) returneres 0.
+
+        :param: float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param: Boolean gammel_metode: Angir om det skal regnes etter metode fra KL_fund
+        :return: Diagonallengde
+        :rtype: :class:`float`
+        """
+
+        if gammel_metode:
+            return math.sqrt((0.9*self.bredde(x))**2 + 500**2)
+        else:
+            if self.type == "bjelke":
+                return 0
+            elif self.type == "B":
+                s = 7.0
+                if self.navn == "B4":
+                    s = 7.5
+                elif self.navn == "B6":
+                    s = 8.5
+                if x >= 6.0:
+                    return math.sqrt((self.bredde(x) - 2*s)**2 + 500**2)
+                else:
+                    return (self.bredde(x) - 2*s) * math.sqrt(2)
+            else:
+                return (self.bredde(x) - 2 * 75) * math.sqrt(2)
+
+
     def dragkoeffisienter(self, x, EN1991):
         """Beregner mastens dragkoeffisienter uten islast.
 
@@ -481,13 +534,13 @@ class Mast(object):
         Tilstandsparametre for utvelgelse blant bruddgrensetilstander:
 
         - Utnyttelsesgrad
-        - :math:`M_{y,max}`
-        - :math:`T_{max}`
+        - :math:`M_{y,storste}`
+        - :math:`T_{storste}`
 
         Tilstandsparametre for utvelgelse blant forskyvningstilstander (både total og KL):
 
-        - :math:`D_{z,max}`
-        - :math:`\\phi_{max}`
+        - :math:`D_{z,storste}`
+        - :math:`\\phi_{storste}`
         """
 
         #Bruddgrense
@@ -613,22 +666,22 @@ def hent_master(hoyde, s235, materialkoeff):
     # B-master
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3,
               A_ref=0.12, Iy_profil=3.64 * 10 ** 6, Iz_profil=4.32 * 10 ** 5,
-              Wyp=7.46 * 10 ** 4, It=4.15 * 10 ** 4, noytralakse=17.45,
+              Wyp=7.46 * 10 ** 4, It_profil=41.5 * 10 ** 3, Cw_profil=0.9 * 10 ** 9, noytralakse=17.45,
               toppmaal=150, stigning=14 / 1000, d_h=10, d_b=50, b_f=55, h_max=8.0,
               h=hoyde, s235=s235, materialkoeff=materialkoeff)
     B3 = Mast(navn="B3", type="B", egenvekt=510, A_profil=2.04 * 10 ** 3,
               A_ref=0.14, Iy_profil=6.05 * 10 ** 6, Iz_profil=6.27 * 10 ** 5,
-              Wyp=1.05 * 10 ** 5, It=5.68 * 10 ** 4, noytralakse=19.09,
+              Wyp=1.05 * 10 ** 5, It_profil=56.8 * 10 ** 3, Cw_profil=1.8 * 10 ** 9, noytralakse=19.09,
               toppmaal=255, stigning=23 / 1000, d_h=10, d_b=50, b_f=60, h_max=9.5,
               h=hoyde, s235=s235, materialkoeff=materialkoeff)
     B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3,
               A_ref=0.16, Iy_profil=9.25 * 10 ** 6, Iz_profil=8.53 * 10 ** 5,
-              Wyp=1.38 * 10 ** 5, It=7.39 * 10 ** 4, noytralakse=20.05,
+              Wyp=1.38 * 10 ** 5, It_profil=73.9 * 10 ** 3, Cw_profil=3.26 * 10 ** 9, noytralakse=20.05,
               toppmaal=255, stigning=23 / 1000, d_h=10, d_b=60, b_f=65, h_max=11.0,
               h=hoyde, s235=s235, materialkoeff=materialkoeff)
     B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3,
               A_ref=0.20, Iy_profil=1.91 * 10 ** 7, Iz_profil=1.48 * 10 ** 6,
-              Wyp=2.28 * 10 ** 5, It=1.19 * 10 ** 5, noytralakse=22.01,
+              Wyp=2.28 * 10 ** 5, It_profil=119 * 10 ** 3, Cw_profil=9.07 * 10 ** 9, noytralakse=22.01,
               toppmaal=255, stigning=23 / 1000, d_h=12, d_b=100, b_f=75, h_max=13.0,
               h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
@@ -649,27 +702,27 @@ def hent_master(hoyde, s235, materialkoeff):
     # Bjelkemaster
     HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81 * 10 ** 3,
                   A_ref=0.20, Iy_profil=5.70 * 10 ** 7, Iz_profil=2.00 * 10 ** 7, Wyp=6.42 * 10 ** 5,
-                  Wzp=3.00*10**5, It=5.95*10**5, Cw=1.71*10**11, h_max=9.5, h=hoyde,
+                  Wzp=3.00*10**5, It_profil=595 * 10 ** 3, Cw_profil=171 * 10 ** 9, h_max=9.5, h=hoyde,
                   s235=s235, materialkoeff=materialkoeff)
     HE220B = Mast(navn="HE220B", type="bjelke", egenvekt=715, A_profil=9.10 * 10 ** 3,
                   A_ref=0.22, Iy_profil=8.09 * 10 ** 7, Iz_profil=2.84 * 10 ** 7, Wyp=8.28 * 10 ** 5,
-                  Wzp=3.87*10**5, It=7.68*10**5, Cw=2.95*10**11, h_max=11.0, h=hoyde,
+                  Wzp=3.87*10**5, It_profil=768 * 10 ** 3, Cw_profil=295 * 10 ** 9, h_max=11.0, h=hoyde,
                   s235=s235, materialkoeff=materialkoeff)
     HE240B = Mast(navn="HE240B", type="bjelke", egenvekt=832, A_profil=1.06 * 10 ** 4,
                   A_ref=0.24, Iy_profil=1.13 * 10 ** 8, Iz_profil=3.92 * 10 ** 7, Wyp=1.05 * 10 ** 6,
-                  Wzp=4.90*10**5, It=1.03*10**6, Cw=4.87*10**11, h_max=12.0, h=hoyde,
+                  Wzp=4.90*10**5, It_profil=1030 * 10 ** 3, Cw_profil=487 * 10 ** 9, h_max=12.0, h=hoyde,
                   s235=s235, materialkoeff=materialkoeff)
     HE260B = Mast(navn="HE260B", type="bjelke", egenvekt=930, A_profil=1.18 * 10 ** 4,
                   A_ref=0.26, Iy_profil=1.49 * 10 ** 8, Iz_profil=5.13 * 10 ** 7, Wyp=1.28 * 10 ** 6,
-                  Wzp=5.92*10**5, It=1.24*10**6, Cw=7.54*10**11, h_max=13.0, h=hoyde,
+                  Wzp=5.92*10**5, It_profil=1240 * 10 ** 3, Cw_profil=754 * 10 ** 9, h_max=13.0, h=hoyde,
                   s235=s235, materialkoeff=materialkoeff)
     HE280B = Mast(navn="HE280B", type="bjelke", egenvekt=1030, A_profil=1.31 * 10 ** 4,
                   A_ref=0.28, Iy_profil=1.93 * 10 ** 8, Iz_profil=6.59 * 10 ** 7, Wyp=1.53 * 10 ** 6,
-                  Wzp=7.06*10**5, It=1.44*10**6, Cw=1.13*10**12, h_max=13.0, h=hoyde,
+                  Wzp=7.06*10**5, It_profil=1440 * 10 ** 3, Cw_profil=1130 * 10 ** 9, h_max=13.0, h=hoyde,
                   s235=s235, materialkoeff=materialkoeff)
     HE260M = Mast(navn="HE260M", type="bjelke", egenvekt=1720, A_profil=2.20 * 10 ** 4,
                   A_ref=0.268, Iy_profil=3.13 * 10 ** 8, Iz_profil=2.00 * 10 ** 8, Wyp=2.52 * 10 ** 6,
-                  Wzp=1.17*10**6, It=7.22*10**6, Cw=1.73*10**12, A_ref_par=0.29,
+                  Wzp=1.17*10**6, It_profil=7220 * 10 ** 3, Cw_profil=1730 * 10 ** 9, A_ref_par=0.29,
                   h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 
     master = []

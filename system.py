@@ -9,7 +9,7 @@ class System(object):
     def __init__(self, navn, baereline, kontakttraad, fixline,
                  forbigangsledning, returledning, matefjernledning,
                  y_line, hengetraad, fiberoptisk, at_ledning,
-                 jordledning, utligger, radius, sms, fh):
+                 jordledning, utligger, stromavtaker, radius, sms, fh):
         """Initialiserer :class:`System`-objekt.
 
         :param str navn: Systemets navn (20A, 20B, 25, 35)
@@ -25,6 +25,7 @@ class System(object):
         :param dict at_ledning: Systemets AT-ledning
         :param dict jordledning: Systemets jordledning
         :param dict utligger: Systemets utligger
+        :param dict stromavtaker: Systemets stromavtaker
         :param int radius: Sporkurvaturens radius :math:`[m]`
         :param float sms: Avstand senter mast - senter spor :math:`[m]`
         :param float fh: Kontakttrådhøyde :math:`[m]`
@@ -43,8 +44,9 @@ class System(object):
         self.at_ledning = at_ledning
         self.jordledning = jordledning
         self.utligger = utligger
+        self.stromavtaker = stromavtaker
         self.B1, self.B2, self.e_max = geometri.beregn_sikksakk(self.navn, radius)
-        self.a_T, self.a_T_dot = geometri.beregn_arm(radius, sms, fh, self.B1)
+        self.a_T, self.a_T_dot = geometri.beregn_arm(navn, radius, sms, fh, self.B1)
 
 
     def __repr__(self):
@@ -161,6 +163,12 @@ def hent_system(i):
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
 
+    # Strømavtakere
+    stromavtakere = []
+    stromavtaker_1600 = {"Navn": "1600", "b_v": 0.746, "b_w": 0.800, "b_wc": 0.600, "alpha": 30}
+    stromavtaker_1800 = {"Navn": "1800", "b_v": 0.806, "b_w": 0.900, "b_wc": 0.731, "alpha": 40}
+    stromavtaker_1950 = {"Navn": "1950", "b_v": 0.954, "b_w": 0.975, "b_wc": 0.725, "alpha": 40}
+    stromavtakere.extend([stromavtaker_1600, stromavtaker_1800, stromavtaker_1950])
 
     # Beregner ledningsstrekk vha. lekevektsbetraktning med Newton-Raphson-iterasjoner
     ledninger = [Al_240_61, Al_240_61_iso, SAHF_120_26_7, ADSS_GRHSLLDV_9_125]
@@ -200,9 +208,6 @@ def hent_system(i):
         plt.show(True)
         """
 
-    # Antatt verdi for diff.strekk i fiberoptisk kabel
-    SAHF_120_26_7["Differansestrekk"] = Al_240_61["Differansestrekk"]
-
     at_ledning = None
     # Setter AT-ledning
     for ledning in at_ledninger:
@@ -218,11 +223,17 @@ def hent_system(i):
             break
 
     systemnavn = i.systemnavn.split()[1] if i.systemnavn.startswith("System") else i.systemnavn
-
     # Setter utligger
     utligger = utligger_s2x
     if systemnavn=="35":
         utligger = utligger_s3x
+
+    stromavtaker = None
+    # Setter strømavtaker
+    for s in stromavtakere:
+        if s["Navn"] == i.stromavtaker_type:
+            stromavtaker = s
+            break
 
     if systemnavn == "20A":
         return System(navn="20A", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
@@ -230,7 +241,7 @@ def hent_system(i):
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                      jordledning=jordledning, utligger=utligger,
+                      jordledning=jordledning, utligger=utligger, stromavtaker=stromavtaker,
                       radius=i.radius, sms=i.sms, fh=i.fh)
     elif systemnavn == "20B":
         return System(navn="20B", baereline=Bz_II_50_19, kontakttraad=Ri_100_Cu,
@@ -238,24 +249,25 @@ def hent_system(i):
                       returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
                       y_line=None, hengetraad=Bz_II_10_49,
                       fiberoptisk=ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                      jordledning=jordledning, utligger=utligger,
+                      jordledning=jordledning, utligger=utligger, stromavtaker=stromavtaker,
                       radius=i.radius, sms=i.sms, fh=i.fh)
     elif systemnavn == "25":
         return System(navn="25", baereline=Bz_II_70_19, kontakttraad=Ri_120_CuAg,
-                     fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
-                     returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                     y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
-                     fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                     jordledning=jordledning, utligger=utligger,
+                      fixline=Bz_II_70_19_fix, forbigangsledning=Al_240_61,
+                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
+                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger, stromavtaker=stromavtaker,
                       radius=i.radius, sms=i.sms, fh=i.fh)
     elif systemnavn == "35":
         return System(navn="35", baereline=Cu_50_7, kontakttraad=Ri_100_Cu_s35,
-                     fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
-                     returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
-                     y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
-                     fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
-                     jordledning=jordledning, utligger=utligger,
+                      fixline=Bz_II_50_19, forbigangsledning=Al_240_61,
+                      returledning=Al_240_61_iso, matefjernledning=SAHF_120_26_7,
+                      y_line=Bz_II_35_7, hengetraad=Bz_II_10_49,
+                      fiberoptisk = ADSS_GRHSLLDV_9_125, at_ledning=at_ledning,
+                      jordledning=jordledning, utligger=utligger, stromavtaker=stromavtaker,
                       radius=i.radius, sms=i.sms, fh=i.fh)
+
 
 def _strekkraft(a, b, masteavstand):
     """Beregner strekkraft i fastavspent ledning mhp. masteavstand.
@@ -273,7 +285,6 @@ def _strekkraft(a, b, masteavstand):
     s = 1000 * (a + (masteavstand-30) * (b - a)/40)
 
     return s
-
 
 
 def _newtonraphson(H_0, E, A, G_0, G_x, L, alpha, T):

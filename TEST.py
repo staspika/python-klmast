@@ -23,38 +23,89 @@ def print_memory_info():
 
 if __name__ == "__main__":
 
-    def P(q, l, f):
-        return q * l**2 / (8 * f)
+    master = mast.hent_master(10, False, 1.05)
 
-    def s(l, f):
-        return l * (1 + (8/3)*(f/l)**2)
+    B_master = [mast for mast in master if mast.type == "B"]
+    H_master = [mast for mast in master if mast.type == "H"]
+    bjelke_master = [mast for mast in master if mast.type == "bjelke"]
 
-    def ds(alpha, dT, l, dP, E, A):
-        return alpha*dT*l + dP*l/(E*A)
+    H = [h / 10 for h in range(0, 135, 5)]
 
-    def dN(E, A, ds, l):
-        return E * A * ds / l
+    i = 1
+    plt.subplot(len(B_master),1,1)
+    plt.title("St. Venants torsjonskonstant I_T for B-master")
+    for mast in B_master:
+        It = []
+        Cw = []
+        for h in H:
+            it, cw = mast.torsjonsparametre(h)
+            It.append(it/10**3)
+            Cw.append(cw)
+        if i>1:
+            plt.subplot(len(B_master),1,i)
 
-    # Fiberoptisk kabel
-    q = 2.65
-    l = 60
-    f = 1.0
-    alpha = 3.94 * 10 ** (-5)
-    dT = -35
-    dP = 0
-    A = 268.9
-    E = 12000
+        plt.plot(H, It, c="b", ls="-", lw=2.0, label="{}".format(mast.navn))
+        plt.ylabel("It [10^3 * mm^4]")
+        plt.xlim(0,13)
+        plt.legend(loc=2)
+        plt.grid()
+        i += 1
+    plt.xlabel("x [m]")
+    plt.show()
 
-    P = P(q, l, f)
-    s = s(l, f)
-    ds = ds(alpha, dT, l, dP, E, A)
-    dN = dN(E, A, ds, l)
+    i = 1
+    plt.subplot(len(H_master),1,1)
+    plt.title("St. Venants torsjonskonstant I_T for H-master")
+    for mast in H_master:
+        It = []
+        Cw = []
+        for h in H:
+            it, cw = mast.torsjonsparametre(h)
+            It.append(it/10**3)
+            Cw.append(cw)
+
+        if i>1:
+            plt.subplot(len(H_master),1,i)
+
+        plt.plot(H, It, c="b", ls="-", lw=2.0, label="{}".format(mast.navn))
+        plt.ylabel("It [10^3 * mm^4]")
+        plt.xlim(0,13)
+        plt.legend(loc=2)
+        plt.grid()
+        i += 1
+    plt.xlabel("x [m]")
+    plt.show()
+
+    i = 1
+    plt.subplot(len(bjelke_master),1,1)
+    plt.title("St. Venants torsjonskonstant I_T for bjelkemaster")
+    for mast in bjelke_master:
+        It = []
+        Cw = []
+        for h in H:
+            it, cw = mast.torsjonsparametre(h)
+            It.append(it/10**3)
+            Cw.append(cw)
+        if i>1:
+            plt.subplot(len(bjelke_master),1,i)
+
+        plt.plot(H, It, c="b", ls="-", lw=2.0, label="{}".format(mast.navn))
+        plt.ylabel("It [10^3 * mm^4]")
+        plt.xlim(0,13)
+        plt.legend(loc=2)
+        plt.grid()
+        i += 1
+    plt.xlabel("x [m]")
+    plt.show()
 
 
-    print(P)
-    print(s)
-    print(ds)
-    print(dN)
+
+
+
+
+
+
+
 
 
 

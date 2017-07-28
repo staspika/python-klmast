@@ -582,7 +582,7 @@ def _beregn_vindtrykk_NEK(i):
     # Alternativ #1: NEK EN 50125-2
     # Inngangsparametre for referansehøyde 10m over bakkenivå
     z = 10              # [m] høyde over bakken
-    v_10 = 24           # [m / s] 10-min middelvindhastighet
+    v_10 = 24           # [m / s] 10-minste middelvindhastighet
     # Ruhetsparameteren for ulike terrengkategorier [1]
     alpha = [0.12, 0.16, 0.20, 0.28]
 

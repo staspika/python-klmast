@@ -5,4 +5,3 @@
   * `tkinter`
   * `configparser`
   * `numpy`
-  * `astropy`

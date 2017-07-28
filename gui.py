@@ -30,7 +30,7 @@ class KL_mast(tk.Tk):
         self.geometry("{}x{}".format(self.x, self.y))
 
 
-        # Range = [default, min, max]
+        # Range = [default, minste, storste]
         self.masteavstand_range = [63.0, 30.0, 75.0]
         self.fh_range = [5.7, 4.8, 6.5]
         self.sh_range = [1.6, 0.2, 2.0]
@@ -107,6 +107,7 @@ class KL_mast(tk.Tk):
         self.s235 = tk.BooleanVar()
         self.materialkoeff = tk.DoubleVar()
         self.traverslengde = tk.DoubleVar()
+        self.stromavtaker_type = tk.StringVar()
         self.ec3 = tk.BooleanVar()
         self.isklasse = tk.IntVar()
 
@@ -166,8 +167,9 @@ class KL_mast(tk.Tk):
                                        ("sh", self.sh.get()), ("e", self.e.get()),
                                        ("sms", self.sms.get())])
         cfg["Div"] = OrderedDict([("s235", self.s235.get()), ("materialkoeff", self.materialkoeff.get()),
-                                  ("traverslengde", self.traverslengde.get()), ("ec3", self.ec3.get()),
-                                  ("isklasse", self.isklasse.get())])
+                                  ("traverslengde", self.traverslengde.get()),
+                                  ("stromavtaker_type", self.stromavtaker_type.get()),
+                                  ("ec3", self.ec3.get()), ("isklasse", self.isklasse.get())])
         cfg["Brukerdefinert last"] = OrderedDict([("brukerdefinert_last", self.brukerdefinert_last.get()),
                                                   ("f_x", self.f_x.get()), ("f_y", self.f_y.get()),
                                                   ("f_z", self.f_z.get()), ("e_x", self.e_x.get()),
@@ -229,7 +231,6 @@ class Hovedvindu(tk.Frame):
         self.Iv.set(0.19)
         self.k_l.set(1)
         self.C_0.set(1)
-        self.isklasse.set(2)
         self.gittermast.set(True)
 
         # Ferdig beregnede master
@@ -631,6 +632,7 @@ class Hovedvindu(tk.Frame):
         self.master.traverslengde.set(0.6)
         self.master.ec3.set(True)
         self.master.isklasse.set(2)
+        self.master.stromavtaker_type.set(lister.stromavtaker_list[2])
         self.master.brukerdefinert_last.set(False)
         avansert_btn = tk.Button(av_beregn, text="Avansert", font=bold,
                                  command=self._avansert)
@@ -951,31 +953,42 @@ class Avansert(tk.Frame):
         tk.Label(alternativer, text="[m]",
                  font=plain).grid(row=2, column=2, sticky="W")
 
+        # strømavtaker
+        tk.Label(alternativer, text="Strømavtakerbredde:",
+                 font=plain).grid(row=3, column=0, sticky="W")
+        system_menu = tk.OptionMenu(alternativer, self.M.master.stromavtaker_type,
+                                    *lister.stromavtaker_list)
+        system_menu.config(font=plain, width=7)
+        system_menu.grid(row=3, column=1, sticky="E")
+        tk.Label(alternativer, text="[mm]",
+                 font=plain).grid(row=3, column=2, sticky="W")
+
+
         # avspenningsbardun
         bardun_checkbtn = tk.Checkbutton(alternativer, text="Avspenningsbardun (dersom fixavsp.- eller avsp.mast)",
                                            font=plain, variable=self.M.master.avspenningsbardun,
                                            onvalue=True, offvalue=False)
-        bardun_checkbtn.grid(row=3, column=0, columnspan=3, sticky="W")
+        bardun_checkbtn.grid(row=4, column=0, columnspan=3, sticky="W")
 
         # differansestrekk
         autodiff_checkbtn = tk.Checkbutton(alternativer, text="Automatisk beregning av differansestrekk",
                                          font=plain, variable=self.M.master.auto_differansestrekk,
                                          onvalue=True, offvalue=False)
-        autodiff_checkbtn.grid(row=4, column=0, columnspan=3, sticky="W")
+        autodiff_checkbtn.grid(row=5, column=0, columnspan=3, sticky="W")
         tk.Label(alternativer, text="   Differansestrekk:",
-                 font=plain).grid(row=5, column=0, sticky="E")
+                 font=plain).grid(row=6, column=0, sticky="E")
         self.differansestrekk_spinbox = tk.Spinbox(alternativer, from_=0.0, to=2.0,
                                                    increment=0.05, width=10)
         self.differansestrekk_spinbox.delete(0, "end")
         self.differansestrekk_spinbox.insert(0, float(self.M.master.differansestrekk.get()))
         self.differansestrekk_spinbox.config(font=plain, state="readonly")
-        self.differansestrekk_spinbox.grid(row=5, column=1, sticky="E")
+        self.differansestrekk_spinbox.grid(row=6, column=1, sticky="E")
         tk.Label(alternativer, text="[kN]",
-                 font=plain).grid(row=5, column=2, sticky="W")
+                 font=plain).grid(row=6, column=2, sticky="W")
 
         # høydedifferanse
         alternativer_2 = tk.Frame(alternativer, relief="groove", bd=1)
-        alternativer_2.grid(row=6, column=0, columnspan=3)
+        alternativer_2.grid(row=7, column=0, columnspan=3)
         tk.Label(alternativer_2, text="Ledningers midlere innfestingshøyde i \n"
                                       "aktuell mast i forhold til...",
                 font=plain).grid(row=0, column=0, columnspan=3)
