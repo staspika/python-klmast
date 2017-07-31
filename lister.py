@@ -100,6 +100,10 @@ for k in kilometer:
     kilometer_list.append(k)
 kilometer_list.sort(key=_hent_tall)
 
+
+master_list = ["B2", "B3", "B4", "B6", "H3", "H5", "H6",
+		       "HE200B", "HE220B", "HE240B", "HE260B", "HE280B", "HE260M"]
+
 # Liste over AT-ledninger
 at_list = ["Al 400-37", "Al 240-19", "Al 150-19"]
 

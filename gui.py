@@ -213,7 +213,9 @@ class Hovedvindu(tk.Frame):
         self.isklasse = tk.IntVar()
 
         # Hjelpevariabel, resultater
+        self.mast_resultater = tk.StringVar()
         self.gittermast = tk.BooleanVar()
+
 
         # initierer
         self._mastefelt.set(0)
@@ -231,11 +233,13 @@ class Hovedvindu(tk.Frame):
         self.Iv.set(0.19)
         self.k_l.set(1)
         self.C_0.set(1)
+        self.mast_resultater.set(lister.master_list[5])
         self.gittermast.set(True)
 
         # Ferdig beregnede master
+        self.alle_master = []
         self.gittermaster = []
-        self.gittermaster = []
+        self.bjelkemaster = []
 
 
 
@@ -709,17 +713,17 @@ class Hovedvindu(tk.Frame):
         self.master.e.set(self.e_spinbox.get())
         self.master.sms.set(self.sms_spinbox.get())
 
-
         self.master.skriv_ini()
 
-        self.gittermaster, self.bjelkemaster = [], []
+        self.alle_master, self.gittermaster, self.bjelkemaster = [], [], []
         with open("input.ini", "r") as ini:
             g, b = main.beregn_master(ini)
+            self.alle_master.extend(g)
+            self.alle_master.extend(b)
             self.gittermaster.extend(g)
             self.bjelkemaster.extend(b)
 
         self.resultater_btn.grid()
-
 
 
 class Klima(tk.Frame):
@@ -1115,12 +1119,21 @@ class Resultater(tk.Frame):
         hovedvindu = tk.LabelFrame(self, text="Resultater", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Krefter i bruddgrensetilstand (H5-mast)",
+        tk.Label(hovedvindu, text="Krefter i bruddgrensetilstand",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
+        tk.Label(hovedvindu, text="Mast:",
+                 font=plain).grid(row=1, column=1, sticky="E")
+        system_menu = tk.OptionMenu(hovedvindu, self.M.mast_resultater,
+                                    *lister.master_list)
+        system_menu.config(font=plain, width=7)
+        system_menu.grid(row=1, column=2, sticky="W")
 
-        self.kraftboks = tk.Text(hovedvindu, width=100, height=10)
+        self.tracer = self.M.mast_resultater.trace("w", self.callback_krefter)
+
+
+        self.kraftboks = tk.Text(hovedvindu, width=100, height=14)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
@@ -1152,15 +1165,25 @@ class Resultater(tk.Frame):
                                   font=bold, command=self._eksporter_fundamast)
         self.eksporter_btn.pack(padx=20, pady=5, side="left")
         lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
-                             font=bold, command=self.master.destroy)
+                             font=bold, command=self.lukk_resultater)
         lukk_btn.pack(padx=20, pady=5, side="left")
+
+    def callback_krefter(self, *args):
+        self._skriv_krefter()
+
+    def lukk_resultater(self):
+        self.M.mast_resultater.trace_vdelete("w", self.tracer)
+        self.master.destroy()
 
     def _skriv_krefter(self):
         """Skriver krefter til tekstboks."""
 
+        if self.kraftboks.get(0.0) is not None:
+            self.kraftboks.delete(1.0, "end")
+
         mast = None
-        for m in self.M.gittermaster:
-            if m.navn=="H5":
+        for m in self.M.alle_master:
+            if m.navn==self.M.mast_resultater.get():
                 mast = m
                 break
 
@@ -1223,6 +1246,15 @@ class Resultater(tk.Frame):
 
         s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
         s += "{}\n\n".format(vindretning)
+
+        t =  mast.tilstand_My_max
+        s += "Lastfaktorer:\nEgenvekt: {}    Kabelstrekk: {}\n".format(t.faktorer["G"],
+                                                                       t.faktorer["L"])
+        s += "Temperatur: {:.4g}    Snø/is: {:.4g}    " \
+             "Vind: {:.4g}\n\n".format(t.faktorer["T"]*t.faktorer["psi_T"],
+                                       t.faktorer["S"]*t.faktorer["psi_S"],
+                                       t.faktorer["V"]*t.faktorer["psi_V"])
+
         if mast.tilstand_T_max_ulykke is not None:
             T = round(mast.tilstand_T_max_ulykke.K[5] / 1000, 2)
             s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n".format(T)
@@ -1308,12 +1340,12 @@ class Resultater(tk.Frame):
         """Eksporterer krefter til FUNDAMAST.DAT."""
 
         mast = None
-        for m in self.M.gittermaster:
-            if m.navn == "H5":
+        for m in self.M.alle_master:
+            if m.navn==self.M.mast_resultater.get():
                 mast = m
                 break
 
-        s = "*** Identifikasjons tekst\n"
+        s = "*** Reaksjonskrefter for {}  (eksportert fra KL_mast)\n".format(mast.navn)
         s += "Banestrekning {}, Mast nr. {}, ".format(self.M.master.banestrekning.get(),
                                                       self.M.master.mastenr.get())
         # Hvor finnes fundamentnr.?
@@ -1339,7 +1371,7 @@ class Resultater(tk.Frame):
         with open("FUNDAMAST.DAT", "w+") as fil:
             fil.write(s)
 
-        self.eksporter_btn.config(text="Eksport fullført!", font=plain)
+        self.eksporter_btn.config(text="Eksport av {} fullført".format(mast.navn), font=plain)
 
 
 
@@ -1356,10 +1388,18 @@ class Bidrag(tk.Frame):
         hovedvindu = tk.LabelFrame(self, text="Bidragsliste", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter (H5-mast)",
+        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
+        tk.Label(hovedvindu, text="Mast:",
+                 font=plain).grid(row=1, column=1, sticky="E")
+        system_menu = tk.OptionMenu(hovedvindu, self.M.mast_resultater,
+                                    *lister.master_list)
+        system_menu.config(font=plain, width=7)
+        system_menu.grid(row=1, column=2, sticky="W")
+
+        self.tracer = self.M.mast_resultater.trace("w", self.callback_bidrag)
 
         self.bidragsboks = tk.Text(hovedvindu, width=100, height=50)
         self.bidragsboks.grid(row=2, column=0, columnspan=3)
@@ -1367,16 +1407,25 @@ class Bidrag(tk.Frame):
         self._skriv_bidrag()
 
         lukk_btn = tk.Button(self, text="Lukk vindu",
-                             font=bold, command=self.master.destroy)
+                             font=bold, command=self.lukk_bidrag)
         lukk_btn.pack(padx=5, pady=5, side="right")
 
+    def callback_bidrag(self, *args):
+        self._skriv_bidrag()
+
+    def lukk_bidrag(self):
+        self.M.mast_resultater.trace_vdelete("w", self.tracer)
+        self.master.destroy()
 
     def _skriv_bidrag(self):
         """Skriver bidrag inkl. alle lastfaktorer."""
 
+        if self.bidragsboks.get(0.0) is not None:
+            self.bidragsboks.delete(1.0, "end")
+
         mast = None
-        for m in self.M.gittermaster:
-            if m.navn=="H5":
+        for m in self.M.alle_master:
+            if m.navn==self.M.mast_resultater.get():
                 mast = m
                 break
 
