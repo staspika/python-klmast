@@ -53,6 +53,13 @@ class System(object):
         return "System {}".format(self.navn)
 
 
+class Ledning(object):
+    """Klasse for å representere systemets ledninger."""
+
+    def __init__(self, navn="", egenvekt=0.0, diameter=0.0, tverrsnitt=0.0, strekk=0.0, e=[0, 0, 0]):
+        pass
+
+
 def hent_system(i):
     """Henter :class:`System` med data for ledninger og utliggere.
 

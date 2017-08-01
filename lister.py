@@ -116,6 +116,9 @@ stromavtaker_list = ["1600", "1800", "1950"]
 # Liste over systemer
 system_list = ["System 20A", "System 20B", "System 25", "System 35"]
 
+isklasse_list = ["0   (0 N/m)", "1   (3.5 N/m)",
+				 "2   (7.5 N/m)", "3   (15 N/m)"]
+
 
 # Overhøyde D (= UE) avhengig av system
 D_20B_35 = {"180": 0.150, "250": 0.150, "300": 0.150, "400": 0.140,

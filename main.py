@@ -57,8 +57,11 @@ if __name__ == "__main__":
         mast.sorter(0)
     master_sortert = sorted(master, key=lambda mast:mast.bruddgrense[0].utnyttelsesgrad, reverse=True)
 
+
+    """
     for mast in master_sortert:
         print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
+    """
 
     mastetype = "g"  # g for gitter, b for bjelke
     mast = None
@@ -85,12 +88,14 @@ if __name__ == "__main__":
         
         """
 
+    """
     mast.sorter_grenseverdier()
     print()
     print("Anbefalt mast:")
     print()
     print(mast)
     print()
+    """
     
 
 

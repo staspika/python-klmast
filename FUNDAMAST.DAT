@@ -1,18 +1,18 @@
-*** Fundamentkrefter for HE260M-mast beregnet med KL_mast
+*** Reaksjonskrefter for HE200B  (eksportert fra KL_mast)
 Banestrekning 0010 Oslo S, Mast nr. 0, Fundament nr. 0, Prosjektnummer 0
 *** Systemkonfigurasjon SMS  - FH  - e-mål
 3.5
 5.7
 0.0
 *** Bruddgrense    N (kN) - V (kN) - M (kNm)
-19.3
-7.2
-45.0
+8.7
+6.1
+40.7
 *** Bruksgrense 2  N (kN) - V (kN) - M (kNm)
 0.7
-3.9
-21.2
+3.2
+18.3
 *** Bruksgrense 3  N (kN) - V (kN) - M (kNm)
-15.9
-5.0
-32.2
+7.1
+4.3
+29.4

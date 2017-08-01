@@ -157,7 +157,7 @@ def vindlast_mast(i, mast, vindretning):
                                e=[- i.e_x + i.e, i.e_y, i.e_z]))
 
         else:
-            q_K = _beregn_vindtrykk_NEK(i)
+            q_K = _beregn_vindtrykk_NEK(i.referansevindhastighet)
 
             if vindretning == 1:
                 q_K = -q_K
@@ -207,7 +207,7 @@ def vindlast_mast(i, mast, vindretning):
                                e=[- i.e_x, i.e_y, i.e_z]))
 
         else:
-            q_K = _beregn_vindtrykk_NEK(i)
+            q_K = _beregn_vindtrykk_NEK(i.referansevindhastighet)
 
             if mast.type == "H":
                 # Inngangsparametre
@@ -263,7 +263,7 @@ def vindlast_ledninger(i, sys, vindretning):
             q = q_p * cf
 
         else:
-            q_K = _beregn_vindtrykk_NEK(i)
+            q_K = _beregn_vindtrykk_NEK(i.referansevindhastighet)
             G_C = 0.75  # [1] Respons faktor
             C_C = 1.0  # [1] Drag faktor
             q = q_K * G_C * C_C
@@ -570,10 +570,10 @@ def isogsno_last(i, sys):
 
 
 
-def _beregn_vindtrykk_NEK(i):
+def _beregn_vindtrykk_NEK(referansevindhastighet):
     """Beregner dimensjonerende vindtrykk mhp. bransjestandard.
 
-    :param Inndata i: Input fra bruker
+    :param float referansevindhastighet: Vindhastighet for beregning av vindtrykk :math:`[\\frac{m}{s}]`
     :return: Vindtrykk :math:`[\\frac{N}{m^2}]`
     :rtype: :class:`float`
     """
@@ -592,10 +592,10 @@ def _beregn_vindtrykk_NEK(i):
 
     # Alternativ 2: EC1
     # Terrengkategori II velges
-    v_b_0 = i.referansevindhastighet  # [m/s] Referansevindhastighet for aktuell kommune
+    v_b_0 = referansevindhastighet  # [m/s] Referansevindhastighet for aktuell kommune
 
     # Dynamisk vindtrykk [N / m^2]
-    rho = 1.255  # [kg / m^3]
+    rho = 1.225  # [kg / m^3]
     G_q = 2.05   # [1] Gust-respons faktor
     G_t = 1.0    # [1] Terrengfaktor av typen åpent
 
@@ -625,13 +625,13 @@ def _g_sno(ec3, isklasse, d):
         if d > 20:
             return 15
         else:
-            if isklasse == 0:
+            if str.startswith(isklasse, "0"):
                 return 0
-            elif isklasse == 1:
+            elif str.startswith(isklasse, "1"):
                 return 3.5
-            elif isklasse == 2:
+            elif str.startswith(isklasse, "2"):
                 return 7.5
-            else:
+            elif str.startswith(isklasse, "3"):
                 return 15
 
 def _D_ledning(ec3, g_sno, d):
@@ -648,6 +648,6 @@ def _D_ledning(ec3, g_sno, d):
         return 0
     else:
         d /= 1000
-        rho = 500 * 9.81
+        rho = 600 * 9.81
         return math.sqrt(d**2 + 4*g_sno/(math.pi*rho)) - d
 

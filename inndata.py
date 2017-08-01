@@ -76,7 +76,7 @@ class Inndata(object):
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
         self.stromavtaker_type = cfg.get("Div", "stromavtaker_type")
         self.ec3 = cfg.getboolean("Div", "ec3")
-        self.isklasse = cfg.getint("Div", "isklasse")
+        self.isklasse = cfg.get("Div", "isklasse")
 
         # Brukerdefinert last
         self.brukerdefinert_last = cfg.getboolean("Brukerdefinert last", "brukerdefinert_last")

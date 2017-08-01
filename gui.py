@@ -109,7 +109,7 @@ class KL_mast(tk.Tk):
         self.traverslengde = tk.DoubleVar()
         self.stromavtaker_type = tk.StringVar()
         self.ec3 = tk.BooleanVar()
-        self.isklasse = tk.IntVar()
+        self.isklasse = tk.StringVar()
 
         # Brukerdefinert last
         self.brukerdefinert_last = tk.BooleanVar()
@@ -210,7 +210,6 @@ class Hovedvindu(tk.Frame):
         self.Iv = tk.DoubleVar()
         self.k_l = tk.DoubleVar()
         self.C_0 = tk.DoubleVar()
-        self.isklasse = tk.IntVar()
 
         # Hjelpevariabel, resultater
         self.mast_resultater = tk.StringVar()
@@ -635,7 +634,7 @@ class Hovedvindu(tk.Frame):
         self.master.materialkoeff.set(1.05)
         self.master.traverslengde.set(0.6)
         self.master.ec3.set(True)
-        self.master.isklasse.set(2)
+        self.master.isklasse.set(lister.isklasse_list[2])
         self.master.stromavtaker_type.set(lister.stromavtaker_list[2])
         self.master.brukerdefinert_last.set(False)
         avansert_btn = tk.Button(av_beregn, text="Avansert", font=bold,
@@ -881,11 +880,10 @@ class Klima(tk.Frame):
         # isklasse
         tk.Label(manuelle_verdier, text="Isklasse:",
                  font=plain).grid(row=3, column=0)
-        self.isklasse_spinbox = tk.Spinbox(manuelle_verdier, from_=0, to=3, width=10)
-        self.isklasse_spinbox.delete(0, "end")
-        self.isklasse_spinbox.insert(0, 2)
-        self.isklasse_spinbox.config(font=plain, state="readonly")
-        self.isklasse_spinbox.grid(row=3, column=1)
+        self.isklasse_menu = tk.OptionMenu(manuelle_verdier, self.M.master.isklasse,
+                                                   *lister.isklasse_list)
+        self.isklasse_menu.config(font=plain, width=12)
+        self.isklasse_menu.grid(row=3, column=1)
         tk.Label(manuelle_verdier, text="(Kun gjeldende ved NEK-beregning)",
                  font=italic).grid(row=4, column=0, columnspan=2, sticky="E")
 
@@ -902,7 +900,6 @@ class Klima(tk.Frame):
         self.M.c_dir.set(self.c_dir_spinbox.get())
         self.M.c_season.set(self.c_season_spinbox.get())
         self.M.c_prob.set(self.c_prob_spinbox.get())
-        self.M.isklasse.set(self.isklasse_spinbox.get())
         self.M.z.set(self.z_spinbox.get())
         self.M.C_0.set(self.C_0_spinbox.get())
 
