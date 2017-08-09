@@ -194,12 +194,16 @@ for s in sikksakk_20:
 radius_list.sort(key=_hent_tall)
 
 # Terrengkategorier etter EC1, NA.4.1
-kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2.0}
-kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2.0}
-kat2 = {"k_r": 0.19, "z_0": 0.05, "z_min": 4.0}
-kat3 = {"k_r": 0.22, "z_0": 0.3, "z_min": 8.0}
-kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16.0}
+kat0 = {"k_r": 0.16, "z_0": 0.003, "z_min": 2}
+kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2}
+kat2 = {"k_r": 0.19, "z_0": 0.05, "z_min": 4}
+kat3 = {"k_r": 0.22, "z_0": 0.3, "z_min": 8}
+kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16}
 terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
+
+regioner = {"Sør-Norge ekskl. Nord-Trøndelag": {"H_0": 900, "H_topp": 1500},
+            "Nord-Trøndelag, Nordland, Troms": {"H_0": 700, "H_topp": 1300},
+                         "Finnmark, Svalbard": {"H_0": 400, "H_topp": 1000}}
 
 # Sidekrefter som gir bidrag til utliggerdeformasjon
 sidekraftbidrag_strekk = ["Strekk: Bæreline", "Strekk: Kontakttråd"]
@@ -225,17 +229,17 @@ def hent_lastkombinasjoner(ec3):
     """
     if ec3:
         # Lastsituasjoner og faktorer ihht. EC3
-        lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6},
-                           "Snølast dominerende": {"psi_T": 0.6, "psi_S": 1.0, "psi_V": 0.6},
-                           "Vind dominerende": {"psi_T": 0.6, "psi_S": 0.7, "psi_V": 1.0}}
+        lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6, "T": -40},
+                           "Snølast dominerende": {"psi_T": 0.6, "psi_S": 1.0, "psi_V": 0.6, "T": 0},
+                           "Vind dominerende": {"psi_T": 0.6, "psi_S": 0.7, "psi_V": 1.0, "T": -25}}
         lastfaktorer = {"G": (1.2, 1.0), "L": (1.2, 1.0), "T": (1.5, 0),
                         "S": (1.5, 0), "V": (1.5, 0)}
     else:
         # Lastsituasjoner og faktorer ihht. NEK (bransjestandard)
-        lastsituasjoner = {"Maksimal temperaturlast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0},
-                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0},
-                           "Maksimal snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0},
-                           "Kombinert vind- og snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0.5}}
+        lastsituasjoner = {"Maksimal temperaturlast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0, "T": -40},
+                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0, "T": -25},
+                           "Maksimal snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0, "T": 0},
+                           "Kombinert vind- og snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0.5, "T": -25}}
         lastfaktorer = {"G": (1.3, 1.0), "L": (1.3, 0), "T": (1.3, 0),
                         "S": (1.3, 0), "V": (1.3, 0)}
 

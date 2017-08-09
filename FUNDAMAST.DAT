@@ -1,18 +1,18 @@
-*** Reaksjonskrefter for HE200B  (eksportert fra KL_mast)
+*** Reaksjonskrefter for H5  (KL_mast, 9.8.2017)
 Banestrekning 0010 Oslo S, Mast nr. 0, Fundament nr. 0, Prosjektnummer 0
 *** Systemkonfigurasjon SMS  - FH  - e-mål
 3.5
 5.7
 0.0
 *** Bruddgrense    N (kN) - V (kN) - M (kNm)
-8.7
-6.1
-40.7
+8.1
+4.4
+31.5
 *** Bruksgrense 2  N (kN) - V (kN) - M (kNm)
-0.7
-3.2
-18.3
+0.2
+2.1
+12.0
 *** Bruksgrense 3  N (kN) - V (kN) - M (kNm)
-7.1
-4.3
-29.4
+6.7
+3.1
+23.3

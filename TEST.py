@@ -23,20 +23,10 @@ def print_memory_info():
 
 if __name__ == "__main__":
 
-    alle = []
-
-    master = mast.hent_master(10, False, 1.05)
-
-    B_master = [mast for mast in master if mast.type == "B"]
-    H_master = [mast for mast in master if mast.type == "H"]
-    bjelke_master = [mast for mast in master if mast.type == "bjelke"]
-
-    alle.extend(B_master)
-    alle.extend(H_master)
-    alle.extend(bjelke_master)
-
-    for m in alle:
-        print(m.navn)
+    a = [1 , 34]
+    b= ["hei", "koakerf"]
+    c = a  +b
+    print(c)
 
 
 

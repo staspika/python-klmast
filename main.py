@@ -12,8 +12,8 @@ def beregn_master(ini):
     Mastene deles opp i gittermaster og bjelkemaster før de
     sorteres mhp. utnyttelsesgrad og returneres i to separate lister.
 
-    :return: Lister med ferdige beregnede master ``gittermaster_sortert``, ``bjelkemaster_sortert``
-    :rtype: :class:`list`, :class:`list`
+    :return: Lister med ferdige beregnede master ``gittermaster_sortert`` og ``bjelkemaster_sortert``, ``i``
+    :rtype: :class:`list`, :class:`list`, :class:`Inndata`
     """
 
     masteliste = []
@@ -30,7 +30,7 @@ def beregn_master(ini):
     gittermaster_sortert = sorted(gittermaster, key=lambda mast: mast.tilstand_UR_max.utnyttelsesgrad, reverse=True)
     bjelkemaster_sortert = sorted(bjelkemaster, key=lambda mast: mast.tilstand_UR_max.utnyttelsesgrad, reverse=True)
 
-    return gittermaster_sortert, bjelkemaster_sortert
+    return gittermaster_sortert, bjelkemaster_sortert, i
 
 
 
@@ -55,13 +55,12 @@ if __name__ == "__main__":
 
     for mast in master:
         mast.sorter(0)
+
     master_sortert = sorted(master, key=lambda mast:mast.bruddgrense[0].utnyttelsesgrad, reverse=True)
 
-
-    """
     for mast in master_sortert:
         print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
-    """
+    
 
     mastetype = "g"  # g for gitter, b for bjelke
     mast = None
@@ -71,7 +70,7 @@ if __name__ == "__main__":
         if m.navn == "H5":
             mast = m
 
-        """
+    """
         
         if mastetype == "g":
             if (m.type == "B" or m.type == "H") \
@@ -86,16 +85,14 @@ if __name__ == "__main__":
                 mast = m
                 break
         
-        """
-
     """
+
     mast.sorter_grenseverdier()
     print()
     print("Anbefalt mast:")
     print()
     print(mast)
     print()
-    """
     
 
 

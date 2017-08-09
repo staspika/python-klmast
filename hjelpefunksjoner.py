@@ -1,71 +1,112 @@
 # -*- coding: utf8 -*-
-"""Funksjoner for beregning av geometriske systemdata."""
+"""Diverse funksjoner til bruk andre steder i programmet."""
 from __future__ import unicode_literals
 
 import math
 import lister
-import matplotlib.pyplot as plt
-import matplotlib.pyplot as tckr
-import matplotlib.artist as art
-from xlrd import open_workbook
 
-import numpy
-from pandas import DataFrame
+def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengkategori, z):
+    """Beregner dimensjonerende vindkasthastighetstrykk mhp. Eurokode 0.
+
+    :param float v_b_0 Referansevindhastighet for aktuell kommune :math:`[\frac{m}{s}]`
+    :param c_dir: Retningsfaktor
+    :param c_season: Årstidsfaktor
+    :param c_alt: Nivåfaktor
+    :param c_prob: Faktor dersom returperioden er mer enn 50 år
+    :param c_0: Terrengformfaktor
+    :param terrengkategori: Terrengkategori
+    :param float z: Høyde over bakken :math:`[m]`
+    :return: Vindkasthastighetstrykk :math:`[\\frac{N}{m^2}]`
+    :rtype: :class:`float`
+    """
+
+    # Basisvindhastighet [m/s]
+    v_b = c_dir * c_season * c_alt * c_prob * v_b_0
+
+    k_r = lister.terrengkategorier[terrengkategori]["k_r"]
+    z_0 = lister.terrengkategorier[terrengkategori]["z_0"]
+    z_min = lister.terrengkategorier[terrengkategori]["z_min"]
+    z_max = 200
+
+    if z > z_max:
+        z = z_max
+
+    if z <= z_min:
+        c_r = k_r * math.log(z_min / z_0)
+    else:
+        c_r = k_r * math.log(z / z_0)
+
+    # Stedets middelvindhastighet [m/s]
+    v_m = c_r * c_0 * v_b
+
+    # Stedets vindhastighetstrykk [N/m^2]
+    rho = 1.25                  # [kg/m^3] Luftens densitet
+    q_m = 0.5 * rho * v_m**2    # [N / m^2]
+
+    # Turbulensintensiteten
+    k_l = 1.0  # Turbulensintensiteten, anbefalt verdi er 1.0
+    k_p = 3.5
+    if z <= z_min:
+        I_v = k_l / (c_0 * math.log(z_min / z_0))
+    else:
+        I_v = k_l / (c_0 * math.log(z / z_0))
 
 
-def beregn_sikksakk(navn, radius):
+    # Vindkasthastigheten
+    v_p = v_m * math.sqrt(1 + 2 * k_p * I_v)
+
+    # Vindkasthastighetstrykket
+    q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
+
+    return q_p, v_b, v_m, v_p, q_m
+
+
+def _c_alt(v_b_0, region, H):
+    """ Beregner faktor for vindøkning med høyden over havet.
+
+    :param v_b_0:
+    :param region:
+    :param H:
+    :return:
+    """
+
+    v_0 = 30
+
+    if v_b_0<v_0:
+        H_0 = lister.regioner[region]["H_0"]
+        H_topp = lister.regioner[region]["H_topp"]
+        return 1.0 + (v_0 - v_b_0) * (H - H_0) / (v_b_0 * (H_topp - H_0))
+    else:
+        return 1.0
+
+def beregn_sikksakk(systemnavn, radius):
     """Beregner sikksakk og største tillat utblåsning av KL.
 
-    :param str navn: Systemets navn
+    :param str systemnavn: Systemets navn
     :param int radius: Sporkurvaturens radius :math:`[m]`
-    :return: Sikksakkverdier ``B1`` og ``B1`` :math:`[m]`, største tillatt utblåsning ``e_max`` :math:`[m]`
-    :rtype: :class:`float`, :class:`float`, :class:`float`
+    :return: Sikksakkverdier ``B1`` og ``B1`` :math:`[m]`
+    :rtype: :class:`float`, :class:`float`
     """
 
     r = radius
-    sikksakk, e_max = 0, 0
 
     # Systemavhengige sikksakk-verdier til input i største masteavstand.
     # struktur i sikksakk-ordbøker under: { "radius": [B1, B2] } i [m]
     # største tillatt utblåsning e_max i [m], bestemmes i indre if-setning.
-    if navn == "20A" or navn == "20B":
+    if systemnavn == "20A" or systemnavn == "20B":
         sikksakk = lister.sikksakk_20
-        e_max = 0.55
-        if r <= 1000:
-            e_max = 0.42
-        elif 1000 < r <= 2000:
-            e_max = 0.42 + (r - 1000) * ((0.50 - 0.42) / (2000 - 1000))
-        elif 2000 < r <= 4000:
-            e_max = 0.50 + (r - 2000) * ((0.55 - 0.50) / (4000 - 2000))
-
-    elif navn == "25":
+    elif systemnavn == "25":
         sikksakk = lister.sikksakk_25
-        e_max = 0.50
-        if 180 <= r <= 300:
-            e_max = 0.40 + (r - 180) * ((0.43 - 0.40) / (300 - 180))
-        elif 300 < r <= 600:
-            e_max = 0.43
-        elif 600 < r <= 700:
-            e_max = 0.43 + (r - 600) * ((0.44 - 0.43) / (700 - 600))
-        elif 700 < r <= 900:
-            e_max = 0.44
-        elif 900 < r <= 1000:
-            e_max = 0.44 + (r - 900) * ((0.45 - 0.44) / (1000 - 900))
-        elif 1000 < r <= 2000:
-            e_max = 0.45
-        elif 2000 < r <= 3000:
-            e_max = 0.45 + (r - 2000) * ((0.50 - 0.45) / (3000 - 2000))
-
-    elif navn == "35":
+    else:  # System 35
         sikksakk = lister.sikksakk_35
-        e_max = 0.7
 
     B1 = 0
     B2 = 0
     if r in sikksakk:
         B1 = sikksakk[str(r)][0]
         B2 = sikksakk[str(r)][1]
-    return B1, B2, e_max
+
+    return B1, B2
 
 
 def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
@@ -107,49 +148,16 @@ def beregn_masteavstand(sys, radius, B1, B2, e_max, q):
     return a
 
 
-def beregn_arm(systemnavn, radius, sms, fh, B1):
-    """Beregner momentarm for utligger.
-
-    :param int radius: Sporkurvaturens radius :math:`[m]`
-    :param float sms: Avstand senter mast - senter spor :math:`[m]`
-    :param float fh: Kontakttrådhøyde :math:`[m]`
-    :param float B1: Første sikksakkverdi :math:`[m]`
-    :return: Momentarmer ``a_T`` og ``a_T_dot`` :math:`[m]`
-    :rtype: :class:`float`
-    """
-
-    r = radius
-    b = abs(B1)
-
-    # Overhøyde, UE i [m], pga kurveradius i [m]
-    if systemnavn=="20A":
-        ue = lister.D_20A
-    elif systemnavn == "20B":
-        ue = lister.D_20B_35
-    elif systemnavn=="25":
-        ue = lister.D_25
-    else:  # System 35
-        ue = lister.D_20B_35
-
-    # Momentarm [m] for strekkutligger.
-    a_T = sms + fh * (ue[str(r)] / 1.435) - b
-
-    # Momentarm [m] for trykkutligger.
-    a_T_dot = sms - fh * (ue[str(r)] / 1.435) + b
-
-    return a_T, a_T_dot
-
-
 def vindutblasning(systemnavn, radius, fh, stromavtaker, v_egendefinert=None):
     """Beregner maksimal tillatt utblåsning av KL.
 
     Verdien beregnes i henhold til EN 50367 kapittel 5.2.5.3.
 
-    :param str systemnavn:
-    :param int radius:
+    :param str systemnavn: Valgt system
+    :param int radius: Sporkurvaturens radius :math:`[m]`
     :param int fh: Kontakttrådhøyde :math:`[m]`
-    :param str stromavtaker:
-    :param Boolean v_egendefinert:
+    :param str stromavtaker: Valgt strømavtaker
+    :param int v_egendefinert: Overstyrer automatisk kjørehastighet :math:`[\frac{m}{s}]`
     :return: Maksimal tillatt vindutblåsning
     :rtype: :class:`float`
     """
@@ -288,99 +296,7 @@ def vindutblasning(systemnavn, radius, fh, stromavtaker, v_egendefinert=None):
 
 
 if __name__ == "__main__":
-
-    wb = open_workbook("vindutblasning_sammenligning.xlsx")
-
-    # v = 130
-    # [R, 1600mm, 1850mm, 1950mm]
-    ark = wb.sheets()[0]
-    excel = [[],[],[],[]]
-    klmast = [[],[],[],[]]
-    for col in range(4):
-        for row in range(6,40):
-            val = ark.cell(row, col).value
-            excel[col].append(val)
-    for col in range(5,9):
-        for row in range(9,33):
-            val = ark.cell(row, col).value
-            klmast[col-5].append(val)
-
-    # 1600mm
-    plt.figure(figsize=(15,10))
-    plt.plot(excel[0], excel[1], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[1], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 35 (v=130km/t)\nStrømavtaker 1600mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
-    # 1800mm
-    plt.figure(figsize=(15, 10))
-    plt.plot(excel[0], excel[2], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[2], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 35 (v=130km/t)\nStrømavtaker 1800mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
-    # 1950mm
-    plt.figure(figsize=(15, 10))
-    plt.plot(excel[0], excel[3], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[3], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 35 (v=130km/t)\nStrømavtaker 1950mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
-
-
-    # v = 200
-    # [R, 1600mm, 1850mm, 1950mm]
-    ark = wb.sheets()[1]
-    excel = [[],[],[],[]]
-    klmast = [[],[],[],[]]
-    for col in range(4):
-        for row in range(6,31):
-            val = ark.cell(row, col).value
-            excel[col].append(val)
-    for col in range(5,9):
-        for row in range(6,17):
-            val = ark.cell(row, col).value
-            klmast[col-5].append(val)
-
-    # 1600mm
-    plt.figure(figsize=(15, 10))
-    plt.plot(excel[0], excel[1], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[1], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 20A (v=200km/t)\nStrømavtaker 1600mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
-    # 1800mm
-    plt.figure(figsize=(15, 10))
-    plt.plot(excel[0], excel[2], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[2], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 20A (v=200km/t)\nStrømavtaker 1800mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
-    # 1950mm
-    plt.figure(figsize=(15, 10))
-    plt.plot(excel[0], excel[3], lw=2.0, label="Excel")
-    plt.plot(klmast[0], klmast[3], lw=2.0, label="KL_mast")
-    plt.title("Max. vindutblåsning for System 20A (v=200km/t)\nStrømavtaker 1950mm")
-    plt.legend(loc=4)
-    plt.xlabel("R [m]")
-    plt.ylabel("d_l [m]")
-    plt.grid()
-    plt.show()
+    pass
 
 
 

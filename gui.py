@@ -240,6 +240,9 @@ class Hovedvindu(tk.Frame):
         self.gittermaster = []
         self.bjelkemaster = []
 
+        # Kopi av inndataobjekt fra beregning
+        self.i = None
+
 
 
 
@@ -715,12 +718,14 @@ class Hovedvindu(tk.Frame):
         self.master.skriv_ini()
 
         self.alle_master, self.gittermaster, self.bjelkemaster = [], [], []
+        self.i = None
         with open("input.ini", "r") as ini:
-            g, b = main.beregn_master(ini)
+            g, b, i = main.beregn_master(ini)
             self.alle_master.extend(g)
             self.alle_master.extend(b)
             self.gittermaster.extend(g)
             self.bjelkemaster.extend(b)
+            self.i = i
 
         self.resultater_btn.grid()
 
@@ -919,7 +924,7 @@ class Avansert(tk.Frame):
         self.M = self.master.master
 
         # -------------------------------Alternativer-------------------------------
-        alternativer = tk.LabelFrame(self, text="Alternativer", font=bold)
+        alternativer = tk.LabelFrame(self, text="Avanserte alternativer", font=bold)
         alternativer.pack(fill="both")
 
         # beregningsprosedyre
@@ -1204,7 +1209,6 @@ class Resultater(tk.Frame):
         K = mast.tilstand_My_max.K / 1000
         for n in range(6):
             if n==5:
-                K = mast.tilstand_T_max.K / 1000
                 k = str(round(K[n],2))
             else:
                 k = str(round(K[n],1))
@@ -1244,6 +1248,13 @@ class Resultater(tk.Frame):
         s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
         s += "{}\n\n".format(vindretning)
 
+        if mast.tilstand_T_max_ulykke is not None:
+            T = round(mast.tilstand_T_max_ulykke.K[5] / 1000, 2)
+            s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n\n".format(T)
+        else:
+            T = round(mast.tilstand_T_max.K[5] / 1000, 2)
+            s += "Maksimal T ved -40C:  {} kNm\n\n".format(T)
+
         t =  mast.tilstand_My_max
         s += "Lastfaktorer:\nEgenvekt: {}    Kabelstrekk: {}\n".format(t.faktorer["G"],
                                                                        t.faktorer["L"])
@@ -1251,10 +1262,6 @@ class Resultater(tk.Frame):
              "Vind: {:.4g}\n\n".format(t.faktorer["T"]*t.faktorer["psi_T"],
                                        t.faktorer["S"]*t.faktorer["psi_S"],
                                        t.faktorer["V"]*t.faktorer["psi_V"])
-
-        if mast.tilstand_T_max_ulykke is not None:
-            T = round(mast.tilstand_T_max_ulykke.K[5] / 1000, 2)
-            s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n".format(T)
 
         self.kraftboks.insert("end", s)
 
@@ -1293,7 +1300,7 @@ class Resultater(tk.Frame):
 
         for mast in masteliste:
             if mast.navn=="H6" and self.M.master.s235.get():
-                s += "H6-mast kan ikke velges da stålkvaliteten er S235."
+                s += "H6-mast kan ikke velges da stålkvaliteten er S235.\n"
             else:
                 s += mast.navn.ljust(max_bredde_navn+1)
 
@@ -1342,7 +1349,7 @@ class Resultater(tk.Frame):
                 mast = m
                 break
 
-        s = "*** Reaksjonskrefter for {}  (eksportert fra KL_mast)\n".format(mast.navn)
+        s = "*** Reaksjonskrefter for {}  (KL_mast, {})\n".format(mast.navn, self.M.i.dato)
         s += "Banestrekning {}, Mast nr. {}, ".format(self.M.master.banestrekning.get(),
                                                       self.M.master.mastenr.get())
         # Hvor finnes fundamentnr.?

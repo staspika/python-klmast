@@ -158,6 +158,7 @@ class Mast(object):
         self.bruddgrense = []
         self.forskyvning_tot = []
         self.forskyvning_kl = []
+        self.ulykke = []
 
         # Variabler for å holde dimensjonerende tilstander
         self.tilstand_UR_max = None
@@ -178,21 +179,21 @@ class Mast(object):
         rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
               "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
         rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
-        rep += "\nSørste utnyttelsesgrad:\n"
+        rep += "\n\nSørste utnyttelsesgrad:\n"
         rep += repr(self.tilstand_UR_max)
-        rep += "\nSørste moment My:\n"
+        rep += "\n\nSørste moment My:\n"
         rep += repr(self.tilstand_My_max)
-        rep += "\nSørste torsjon T:\n"
+        rep += "\n\nSørste torsjon T:\n"
         rep += repr(self.tilstand_T_max)
-        rep += "\nSørste torsjon T (ulykkeslast):\n"
+        rep += "\n\nSørste torsjon T (ulykkeslast):\n"
         rep += repr(self.tilstand_T_max_ulykke)
-        rep += "\nStørste forskyvning Dz (totalt):\n"
+        rep += "\n\nStørste forskyvning Dz (totalt):\n"
         rep += repr(self.tilstand_Dz_tot_max)
-        rep += "\nStørste torsjonsvinkel phi (totalt):\n"
+        rep += "\n\nStørste torsjonsvinkel phi (totalt):\n"
         rep += repr(self.tilstand_phi_tot_max)
-        rep += "\nStørste forskyvning Dz (KL):\n"
+        rep += "\n\nStørste forskyvning Dz (KL):\n"
         rep += repr(self.tilstand_Dz_kl_max)
-        rep += "\nStørste torsjonsvinkel phi (KL):\n"
+        rep += "\n\nStørste torsjonsvinkel phi (KL):\n"
         rep += repr(self.tilstand_phi_kl_max)
         rep += "\n"
         return rep
@@ -552,8 +553,6 @@ class Mast(object):
         self.tilstand_Dz_kl_max = self.forskyvning_kl[0]
         self.tilstand_phi_kl_max = self.forskyvning_kl[0]
 
-        ulykkeslast_initiert = False
-
         for tilstand in self.bruddgrense:
             UR_max = self.tilstand_UR_max.utnyttelsesgrad
             My_max = abs(self.tilstand_My_max.K[0])
@@ -564,9 +563,6 @@ class Mast(object):
             Mz = abs(tilstand.K[2])
             T = abs(tilstand.K[5])
 
-            if ulykkeslast_initiert:
-                T_max_ulykke = abs(self.tilstand_T_max_ulykke.K[5])
-
             if UR > UR_max:
                 self.tilstand_UR_max = tilstand
 
@@ -576,16 +572,8 @@ class Mast(object):
                 if Mz > Mz_max:
                     self.tilstand_My_max = tilstand
 
-            if tilstand.lastsituasjon == "Ulykkeslast":
-                if not ulykkeslast_initiert:
-                    self.tilstand_T_max_ulykke = self.bruddgrense[0]
-                    T_max_ulykke = abs(self.tilstand_T_max_ulykke.K[5])
-                    ulykkeslast_initiert = True
-                if T > T_max_ulykke:
-                    self.tilstand_T_max_ulykke = tilstand
-            else:
-                if T > T_max:
-                    self.tilstand_T_max = tilstand
+            if T > T_max:
+                self.tilstand_T_max = tilstand
 
 
         # Forskyvning totalt
@@ -620,6 +608,17 @@ class Mast(object):
             if phi > phi_max:
                 self.tilstand_phi_kl_max = tilstand
 
+        # Ulykkeslast
+        if self.ulykke:
+            self.tilstand_T_max_ulykke = self.ulykke[0]
+
+            for tilstand in self.ulykke:
+                T_max = abs(self.tilstand_T_max.K[5])
+                T = abs(tilstand.K[5])
+
+                if T > T_max:
+                    self.tilstand_T_max_ulykke = tilstand
+
     def sorter(self, kriterie):
         """Sorterer :class:`Mast`-objektets tilstander.
 
@@ -645,12 +644,14 @@ class Mast(object):
         :param Tilstand tilstand: :class:`Tilstand` som skal lagres
         """
 
-        if tilstand.type == 0:
+        if tilstand.grensetilstand == 0:
             self.bruddgrense.append(tilstand)
-        elif tilstand.type == 1:
+        elif tilstand.grensetilstand == 1:
             self.forskyvning_tot.append(tilstand)
-        else:
+        elif tilstand.grensetilstand == 2:
             self.forskyvning_kl.append(tilstand)
+        elif tilstand.grensetilstand == 3:
+            self.ulykke.append(tilstand)
 
 
 def hent_master(hoyde, s235, materialkoeff):
@@ -691,11 +692,11 @@ def hent_master(hoyde, s235, materialkoeff):
               toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10, k_g=0.85, k_d=0.55,
               b_f=75, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
     H5 = Mast(navn="H5", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3,
-              A_ref=0.20, Iy_profil=5.89 * 10 ** 5, noytralakse=22.41,
+              A_ref=0.20, Iy_profil=7.14 * 10 ** 5, noytralakse=22.41,
               toppmaal=200, stigning=20 / 1000, d_h=50, d_b=10, k_g=0.85, k_d=0.55,
               b_f=75, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
     H6 = Mast(navn="H6", type="H", egenvekt=620, A_profil=1.41 * 10 ** 3,
-              A_ref=0.20, Iy_profil=5.89 * 10 ** 5, noytralakse=22.41,
+              A_ref=0.20, Iy_profil=7.14 * 10 ** 5, noytralakse=22.41,
               toppmaal=200, stigning=20 / 1000, d_h=75, d_b=75, k_g=0.85, k_d=0.55,
               b_f=75, h_max=13.0, h=hoyde, s235=s235, materialkoeff=materialkoeff)
 

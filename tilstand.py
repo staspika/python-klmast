@@ -11,7 +11,7 @@ class Tilstand(object):
      Lagres i masteobjekt via metoden mast.lagre_lasttilfelle(lasttilfelle)
      """
 
-    def __init__(self, mast, i, lastsituasjon, vindretning, type, F=None, R=None, D=None,
+    def __init__(self, mast, i, lastsituasjon, vindretning, grensetilstand, F=None, R=None, D=None,
                  G=1, L=1, T=1, S=1, V=1, psi_T=1, psi_S=1, psi_V=1, iterasjon=0):
         """Initialiserer :class:`Tilstand`-objekt.
 
@@ -21,17 +21,18 @@ class Tilstand(object):
         - 1: Vind fra spor mot mast
         - 2: Vind parallelt spor
 
-        Alternativer for ``type``:
+        Alternativer for ``grensetilstand``:
 
         - 0: Bruddgrense
         - 1: Bruksgrense, forskyvning totalt
         - 2: Bruksgrense, forskyvning KL
+        - 3: Ulykkestilstand
 
         :param Mast mast: Aktuell mast
         :param Inndata i: Input fra bruker
-        :param dict lastsituasjon: Aktuell lastsituasjon
+        :param str lastsituasjon: Aktuell lastsituasjon
         :param int vindretning: Aktuell vindretning
-        :param int type: (Rad, etasje) for plassering i R- og D-matrise
+        :param int grensetilstand: (Rad, etasje) for plassering i R- og D-matrise
         :param list F: Liste med :class:`Kraft`-objekter påført systemet
         :param numpy.array R: Reaksjonskraftmatrise
         :param numpy.array D: Forskyvningsmatrise
@@ -49,10 +50,10 @@ class Tilstand(object):
         self.metode = "EC3" if i.ec3 else "NEK"
         self.lastsituasjon = lastsituasjon
         self.vindretning = vindretning
-        self.type = type
+        self.grensetilstand = grensetilstand
         self.iterasjon = iterasjon
 
-        if self.type == 0:
+        if self.grensetilstand==0 or self.grensetilstand==3:
             # Bruddgrensetilstand
             self.F = copy.copy(F)
             self.R = R
@@ -72,8 +73,8 @@ class Tilstand(object):
 
     def __repr__(self):
         K = self.K / 1000  # Konverterer M til [kNm] og F til [kN]
-        if self.type == 0:
-            rep = ""
+        rep = ""
+        if self.grensetilstand == 0 or self.grensetilstand == 3:
             rep += "Beregningsmetode: {}\n".format(self.metode)
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
                    "Vz = {:.3g} kN    N = {:.3g} kN    T = {:.3g} kNm\n". \
@@ -90,7 +91,6 @@ class Tilstand(object):
             rep += "Sum kapasiteter: {}%\n".format(self.My_kap * 100 + self.Mz_kap * 100 + self.N_kap * 100)
             rep += "Utnyttelsesgrad: {}%\n".format(self.utnyttelsesgrad * 100)
         else:
-            rep = ""
             rep += "Dy = {:.3f} mm    Dz = {:.3f} mm    phi = {:.3f}\n". \
                 format(self.K_D[0], self.K_D[1], self.K_D[2])
             rep += "My = {:.3g} kNm    Vy = {:.3g} kN    Mz = {:.3g} kNm    " \
@@ -101,6 +101,74 @@ class Tilstand(object):
             rep += "Vindretning = {}\n".format(self.vindretning)
 
         return rep
+
+    def _utnyttelsesgrad(self, i, mast, K):
+        """Beregner utnyttelsesgrad.
+
+        Funksjonen undersøker utnyttelsesgrad for alle relevante
+        bruddsituasjoner, og returnerer den høyeste verdien.
+
+        :param Inndata i: Input fra bruker
+        :param Mast mast: Aktuell mast
+        :param numpy.array K: Liste med dimensjonerende reaksjonskrefter
+        :return: Mastens utnyttelsesgrad
+        :rtype: :class:`float`
+        """
+
+        u = self.N_kap + self.My_kap + self.Mz_kap
+
+        L_e, A, B = self._beregn_momentfordeling()
+        L_cr = 2 * L_e
+        if i.avspenningsmast or i.fixavspenningsmast:
+            L_cr = L_e
+
+        # Konverterer [Nm] til [Nmm]
+        My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
+        Vy_Ed, Vz_Ed, N_Ed = abs(K[1]), abs(K[3]), abs(K[4])
+
+        X_y, lam_y = self._reduksjonsfaktor_knekking(mast, L_cr, 0)
+        X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
+        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B, My_Ed)
+
+        My_Rk, Mz_Rk, N_Rk = mast.My_Rk, mast.Mz_Rk, mast.A * mast.fy
+
+        k_yy, k_yz, k_zy, k_zz = self._interaksjonsfaktorer(mast, lam_y, N_Ed, X_y, X_z, lam_z)
+
+        # EC3, 6.3.3(4) ligning (6.61)
+        UR_y = (1.05 * N_Ed / (X_y * mast.A * mast.fy)) + \
+               k_yy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
+               k_yz * (1.05 * Mz_Ed / Mz_Rk)
+
+        # EC3, 6.3.3(4) ligning (6.62)
+        UR_z = (1.05 * N_Ed / (X_z * mast.A * mast.fy)) + \
+               k_zy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
+               k_zz * (1.05 * Mz_Ed / Mz_Rk)
+
+        UR_d, UR_g = 0, 0
+        if mast.type == "H":
+            # Diagonalstav:
+            N_Ed_d = max(math.sqrt(2)/2 * Vy_Ed, math.sqrt(2)/2 * Vz_Ed)
+            L_d = mast.k_d * mast.d_L
+            d_I = mast.d_I
+            alpha_d = 0.49
+            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
+            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
+            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
+            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
+            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
+
+            # Gurt (vinkelprofil)
+            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
+            L_g = mast.k_g * 1000
+            I_g = mast.Iy_profil
+            alpha_g = 0.34
+            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
+            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
+            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
+            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
+            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
+
+        return max(u, UR_y, UR_z, UR_d, UR_g)
 
     def _beregn_momentfordeling(self):
         """Beregner mastens momentfordeling.
@@ -261,70 +329,4 @@ class Tilstand(object):
 
         return k_yy, k_yz, k_zy, k_zz
 
-    def _utnyttelsesgrad(self, i, mast, K):
-        """Beregner utnyttelsesgrad.
 
-        Funksjonen undersøker utnyttelsesgrad for alle relevante
-        bruddsituasjoner, og returnerer den høyeste verdien.
-
-        :param Inndata i: Input fra bruker
-        :param Mast mast: Aktuell mast
-        :param list K: Liste med dimensjonerende reaksjonskrefter
-        :return: Mastens utnyttelsesgrad
-        :rtype: :class:`float`
-        """
-
-        u = self.N_kap + self.My_kap + self.Mz_kap
-
-        L_e, A, B = self._beregn_momentfordeling()
-        L_cr = 2 * L_e
-        if i.avspenningsmast or i.fixavspenningsmast:
-            L_cr = L_e
-
-        # Konverterer [Nm] til [Nmm]
-        My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
-        Vy_Ed, Vz_Ed, N_Ed = abs(K[1]), abs(K[3]), abs(K[4])
-
-        X_y, lam_y = self._reduksjonsfaktor_knekking(mast, L_cr, 0)
-        X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
-        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B, My_Ed)
-
-        My_Rk, Mz_Rk, N_Rk = mast.My_Rk, mast.Mz_Rk, mast.A * mast.fy
-
-        k_yy, k_yz, k_zy, k_zz = self._interaksjonsfaktorer(mast, lam_y, N_Ed, X_y, X_z, lam_z)
-
-        # EC3, 6.3.3(4) ligning (6.61)
-        UR_y = (1.05 * N_Ed / (X_y * mast.A * mast.fy)) + \
-               k_yy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
-               k_yz * (1.05 * Mz_Ed / Mz_Rk)
-
-        # EC3, 6.3.3(4) ligning (6.62)
-        UR_z = (1.05 * N_Ed / (X_z * mast.A * mast.fy)) + \
-               k_zy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
-               k_zz * (1.05 * Mz_Ed / Mz_Rk)
-
-        UR_d, UR_g = 0, 0
-        if mast.type == "H":
-            # Diagonalstav:
-            N_Ed_d = max(math.sqrt(2)/2 * Vy_Ed, math.sqrt(2)/2 * Vz_Ed)
-            L_d = mast.k_d * mast.d_L
-            d_I = mast.d_I
-            alpha_d = 0.49
-            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
-            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
-            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
-            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
-            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
-
-            # Gurt (vinkelprofil)
-            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
-            L_g = mast.k_g * 1000
-            I_g = mast.Iy_profil
-            alpha_g = 0.34
-            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
-            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
-            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
-            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
-            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
-
-        return max(u, UR_y, UR_z, UR_d, UR_g)
