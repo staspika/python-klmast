@@ -105,7 +105,7 @@ def laster_ledninger(i, sys, mastehoyde):
     F = []
 
     e_x_kl = -(fh + sh/2)
-
+    e_y_kl = 0
 
     # Sidekrefter KL pga. ledningsføring
     s_kl = sys.strekk_kl
@@ -115,24 +115,25 @@ def laster_ledninger(i, sys, mastehoyde):
 
     # Bidrag dersom siste før avspenning
     if i.siste_for_avspenning:
+        e_y_kl = i.traverslengde
         f_z_kl_avsp = s_kl * (arm/a2)
         if not i.master_bytter_side:
             f_z_kl_avsp = -f_z_kl_avsp
         F.append(Kraft(navn="Egenvekt: Utligger til avspenning", type=(0, 0),
                        f=(sys.utligger["Egenvekt"] * sms, 0, 0),
-                       e=(e_x_kl, 0, sys.utligger["Momentarm"] * sms)))
+                       e=(e_x_kl, e_y_kl, sys.utligger["Momentarm"] * sms)))
         F.append(Kraft(navn="Sidekraft: KL til avspenning", type=(1, 1),
                        f=(0, 0, f_z_kl + f_z_kl_avsp),
-                       e=(e_x_kl, 0, arm)))
+                       e=(e_x_kl, e_y_kl, arm)))
 
     # Bidrag fra n stk. KL/utligger
     if i.linjemast_utliggere == 1:
         F.append(Kraft(navn="Egenvekt: Utligger", type=(0, 0),
                        f=(sys.utligger["Egenvekt"] * sms, 0, 0),
-                       e=(e_x_kl, 0, sys.utligger["Momentarm"] * sms)))
+                       e=(e_x_kl, -e_y_kl, sys.utligger["Momentarm"] * sms)))
         F.append(Kraft(navn="Sidekraft: KL", type=(1, 1),
                        f=(0, 0, f_z_kl),
-                       e=(e_x_kl, 0, arm)))
+                       e=(e_x_kl, -e_y_kl, arm)))
     else:
         n = i.linjemast_utliggere
         F.append(Kraft(navn="Egenvekt: Utliggere", type=(0, 0),
@@ -322,14 +323,17 @@ def laster_ledninger(i, sys, mastehoyde):
 
     return F_statisk, F_dynamisk
 
-def ulykkeslast(i, sys):
+def ulykkeslast(i, sys, T):
     """Beregner ulykkeslast (torsjon) dersom brudd i én av to KL.
 
     :param Inndata i: Input fra bruker
     :param System sys: Data for ledninger og utligger
+    :param float T: Torsjonsmoment før påføring av ulykkeslast
     :return: Ulykkeslast
     :rtype: :class:`Kraft`
     """
+
+    F = []
 
     r = i.radius
     fh, sh = i.fh, i.sh
@@ -349,7 +353,9 @@ def ulykkeslast(i, sys):
         if not i.master_bytter_side:
             f_z_kl_avsp = -f_z_kl_avsp
 
-    f_z_ulykke = max(abs(f_z_kl), abs(f_z_kl + f_z_kl_avsp))
+    f_z_ulykke = max(abs(T + f_z_kl), abs(T + f_z_kl + f_z_kl_avsp))
 
-    return Kraft(navn="Sidekraft: KL (ulykke)", type=(1, 1),
-                          f=(0, 0, f_z_ulykke), e=(-(fh + sh / 2), i.traverslengde, arm))
+    F.append(Kraft(navn="Sidekraft: KL (ulykke)", type=(1, 1),
+                   f=(0, 0, f_z_ulykke), e=(-(fh + sh / 2), i.traverslengde, arm)))
+
+    return F

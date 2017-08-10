@@ -22,11 +22,7 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-
-    a = [1 , 34]
-    b= ["hei", "koakerf"]
-    c = a  +b
-    print(c)
+    pass
 
 
 

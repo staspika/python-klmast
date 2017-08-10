@@ -97,10 +97,6 @@ def beregn(i):
     # F_dynamisk_ledn = laster som varierer med én eller flere klimaforhold
     F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.h)
 
-    # Tilleggskraft ved ulykke
-    ulykkeslast = laster.ulykkeslast(i, sys)
-
-
     iterasjon = 0
     for mast in master:
 
@@ -186,102 +182,19 @@ def beregn(i):
         if i.siste_for_avspenning or i.linjemast_utliggere > 1:
             lastsituasjon = "Ulykkeslast"
             F_ulykke = []
-            F_ulykke.extend([f for f in F_statisk if not str.startswith(f.navn, "Sidekraft: KL")])
-            F_ulykke.append(ulykkeslast)
-
+            F_ulykke.extend([f for f in F_statisk if not f.navn.startswith("Sidekraft: KL")])
             R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
+
+            # Tilleggskraft ved ulykke
+            ulykkeslast = laster.ulykkeslast(i, sys, numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
+            R_ulykke += _beregn_reaksjonskrefter(ulykkeslast)
+
+
             t = tilstand.Tilstand(mast, i, lastsituasjon, 0,
                                   grensetilstand=3, F=F_ulykke, R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
 
             iterasjon += 1
-
-
-        """
-        F.extend(klima.isogsno_last(i, sys))
-
-        for vindretning in range(3):
-
-            # Setter på vindlast med korrekt lastretning ift. vindretning
-            F.extend(klima.vindlast_mast(i, mast, vindretning))
-            F.extend(klima.vindlast_ledninger(i, sys, vindretning))
-
-            # Sidekrefter til beregning av utliggerens deformasjonsbidrag
-            sidekrefter_strekk = []
-            sidekrefter_sno = []
-            sidekrefter_vind = []
-            for j in F:
-                if j.navn in lister.sidekraftbidrag_strekk:
-                    sidekrefter_strekk.append(j.f[2])
-                elif j.navn in lister.sidekraftbidrag_sno:
-                    sidekrefter_sno.append(j.f[2])
-                elif j.navn in lister.sidekraftbidrag_vind:
-                    sidekrefter_vind.append(j.f[2])
-
-            R_0 = _beregn_reaksjonskrefter(F)
-            D_0 = _beregn_deformasjoner(i, mast, F)
-            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_strekk, 1)
-            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_sno, 3)
-            D_0 += _beregn_sidekraftbidrag(sys, sidekrefter_vind, 4)
-
-            if i.linjemast_utliggere == 2:
-                # Nullstiller T og phi for tilfelle linjemast med dobbel utligger
-                R_0[:, :, 5], D_0[:, :, 2] = 0, 0
-
-            lastsituasjoner, lastfaktorer = lister.hent_lastkombinasjoner(i.ec3)
-
-            for lastsituasjon in lastsituasjoner:
-                # Dimensjonerende krefter i bruddgrensetilstand
-                psi_T = lastsituasjoner.get(lastsituasjon)["psi_T"]
-                psi_S = lastsituasjoner.get(lastsituasjon)["psi_S"]
-                psi_V = lastsituasjoner.get(lastsituasjon)["psi_V"]
-                R = numpy.zeros((5, 8, 6))
-                for G in lastfaktorer["G"]:
-                    # Egenvekt
-                    R[0, :, :] = R_0[0, :, :] * G
-                    for L in lastfaktorer["L"]:
-                        # Strekk
-                        R[1, :, :] = R_0[1, :, :] * L
-                        for T in lastfaktorer["T"]:
-                            # Temperatur
-                            R[2, :, :] = R_0[2, :, :] * psi_T * T
-                            for S in lastfaktorer["S"]:
-                                # Snø
-                                R[3, :, :] = R_0[3, :, :] * psi_S * S
-                                for V in lastfaktorer["V"]:
-                                    # Vind
-                                    R[4, :, :] = R_0[4, :, :] * psi_V * V
-
-                                    t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 0,
-                                                          F=F, R=R, G=G, L=L, T=T, S=S, V=V,
-                                                          psi_T=psi_T, psi_S=psi_S, psi_V=psi_V,
-                                                          iterasjon=iterasjon)
-                                    mast.lagre_tilstand(t)
-
-                                    iterasjon += 1
-
-
-                # Bruksgrense, forskyvning totalt
-                R = numpy.zeros((5, 8, 6))
-                R[0:2, :, :] = R_0[0:2, :, :]
-                R[2, :, :] = R_0[2, :, :] * psi_T
-                R[3, :, :] = R_0[3, :, :] * psi_S
-                R[4, :, :] = R_0[4, :, :] * psi_V
-                D = numpy.zeros((5, 8, 3))
-                D[0:2, :, :] = D_0[0:2, :, :]
-                D[2, :, :] = D_0[2, :, :] * psi_T
-                D[3, :, :] = D_0[3, :, :] * psi_S
-                D[4, :, :] = D_0[4, :, :] * psi_V
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 1, R=R, D=D, iterasjon=iterasjon)
-                mast.lagre_tilstand(t)
-                # Bruksgrense, forskyvning KL
-                R[0:2, :, :], D[0:2, :, :] = 0, 0  # Nullstiller bidrag fra egenvekt og strekk
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning, 2, R=R, D=D, iterasjon=iterasjon)
-                mast.lagre_tilstand(t)
-            
-            iterasjon += 1
-            
-        """
 
     return master
 
@@ -309,7 +222,13 @@ def _beregn_reaksjonskrefter(F):
         R_0[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
         R_0[j.type[1], j.type[0], 3] = f[2]
         R_0[j.type[1], j.type[0], 4] = f[0]
-        R_0[j.type[1], j.type[0], 5] = abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1])
+        if j.navn.startswith("Sidekraft: KL"):
+            R_0[j.type[1], j.type[0], 5] = f[1] * (-j.e[2]) + f[2] * j.e[1]
+        else:
+            sign = numpy.sign(numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
+            sign = 1 if sign == 0 else sign
+            R_0[j.type[1], j.type[0], 5] = sign*(abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1]))
+
         R += R_0
 
     return R
@@ -339,7 +258,9 @@ def _beregn_deformasjoner(i, mast, F):
                 +_bjelkeformel_M(mast, j, fh_korrigert) )
 
         if mast.type == "bjelke":
-            D_0 += _torsjonsvinkel(mast, j, fh_korrigert)
+            sign = numpy.sign(numpy.sum(numpy.sum(D, axis=0), axis=0)[2])
+            sign = 1 if sign == 0 else sign
+            D_0 += _torsjonsvinkel(mast, j, fh_korrigert, sign)
 
         D += D_0
 
@@ -480,7 +401,7 @@ def _bjelkeformel_q(mast, j, fh):
     return D
 
 
-def _torsjonsvinkel(mast, j, fh):
+def _torsjonsvinkel(mast, j, fh, sign):
     """Beregner torsjonsvinkel i kontakttrådhøyde grunnet en eksentrisk horisontal last.
 
     Funksjonen beregner torsjonsvinkel i grader basert på følgende bjelkeformel:
@@ -491,6 +412,7 @@ def _torsjonsvinkel(mast, j, fh):
     :param Mast mast: Aktuell mast som beregnes
     :param Kraft j: Last som skal påføres ``mast``
     :param float fh: Kontakttrådhøyde :math:`[m]`
+    :param float sign: Fortegn for torsjonsmoment
     :return: Matrise med rotasjonsbidrag :math:`[^{\\circ}]`
     :rtype: :class:`numpy.array`
     """
@@ -499,7 +421,11 @@ def _torsjonsvinkel(mast, j, fh):
 
     if j.e[0] < 0:
 
-        T = (abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])) * 1000
+        if j.navn.startswith("Sidekraft: KL"):
+            T = (j.f[1] * -j.e[2] + j.f[2] * j.e[1]) * 1000
+        else:
+            T = sign*(abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])) * 1000
+
         E = mast.E
         G = mast.G
         I_T = mast.It

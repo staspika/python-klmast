@@ -212,9 +212,13 @@ class Tilstand(object):
                     M_punkt += abs(f[1] * j.e[0] ** 2)
                 M_sum += abs(f[1] * j.e[0])
 
-        L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
-        A = abs(M_fordelt_0 / M_sum)
-        B = 1 - A
+        if M_sum == 0:
+            L_e = 6000
+            A, B = 0.5, 0.5
+        else:
+            L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
+            A = abs(M_fordelt_0 / M_sum)
+            B = 1 - A
 
         return L_e, A, B
 

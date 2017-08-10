@@ -1135,7 +1135,7 @@ class Resultater(tk.Frame):
         self.tracer = self.M.mast_resultater.trace("w", self.callback_krefter)
 
 
-        self.kraftboks = tk.Text(hovedvindu, width=100, height=14)
+        self.kraftboks = tk.Text(hovedvindu, width=100, height=16)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
@@ -1221,8 +1221,9 @@ class Resultater(tk.Frame):
         K = mast.tilstand_Dz_kl_max.K / 1000
         for n in range(6):
             if n==5:
-                K = mast.tilstand_phi_kl_max.K / 1000
-            k = str(round(K[n], 1))
+                k = str(round(K[n], 2))
+            else:
+                k = str(round(K[n], 1))
             k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
         s += "\n"
@@ -1232,8 +1233,9 @@ class Resultater(tk.Frame):
         K = mast.tilstand_Dz_tot_max.K / 1000
         for n in range(6):
             if n==5:
-                K = mast.tilstand_phi_tot_max.K / 1000
-            k = str(round(K[n], 1))
+                k = str(round(K[n],2))
+            else:
+                k = str(round(K[n],1))
             k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
         s += "\n\n"
@@ -1248,15 +1250,15 @@ class Resultater(tk.Frame):
         s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
         s += "{}\n\n".format(vindretning)
 
+        T = round(mast.tilstand_T_max.K[5] / 1000, 2)
+        s += "Maksimal T ved -40C:  {} kNm\n".format(T)
+
         if mast.tilstand_T_max_ulykke is not None:
             T = round(mast.tilstand_T_max_ulykke.K[5] / 1000, 2)
-            s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n\n".format(T)
-        else:
-            T = round(mast.tilstand_T_max.K[5] / 1000, 2)
-            s += "Maksimal T ved -40C:  {} kNm\n\n".format(T)
+            s += "Maksimal T ved brudd i KL (ulykkeslast):  {} kNm\n".format(T)
 
         t =  mast.tilstand_My_max
-        s += "Lastfaktorer:\nEgenvekt: {}    Kabelstrekk: {}\n".format(t.faktorer["G"],
+        s += "\nLastfaktorer:\nEgenvekt: {}    Kabelstrekk: {}\n".format(t.faktorer["G"],
                                                                        t.faktorer["L"])
         s += "Temperatur: {:.4g}    Snø/is: {:.4g}    " \
              "Vind: {:.4g}\n\n".format(t.faktorer["T"]*t.faktorer["psi_T"],
@@ -1463,7 +1465,7 @@ class Bidrag(tk.Frame):
             elif j.type[1] == 4:
                 faktor = mast.tilstand_My_max.faktorer["V"] * mast.tilstand_My_max.faktorer["psi_V"]
 
-            R = self._beregn_reaksjonskrefter_enkeltvis(j)
+            R = self._beregn_reaksjonskrefter_enkeltvis(j, numpy.sign(mast.tilstand_My_max.K[5]))
             K = faktor * numpy.sum(numpy.sum(R, axis=0), axis=0) / 1000
 
             for n in range (6):
@@ -1478,10 +1480,11 @@ class Bidrag(tk.Frame):
         self.bidragsboks.insert("end", s)
 
 
-    def _beregn_reaksjonskrefter_enkeltvis(self, j):
+    def _beregn_reaksjonskrefter_enkeltvis(self, j, sign):
         """Beregner reaksjonskrefter ved masteinnspenning grunnet kraft ``j``.
 
-        :param list j: :class:`Kraft`-objekt påført systemet
+        :param Kraft j: :class:`Kraft`-objekt påført systemet
+        :param float sign: Angir fortegn på torsjonsmomentet
         :return: Matrise med reaksjonskrefter
         :rtype: :class:`numpy.array`
         """
@@ -1489,20 +1492,22 @@ class Bidrag(tk.Frame):
         # Initierer R-matrisen for reaksjonskrefter
         R = numpy.zeros((5, 8, 6))
 
-        R_0 = numpy.zeros((5, 8, 6))
         f = j.f
 
         if not numpy.count_nonzero(j.q) == 0:
             f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
 
         # Sorterer bidrag til reaksjonskrefter
-        R_0[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
-        R_0[j.type[1], j.type[0], 1] = f[1]
-        R_0[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
-        R_0[j.type[1], j.type[0], 3] = f[2]
-        R_0[j.type[1], j.type[0], 4] = f[0]
-        R_0[j.type[1], j.type[0], 5] = abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1])
-        R += R_0
+        R[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
+        R[j.type[1], j.type[0], 1] = f[1]
+        R[j.type[1], j.type[0], 2] = f[0] * (-j.e[1]) + f[1] * j.e[0]
+        R[j.type[1], j.type[0], 3] = f[2]
+        R[j.type[1], j.type[0], 4] = f[0]
+        if j.navn.startswith("Sidekraft: KL"):
+            R[j.type[1], j.type[0], 5] = f[1] * (-j.e[2]) + f[2] * j.e[1]
+        else:
+            sign = 1 if sign == 0 else sign
+            R[j.type[1], j.type[0], 5] = sign*(abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1]))
 
         return R
 

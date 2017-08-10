@@ -347,7 +347,6 @@ def hent_system(i):
     Ledning.sporhoyde_e = i.e
     Ledning.G_sno_lett = float(i.isklasse[i.isklasse.find("(")+1:i.isklasse.find("N")-1])
     Ledning.G_sno_tung = Ledning.G_sno_lett * 2
-    print(Ledning.G_sno_lett)
     Ledning.rho_sno_tung = 700
     Ledning.rho_sno_lett = 600
     Ledning.ec3 = i.ec3
