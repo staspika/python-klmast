@@ -389,6 +389,9 @@ def hent_system(i):
     Bz_II_10_49 = Loddavspent(navn="Bz II 10/49", type="Hengetråd",
                               G_0=4.69, d=4.5, A=9.6, L=L_h,
                               e=(e_x_ht, 0, arm))
+    Bz_II_10_49_35 = Loddavspent(navn="Bz II 10/49", type="Hengetråd",
+                                 G_0=10.69, d=4.5, A=9.6, L=L_h,
+                                 e=(e_x_ht, 0, arm))
     # Y-line
     L_y = 0
     e_x_yl = -(i.sh + i.fh)
@@ -399,6 +402,9 @@ def hent_system(i):
     Bz_II_35_7 = Loddavspent(navn="Bz II 35/7", type="Y-line",
                              G_0=3.1, d=7.5, A=34.36, L=L_y,
                              e=(e_x_yl, 0, arm))
+    Bz_II_35_7_25 = Loddavspent(navn="Bz II 35/7", type="Y-line",
+                                G_0=16.1, d=7.5, A=34.36, L=L_y,
+                                e=(e_x_yl, 0, arm))
     # Fixliner
     L_fix = 0
     e_x_fix = -(i.sh + i.fh)
@@ -504,9 +510,9 @@ def hent_system(i):
         utligger = utligger_s2x
 
     elif systemnavn == "25":
-        ledninger = [Bz_II_70_19, Ri_120_CuAg, Bz_II_10_49]
+        ledninger = [Bz_II_70_19, Ri_120_CuAg, Bz_II_10_49_35]
         if i.radius >= 1200:
-            ledninger.append(Bz_II_35_7)
+            ledninger.append(Bz_II_35_7_25)
         utligger = utligger_s2x
 
     else:  # System 35

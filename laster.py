@@ -109,7 +109,7 @@ def laster_ledninger(i, sys, mastehoyde):
 
     # Sidekrefter KL pga. ledningsføring
     s_kl = sys.strekk_kl
-    f_z_kl = s_kl * (a_mid/r + (B2 - B1)/a1 + (B2 - B1)/a2)
+    f_z_kl = s_kl * (a_mid/r + 0.5 * ((B2 - B1)/a1 + (B2 - B1)/a2))
     if not i.strekkutligger:
         f_z_kl = -f_z_kl
 
@@ -242,7 +242,7 @@ def laster_ledninger(i, sys, mastehoyde):
             # Egenvekt snø på ledning
             if T <= 0 and not ledning.type=="Hengetråd":
                 if i.ec3:
-                    G_sno = 2 + 0.5 * ledning.d
+                    G_sno = 2 + 0.5 * 1000 * ledning.d
                 else:
                     G_sno = sys.G_sno_tung if T == 0 else sys.G_sno_lett
                 f_x_sno = n * G_sno * L
@@ -279,7 +279,7 @@ def laster_ledninger(i, sys, mastehoyde):
                     f_z_side += n * s * ((sys.arm + 2 * ledning.e[2]) / L)
                 sidekraft = Kraft(navn="Sidekraft: {}".format(ledning.type),
                                   type=(rad, etasje), f=(0, 0, f_z_side),
-                                  e=ledning.e, T=T)
+                                  e=ledning.e, T=T, s=s)
                 F.append(sidekraft)
 
                 # Differansestrekk

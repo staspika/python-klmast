@@ -9,7 +9,7 @@ class Kraft(object):
     """Generell klasse for konsentrerte/fordelte laster."""
 
     def __init__(self, navn="", type=(0, 0), f=(0, 0, 0),
-                 q=(0, 0, 0), b=0, e=(0, 0, 0), T=None, vindretning=None):
+                 q=(0, 0, 0), b=0, e=(0, 0, 0), T=None, vindretning=None, s=None):
         """Initialiserer :class:`Kraft`-objekt.
 
         Alternativer for ``vindretning``:
@@ -32,6 +32,7 @@ class Kraft(object):
         :param tuple e: Eksentrisitet fra origo [x, y, z] :math:`[m]`
         :param int T: Temperatur ved forårsakende last :math:`^{\\circ}C`
         :param int vindretning: Vindretning ved forårsakende last
+        :param float s: Strekkraft i lastforårsakende ledning :math:`[N]`
         """
 
         self.navn = navn
@@ -42,7 +43,7 @@ class Kraft(object):
         self.e = numpy.array(e)
         self.T = T
         self.vindretning = vindretning
-
+        self.s = s
         if self.T is None and self.vindretning is None:
             self.statisk = True
         else:

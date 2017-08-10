@@ -102,7 +102,7 @@ def beregn_sikksakk(systemnavn, radius):
 
     B1 = 0
     B2 = 0
-    if r in sikksakk:
+    if str(r) in sikksakk:
         B1 = sikksakk[str(r)][0]
         B2 = sikksakk[str(r)][1]
 

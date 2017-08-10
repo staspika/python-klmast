@@ -32,7 +32,7 @@ class KL_mast(tk.Tk):
 
         # Range = [default, minste, storste]
         self.masteavstand_range = [63.0, 30.0, 75.0]
-        self.fh_range = [5.7, 4.8, 6.5]
+        self.fh_range = [5.6, 4.8, 6.5]
         self.sh_range = [1.6, 0.2, 2.0]
         self.e_range = [0.0, -5.9, 3.0]
         self.sms_range = [3.5, 2.0, 6.0]
@@ -1450,8 +1450,13 @@ class Bidrag(tk.Frame):
             s += k.rjust(kolonnebredde)
         s += "\n{}\n".format("-"*(max_bredde_navn+1+kolonnebredde*len(kolonner)))
 
+        strekk_ledninger = {}
+
         for j in krefter_alfabetisk:
             s += j.navn.ljust(max_bredde_navn+1)
+
+            if j.s is not None:
+                strekk_ledninger[j.navn.split(": ")[1]] = j.s
 
             faktor = 1.0
             if j.type[1] == 0:
@@ -1476,6 +1481,15 @@ class Bidrag(tk.Frame):
                 k = "0" if (k == "0.0" or k == "-0.0") else k
                 s += k.rjust(kolonnebredde)
             s += "\n"
+
+        if strekk_ledninger:
+            s += "\n\nStrekk i fastavspente ledninger (uten lastfaktor):"
+            max_bredde_navn = 0
+            for navn in strekk_ledninger:
+                max_bredde_navn = len(navn) if len(navn) > max_bredde_navn else max_bredde_navn
+            for navn in strekk_ledninger:
+                s += "\n{}:".format(navn).ljust(max_bredde_navn+4)
+                s += "{:.2f} kN".format(strekk_ledninger[navn]/1000)
 
         self.bidragsboks.insert("end", s)
 
