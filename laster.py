@@ -275,6 +275,8 @@ def laster_ledninger(i, sys, mastehoyde):
 
                 # Sidekraft
                 f_z_side = n * s * L / r
+                if not i.strekkutligger:
+                    f_z_side = -f_z_side
                 if i.master_bytter_side:
                     f_z_side += n * s * ((sys.arm + 2 * ledning.e[2]) / L)
                 sidekraft = Kraft(navn="Sidekraft: {}".format(ledning.type),

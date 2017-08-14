@@ -61,7 +61,7 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengk
     return q_p, v_b, v_m, v_p, q_m
 
 
-def _c_alt(v_b_0, region, H):
+def c_alt(v_b_0, region, H):
     """ Beregner faktor for vindøkning med høyden over havet.
 
     :param v_b_0:

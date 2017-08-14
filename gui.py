@@ -9,6 +9,7 @@ from collections import OrderedDict
 from datetime import date
 import main
 import numpy
+import hjelpefunksjoner
 
 
 # Fonter

@@ -1,18 +1,18 @@
-*** Reaksjonskrefter for H5  (KL_mast, 9.8.2017)
-Banestrekning 0010 Oslo S, Mast nr. 0, Fundament nr. 0, Prosjektnummer 0
+*** Reaksjonskrefter for H6  (KL_mast, 10.8.2017)
+Banestrekning 0030 Alnabru, Mast nr. 1337, Fundament nr. 24, Prosjektnummer 24
 *** Systemkonfigurasjon SMS  - FH  - e-mål
 3.5
-5.7
+5.6
 0.0
 *** Bruddgrense    N (kN) - V (kN) - M (kNm)
-8.1
-4.4
-31.5
+25.7
+19.6
+161.2
 *** Bruksgrense 2  N (kN) - V (kN) - M (kNm)
-0.2
-2.1
-12.0
+2.0
+9.7
+77.2
 *** Bruksgrense 3  N (kN) - V (kN) - M (kNm)
-6.7
-3.1
-23.3
+20.9
+13.9
+115.0
