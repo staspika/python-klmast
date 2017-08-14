@@ -1140,21 +1140,34 @@ class Resultater(tk.Frame):
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
-
-        tk.Label(hovedvindu, text="Velg mastetype:",
+        tk.Label(hovedvindu, text="Faktorer for beregning av utnyttelsesgrad",
                  font=plain).grid(row=3, column=0)
-        tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
-                       variable=self.M.gittermast, value=True,
-                       command=self._skriv_master).grid(row=3, column=1)
-        tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
-                       variable=self.M.gittermast, value=False,
-                       command=self._skriv_master).grid(row=3, column=2)
-
-        tk.Label(hovedvindu, text="D = [mm]    phi = [grader]",
+        tk.Label(hovedvindu, text="M_cr = [kNm]    N_cr = [kN]",
                  font=italic).grid(row=4, column=0)
 
+        self.faktorboks_1 = tk.Text(hovedvindu, width=33, height=12)
+        self.faktorboks_1.grid(row=5, column=0, columnspan=1)
+        self.faktorboks_2 = tk.Text(hovedvindu, width=33, height=12)
+        self.faktorboks_2.grid(row=5, column=1, columnspan=1)
+        self.faktorboks_3 = tk.Text(hovedvindu, width=33, height=12)
+        self.faktorboks_3.grid(row=5, column=2, columnspan=1)
+        self._skriv_dimensjonerende_faktorer()
+
+
+        tk.Label(hovedvindu, text="Velg mastetype:",
+                 font=plain).grid(row=6, column=0)
+        tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
+                       variable=self.M.gittermast, value=True,
+                       command=self._skriv_master).grid(row=6, column=1)
+        tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
+                       variable=self.M.gittermast, value=False,
+                       command=self._skriv_master).grid(row=6, column=2)
+
+        tk.Label(hovedvindu, text="D = [mm]    phi = [grader]",
+                 font=italic).grid(row=7, column=0)
+
         self.masteboks = tk.Text(hovedvindu, width=100, height=18)
-        self.masteboks.grid(row=5, column=0, columnspan=3)
+        self.masteboks.grid(row=8, column=0, columnspan=3)
         self._skriv_master()
 
 
@@ -1173,6 +1186,7 @@ class Resultater(tk.Frame):
 
     def callback_krefter(self, *args):
         self._skriv_krefter()
+        self._skriv_dimensjonerende_faktorer()
 
     def lukk_resultater(self):
         self.M.mast_resultater.trace_vdelete("w", self.tracer)
@@ -1269,6 +1283,77 @@ class Resultater(tk.Frame):
                                        t.faktorer["V"]*t.faktorer["psi_V"])
 
         self.kraftboks.insert("end", s)
+
+    def _skriv_dimensjonerende_faktorer(self):
+        """Skriver dimensjonerende faktorer til tekstbokser (TIL VERIFIKASJONSFORMÅL)"""
+
+        if self.faktorboks_1.get(0.0) is not None:
+            self.faktorboks_1.delete(1.0, "end")
+        if self.faktorboks_2.get(0.0) is not None:
+            self.faktorboks_2.delete(1.0, "end")
+        if self.faktorboks_3.get(0.0) is not None:
+            self.faktorboks_3.delete(1.0, "end")
+
+        mast = None
+        for m in self.M.alle_master:
+            if m.navn==self.M.mast_resultater.get():
+                mast = m
+                break
+
+        if mast.type == "bjelke":
+
+            faktorer = sorted([key for key in mast.tilstand_My_max.dimensjonerende_faktorer])
+
+            faktorer_1 = faktorer [0:9]
+            faktorer_2 = faktorer[9:18]
+            faktorer_3 = faktorer[18::]
+
+            max_bredde_faktor_1 = 0
+            for g in faktorer:
+                max_bredde_faktor_1 = len(g) if len(g)>max_bredde_faktor_1 else max_bredde_faktor_1
+            max_bredde_faktor_2 = 0
+            for g in faktorer:
+                max_bredde_faktor_2 = len(g) if len(g)>max_bredde_faktor_2 else max_bredde_faktor_2
+            max_bredde_faktor_3 = 0
+            for g in faktorer:
+                max_bredde_faktor_3 = len(g) if len(g)>max_bredde_faktor_3 else max_bredde_faktor_3
+
+            kolonnebredde = 12
+
+            s_1 = "Faktor".ljust(max_bredde_faktor_1)
+            s_1 += "Verdi".rjust(kolonnebredde)
+            s_1 += "\n{}\n".format("-"*(max_bredde_faktor_1+1+kolonnebredde))
+            s_2 = "Faktor".ljust(max_bredde_faktor_2)
+            s_2 += "Verdi".rjust(kolonnebredde)
+            s_2 += "\n{}\n".format("-" * (max_bredde_faktor_2 + 1 + kolonnebredde))
+            s_3 = "Faktor".ljust(max_bredde_faktor_3)
+            s_3 += "Verdi".rjust(kolonnebredde)
+            s_3 += "\n{}\n".format("-" * (max_bredde_faktor_3 + 1 + kolonnebredde))
+
+            for key in faktorer_1:
+                val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
+                s_1 += key.ljust(max_bredde_faktor_1)
+                s_1 += str(round(val, 2)).rjust(kolonnebredde)
+                s_1 += "\n"
+            for key in faktorer_2:
+                val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
+                s_2 += key.ljust(max_bredde_faktor_2)
+                s_2 += str(round(val, 2)).rjust(kolonnebredde)
+                s_2 += "\n"
+            for key in faktorer_3:
+                val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
+                s_3 += key.ljust(max_bredde_faktor_3)
+                s_3 += str(round(val, 2)).rjust(kolonnebredde)
+                s_3 += "\n"
+        else:
+            s_1 = "\nKun aktiv for bjelkemaster.\n"
+            s_2 = ""
+            s_3 = ""
+
+        self.faktorboks_1.insert("end", s_1)
+        self.faktorboks_2.insert("end", s_2)
+        self.faktorboks_3.insert("end", s_3)
+
 
     def _skriv_master(self):
         self.masteboks.delete(1.0, "end")
