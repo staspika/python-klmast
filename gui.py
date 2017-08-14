@@ -1200,7 +1200,7 @@ class Resultater(tk.Frame):
         kolonnebredde = 8
 
         s = "Grensetilstand:".ljust(max_bredde_tilstand + 1)
-        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
+        kolonner = ("My", "Vy", "Mz", "Vz", "N", "T", "UR")
         for k in kolonner:
             s += k.rjust(kolonnebredde)
         s += "\n{}\n".format("-"*(max_bredde_tilstand+1+kolonnebredde*len(kolonner)))
@@ -1215,6 +1215,8 @@ class Resultater(tk.Frame):
                 k = str(round(K[n],1))
             k = "0" if (k == "0.0" or k == "-0.0") else k
             s += k.rjust(kolonnebredde)
+        UR = round(mast.tilstand_My_max.utnyttelsesgrad * 100, 1)
+        s += "{}%".format(UR).rjust(kolonnebredde)
         s += "\n"
 
         # (2) Bruksgrense (forskyvning KL)
