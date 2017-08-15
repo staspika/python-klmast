@@ -281,7 +281,7 @@ def laster_ledninger(i, sys, mastehoyde):
                     f_z_side += n * s * ((sys.arm + 2 * ledning.e[2]) / L)
                 sidekraft = Kraft(navn="Sidekraft: {}".format(ledning.type),
                                   type=(rad, etasje), f=(0, 0, f_z_side),
-                                  e=ledning.e, T=T, s=s)
+                                  e=ledning.e, T=T, s=n*s)
                 F.append(sidekraft)
 
                 # Differansestrekk

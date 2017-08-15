@@ -28,7 +28,7 @@ class KL_mast(tk.Tk):
         self.title("KL-mast")
 
         self.x, self.y = 1600, 900
-        self.geometry("{}x{}".format(self.x, self.y))
+        #self.geometry("{}x{}".format(self.x, self.y))
 
 
         # Range = [default, minste, storste]
@@ -1136,38 +1136,34 @@ class Resultater(tk.Frame):
         self.tracer = self.M.mast_resultater.trace("w", self.callback_krefter)
 
 
-        self.kraftboks = tk.Text(hovedvindu, width=100, height=16)
+        self.kraftboks = tk.Text(hovedvindu, width=96, height=15)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
         self._skriv_krefter()
 
-        tk.Label(hovedvindu, text="Faktorer for beregning av utnyttelsesgrad",
-                 font=plain).grid(row=3, column=0)
+        tk.Label(hovedvindu, text="Faktorer for utregning av UR",
+                 font=plain).grid(row=0, column=4)
         tk.Label(hovedvindu, text="M_cr = [kNm]    N_cr = [kN]",
-                 font=italic).grid(row=4, column=0)
+                 font=italic).grid(row=1, column=4)
 
-        self.faktorboks_1 = tk.Text(hovedvindu, width=33, height=12)
-        self.faktorboks_1.grid(row=5, column=0, columnspan=1)
-        self.faktorboks_2 = tk.Text(hovedvindu, width=33, height=12)
-        self.faktorboks_2.grid(row=5, column=1, columnspan=1)
-        self.faktorboks_3 = tk.Text(hovedvindu, width=33, height=12)
-        self.faktorboks_3.grid(row=5, column=2, columnspan=1)
+        self.faktorboks = tk.Text(hovedvindu, width=28, height=35)
+        self.faktorboks.grid(row=2, column=4, rowspan=6, sticky="N")
         self._skriv_dimensjonerende_faktorer()
 
 
         tk.Label(hovedvindu, text="Velg mastetype:",
-                 font=plain).grid(row=6, column=0)
+                 font=plain).grid(row=5, column=0)
         tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
                        variable=self.M.gittermast, value=True,
-                       command=self._skriv_master).grid(row=6, column=1)
+                       command=self._skriv_master).grid(row=5, column=1)
         tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
                        variable=self.M.gittermast, value=False,
-                       command=self._skriv_master).grid(row=6, column=2)
+                       command=self._skriv_master).grid(row=5, column=2)
 
         tk.Label(hovedvindu, text="D = [mm]    phi = [grader]",
-                 font=italic).grid(row=7, column=0)
+                 font=italic).grid(row=6, column=0)
 
-        self.masteboks = tk.Text(hovedvindu, width=100, height=18)
-        self.masteboks.grid(row=8, column=0, columnspan=3)
+        self.masteboks = tk.Text(hovedvindu, width=96, height=16)
+        self.masteboks.grid(row=7, column=0, columnspan=3)
         self._skriv_master()
 
 
@@ -1213,7 +1209,7 @@ class Resultater(tk.Frame):
 
         kolonnebredde = 8
 
-        s = "Grensetilstand:".ljust(max_bredde_tilstand + 1)
+        s = "Grensetilstand".ljust(max_bredde_tilstand + 1)
         kolonner = ("My", "Vy", "Mz", "Vz", "N", "T", "UR")
         for k in kolonner:
             s += k.rjust(kolonnebredde)
@@ -1287,12 +1283,8 @@ class Resultater(tk.Frame):
     def _skriv_dimensjonerende_faktorer(self):
         """Skriver dimensjonerende faktorer til tekstbokser (TIL VERIFIKASJONSFORMÅL)"""
 
-        if self.faktorboks_1.get(0.0) is not None:
-            self.faktorboks_1.delete(1.0, "end")
-        if self.faktorboks_2.get(0.0) is not None:
-            self.faktorboks_2.delete(1.0, "end")
-        if self.faktorboks_3.get(0.0) is not None:
-            self.faktorboks_3.delete(1.0, "end")
+        if self.faktorboks.get(0.0) is not None:
+            self.faktorboks.delete(1.0, "end")
 
         mast = None
         for m in self.M.alle_master:
@@ -1304,55 +1296,25 @@ class Resultater(tk.Frame):
 
             faktorer = sorted([key for key in mast.tilstand_My_max.dimensjonerende_faktorer])
 
-            faktorer_1 = faktorer [0:9]
-            faktorer_2 = faktorer[9:18]
-            faktorer_3 = faktorer[18::]
-
-            max_bredde_faktor_1 = 0
+            max_bredde_faktor = 0
             for g in faktorer:
-                max_bredde_faktor_1 = len(g) if len(g)>max_bredde_faktor_1 else max_bredde_faktor_1
-            max_bredde_faktor_2 = 0
-            for g in faktorer:
-                max_bredde_faktor_2 = len(g) if len(g)>max_bredde_faktor_2 else max_bredde_faktor_2
-            max_bredde_faktor_3 = 0
-            for g in faktorer:
-                max_bredde_faktor_3 = len(g) if len(g)>max_bredde_faktor_3 else max_bredde_faktor_3
+                max_bredde_faktor = len(g) if len(g)>max_bredde_faktor else max_bredde_faktor
 
             kolonnebredde = 12
 
-            s_1 = "Faktor".ljust(max_bredde_faktor_1)
-            s_1 += "Verdi".rjust(kolonnebredde)
-            s_1 += "\n{}\n".format("-"*(max_bredde_faktor_1+1+kolonnebredde))
-            s_2 = "Faktor".ljust(max_bredde_faktor_2)
-            s_2 += "Verdi".rjust(kolonnebredde)
-            s_2 += "\n{}\n".format("-" * (max_bredde_faktor_2 + 1 + kolonnebredde))
-            s_3 = "Faktor".ljust(max_bredde_faktor_3)
-            s_3 += "Verdi".rjust(kolonnebredde)
-            s_3 += "\n{}\n".format("-" * (max_bredde_faktor_3 + 1 + kolonnebredde))
+            s = "Faktor".ljust(max_bredde_faktor)
+            s += "Verdi".rjust(kolonnebredde)
+            s += "\n{}\n".format("-"*(max_bredde_faktor+kolonnebredde))
 
-            for key in faktorer_1:
+            for key in faktorer:
                 val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
-                s_1 += key.ljust(max_bredde_faktor_1)
-                s_1 += str(round(val, 2)).rjust(kolonnebredde)
-                s_1 += "\n"
-            for key in faktorer_2:
-                val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
-                s_2 += key.ljust(max_bredde_faktor_2)
-                s_2 += str(round(val, 2)).rjust(kolonnebredde)
-                s_2 += "\n"
-            for key in faktorer_3:
-                val = mast.tilstand_My_max.dimensjonerende_faktorer[key]
-                s_3 += key.ljust(max_bredde_faktor_3)
-                s_3 += str(round(val, 2)).rjust(kolonnebredde)
-                s_3 += "\n"
+                s += key.ljust(max_bredde_faktor)
+                s += str(round(val, 2)).rjust(kolonnebredde)
+                s += "\n"
         else:
-            s_1 = "\nKun aktiv for bjelkemaster.\n"
-            s_2 = ""
-            s_3 = ""
+            s = "\nKun aktiv for bjelkemaster.\n"
 
-        self.faktorboks_1.insert("end", s_1)
-        self.faktorboks_2.insert("end", s_2)
-        self.faktorboks_3.insert("end", s_3)
+        self.faktorboks.insert("end", s)
 
 
     def _skriv_master(self):
@@ -1365,21 +1327,21 @@ class Resultater(tk.Frame):
                 anbefalt_mast = mast
                 break
 
-        s = "\n\n"
+        s = "\n"
         if anbefalt_mast:
             s += "Anbefalt mast:  {}   ".format(anbefalt_mast.navn)
             UR = round(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100, 1)
-            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n\n".format(UR)
+            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n".format(UR)
         else:
-            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n\n"
+            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n"
 
-        max_bredde_navn = len("Navn:")
+        max_bredde_navn = len("Navn")
         for mast in masteliste:
             max_bredde_navn = len(mast.navn) if len(mast.navn)>max_bredde_navn else max_bredde_navn
 
         kolonnebredde = 10
 
-        s += "Navn:".ljust(max_bredde_navn + 1)
+        s += "Navn".ljust(max_bredde_navn + 1)
         kolonner = ("UR", "Dz(tot)", "Dz(KL)", "phi(tot)", "phi(KL)", "Max.høyde")
         for k in kolonner:
             if k=="Max.høyde":
@@ -1495,7 +1457,7 @@ class Bidrag(tk.Frame):
 
         self.tracer = self.M.mast_resultater.trace("w", self.callback_bidrag)
 
-        self.bidragsboks = tk.Text(hovedvindu, width=100, height=50)
+        self.bidragsboks = tk.Text(hovedvindu, width=86, height=40)
         self.bidragsboks.grid(row=2, column=0, columnspan=3)
 
         self._skriv_bidrag()
@@ -1532,7 +1494,7 @@ class Bidrag(tk.Frame):
 
         kolonnebredde = 8
 
-        s = "Navn:".ljust(max_bredde_navn+1)
+        s = "Navn".ljust(max_bredde_navn+1)
         kolonner = ("My", "Vy", "Mz", "Vz", "N", "T")
         for k in kolonner:
             s += k.rjust(kolonnebredde)
@@ -1571,13 +1533,18 @@ class Bidrag(tk.Frame):
             s += "\n"
 
         if strekk_ledninger:
-            s += "\n\nStrekk i fastavspente ledninger (uten lastfaktor):"
             max_bredde_navn = 0
             for navn in strekk_ledninger:
                 max_bredde_navn = len(navn) if len(navn) > max_bredde_navn else max_bredde_navn
+            kolonnebredde = 16
+            s += "\nLedning".ljust(max_bredde_navn)
+            s += "Strekkraft".rjust(kolonnebredde)
+            s += "\n{}\n".format("-" * (max_bredde_navn+kolonnebredde-1))
             for navn in strekk_ledninger:
-                s += "\n{}:".format(navn).ljust(max_bredde_navn+4)
-                s += "{:.2f} kN".format(strekk_ledninger[navn]/1000)
+                s += "{}".format(navn).ljust(max_bredde_navn)
+                faktor = mast.tilstand_My_max.faktorer["L"]
+                strekkraft = faktor * strekk_ledninger[navn]/1000
+                s += "{:.2f} kN\n".format(strekkraft).rjust(kolonnebredde)
 
         self.bidragsboks.insert("end", s)
 

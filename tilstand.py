@@ -118,7 +118,8 @@ class Tilstand(object):
 
         u = self.N_kap + self.My_kap + self.Mz_kap
 
-        L_e, A, B = self._beregn_momentfordeling()
+        A, B = self._beregn_momentfordeling()
+        L_e = mast.h * 1000  # [mm]
         L_cr = 2 * L_e
         if i.avspenningsmast or i.fixavspenningsmast:
             L_cr = L_e
@@ -193,54 +194,39 @@ class Tilstand(object):
     def _beregn_momentfordeling(self):
         """Beregner mastens momentfordeling.
 
-        Beregner ekvivalent mastelengde L_e,
-        samt andeler til kritisk moment. A gir
+        Beregner momentandeler til kritisk moment. A gir
         vindlastens, mens B angir punktlastenes
         andel av bidrag til kritisk moment.
 
-        :return: Ekvivalent mastelengde ``L_e`` :math:`[mm]`, momentandeler ``A`` og ``B``
-        :rtype: :class:`float`, :class:`float`, :class:`float`
+        :return: omentandeler ``A`` og ``B``
+        :rtype: :class:`float`, :class:`float`
         """
 
-        M_punkt, M_fordelt, M_fordelt_0, M_sum = 0, 0, 0, 0
+        M_total, M_vind = 0, 0
 
         # (0) Vind fra mast mot spor eller (1) fra spor mot mast
         if self.vindretning == 0 or 1:
+            M_total = self.K[0]
             for j in self.F:
-                f = j.f
                 if not numpy.count_nonzero(j.q) == 0:
-                    if self.vindretning == 0:
-                        f = numpy.array([0, 0, j.q[2] * j.b])
-                    elif self.vindretning == 1:
-                        f = numpy.array([0, 0, j.q[2] * j.b])
-                    M_fordelt_0 += abs(f[2] * j.e[0])
-                    M_fordelt += abs(f[2] *j.e[0] ** 2)
-                else:
-                    M_punkt += abs(f[2] * j.e[0] ** 2)
-                M_sum += abs(f[2] * j.e[0])
+                    M_vind += j.q[2] * j.b * (-j.e[0])
+            M_vind *= self.faktorer["V"] * self.faktorer["psi_V"]
 
         # (2) Vind parallelt spor
         elif self.vindretning == 2:
-            # Beregner ekvivalent mastelengde
+            M_total = self.K[2]
             for j in self.F:
-                f = j.f
                 if not numpy.count_nonzero(j.q) == 0:
-                    f = numpy.array([0, j.q[1] * j.b, 0])
-                    M_fordelt_0 += abs(f[2] * j.e[0])
-                    M_fordelt += abs(f[1] * j.e[0] ** 2)
-                else:
-                    M_punkt += abs(f[1] * j.e[0] ** 2)
-                M_sum += abs(f[1] * j.e[0])
+                    M_vind += j.q[1] * j.b * (-j.e[0])
+            M_vind *= self.faktorer["V"] * self.faktorer["psi_V"]
 
-        if M_sum == 0:
-            L_e = 6000
-            A, B = 0.5, 0.5
-        else:
-            L_e = 1000 * (M_punkt + M_fordelt) / M_sum  # [mm]
-            A = abs(M_fordelt_0 / M_sum)
-            B = 1 - A
+        A = abs(M_vind/M_total)
+        B = 1 -A
 
-        return L_e, A, B
+        self.dimensjonerende_faktorer["M_total"] = M_total / 1000
+        self.dimensjonerende_faktorer["M_vind"] = M_vind / 1000
+
+        return A, B
 
     def _reduksjonsfaktor_knekking(self, mast, L_cr, akse):
         """Beregner faktorer for aksialkraftkapasitet etter EC3, 6.3.1.2.
@@ -306,9 +292,9 @@ class Tilstand(object):
 
             M_cr = A * M_cr_vind + B * M_cr_punkt
 
-            self.dimensjonerende_faktorer["M_cr_vind"] = M_cr_vind / 1000  # [kNm]
-            self.dimensjonerende_faktorer["M_cr_punkt"] = M_cr_punkt / 1000  # [kNm]
-            self.dimensjonerende_faktorer["M_cr"] = M_cr / 1000  # [kNm]
+            self.dimensjonerende_faktorer["M_cr_vind"] = M_cr_vind / 10**6  # [kNm]
+            self.dimensjonerende_faktorer["M_cr_punkt"] = M_cr_punkt / 10**6  # [kNm]
+            self.dimensjonerende_faktorer["M_cr"] = M_cr / 10**6  # [kNm]
 
             lam_LT = math.sqrt(mast.My_Rk / M_cr)
             lam_0, beta = 0.4, 0.75
@@ -319,9 +305,6 @@ class Tilstand(object):
                     X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
                     X_LT = X_LT if X_LT <= 1.0 else 1.0
 
-                    self.dimensjonerende_faktorer["alpha_LT"] = alpha_LT
-                    self.dimensjonerende_faktorer["phi_LT"] = phi_LT
-
                 else:  # bjelke
                     alpha_LT = 0.34
                     phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0) + beta * lam_LT**2)
@@ -329,13 +312,12 @@ class Tilstand(object):
                     if X_LT > min(1.0, (1 / lam_0 ** 2)):
                         X_LT = min(1.0, (1 / lam_0 ** 2))
 
-                    self.dimensjonerende_faktorer["alpha_LT"] = alpha_LT
-                    self.dimensjonerende_faktorer["phi_LT"] = phi_LT
+                self.dimensjonerende_faktorer["alpha_LT"] = alpha_LT
+                self.dimensjonerende_faktorer["phi_LT"] = phi_LT
 
             self.dimensjonerende_faktorer["lam_LT"] = lam_LT
             self.dimensjonerende_faktorer["lam_0"] = lam_0
             self.dimensjonerende_faktorer["beta"] = beta
-
 
         return X_LT
 
@@ -354,7 +336,7 @@ class Tilstand(object):
         :rtype: :class:`float`, :class:`float`, :class:`float`, :class:`float`
         """
 
-        k_yy = 0.6 * (1 - (lam_y - 0.2) * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
+        k_yy = 0.6 * (1 + (lam_y - 0.2) * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
         k_yy_max = 0.6 * (1 + 0.8 * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
         if k_yy > k_yy_max:
             k_yy = k_yy_max
