@@ -22,7 +22,23 @@ def print_memory_info():
 
 
 if __name__ == "__main__":
-    pass
+    from tkinter import *
+
+    root = Tk()
+    sv = StringVar()
+
+
+    def callback():
+        print(sv.get())
+        return False
+
+
+    e = Entry(root, textvariable=sv, validate="focusout", validatecommand=callback)
+    e.grid()
+    e = Entry(root)
+    e.grid()
+    root.mainloop()
+
 
 
 

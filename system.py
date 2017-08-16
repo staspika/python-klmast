@@ -260,7 +260,7 @@ class Fastavspent(Ledning):
 
         return {"s": s, "s_diff": s_diff}
 
-    def _newtonraphson(self, L, G_sno, T, H_0=None):
+    def _newtonraphson(self, L, G_sno, T, H_0=None, debug=False):
         """Numerisk løsning av kabelstrekk i fastavspente ledninger.
 
         Følgende likevektsligning ligger til grunn for beregningene:
@@ -282,6 +282,7 @@ class Fastavspent(Ledning):
         :param float L: Masteavstand :math:`[m]`
         :param float alpha: Lengdeutvidelseskoeffisient :math:`[\\frac{1}{^{\\circ}C}]`
         :param float T: Lufttemperatur :math:`[^{\\circ}C]`
+        :param Boolean debug: Returnerer data for debugging i form av en :class:`tuple`
         :return: Endelig kabelstrekk ``H_x`` :math:`[N]`
         :rtype: :class:`float`
         """
@@ -321,6 +322,9 @@ class Fastavspent(Ledning):
             delta_H_x = r / r_d
 
             iterasjoner += 1
+
+        if debug:
+            return H_x, H_list, iterasjoner
 
         return H_x
 

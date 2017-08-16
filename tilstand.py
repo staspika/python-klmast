@@ -12,7 +12,7 @@ class Tilstand(object):
      """
 
     def __init__(self, mast, i, lastsituasjon, vindretning, grensetilstand, F=None, R=None, D=None,
-                 G=1, L=1, T=1, S=1, V=1, psi_T=1, psi_S=1, psi_V=1, iterasjon=0):
+                 G=1, L=1, T=1, S=1, V=1, psi_T=1, psi_S=1, psi_V=1, temp=5, iterasjon=0):
         """Initialiserer :class:`Tilstand`-objekt.
 
         Alternativer for ``vindretning``:
@@ -44,6 +44,7 @@ class Tilstand(object):
         :param float psi_T: Lastkombinasjonsfaktor temperatur
         :param float psi_S: Lastkombinasjonsfaktor snø/is
         :param float psi_V: Lastkombinasjonsfaktor vind
+        :param int T: Temperatur ved gitt lastsituasjon
         :param iterasjon: Iterasjon for utregning av aktuell :class:`Tilstand`
         """
 
@@ -51,6 +52,7 @@ class Tilstand(object):
         self.lastsituasjon = lastsituasjon
         self.vindretning = vindretning
         self.grensetilstand = grensetilstand
+        self.temp = temp
         self.iterasjon = iterasjon
 
         if self.grensetilstand==0 or self.grensetilstand==3:

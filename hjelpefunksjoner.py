@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import math
 import lister
 
-def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengkategori, z):
+def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, C_0, terrengkategori, z):
     """Beregner dimensjonerende vindkasthastighetstrykk mhp. Eurokode 0.
 
     :param float v_b_0 Referansevindhastighet for aktuell kommune :math:`[\frac{m}{s}]`
@@ -13,11 +13,17 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengk
     :param c_season: Årstidsfaktor
     :param c_alt: Nivåfaktor
     :param c_prob: Faktor dersom returperioden er mer enn 50 år
-    :param c_0: Terrengformfaktor
+    :param C_0: Terrengformfaktor
     :param terrengkategori: Terrengkategori
     :param float z: Høyde over bakken :math:`[m]`
-    :return: Vindkasthastighetstrykk :math:`[\\frac{N}{m^2}]`
-    :rtype: :class:`float`
+    :return: Vindkasthastighetstrykk :math:`q_p [\\frac{N}{m^2}]`,
+     basisvindhastighet :math:`v_b[\\frac{m}{s}]`,
+     middelvindhastighet :math:`v_m [\\frac{m}{s}]`,
+     vindhastighet svarende til vindkasthastighetstrykket :math:`v_p [\\frac{m}{s}]`,
+     vindhastighetstrykk :math:`q_m [\\frac{N}{m^2}]`,
+     turbulensintensitet :math:`I_v`, turbulensfaktor :math:`k_l`
+    :rtype: :class:`float`, :class:`float`, :class:`float`, :class:`float`,
+     :class:`float`, :class:`float`, :class:`float`
     """
 
     # Basisvindhastighet [m/s]
@@ -37,7 +43,7 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengk
         c_r = k_r * math.log(z / z_0)
 
     # Stedets middelvindhastighet [m/s]
-    v_m = c_r * c_0 * v_b
+    v_m = c_r * C_0 * v_b
 
     # Stedets vindhastighetstrykk [N/m^2]
     rho = 1.25                  # [kg/m^3] Luftens densitet
@@ -47,9 +53,9 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengk
     k_l = 1.0  # Turbulensintensiteten, anbefalt verdi er 1.0
     k_p = 3.5
     if z <= z_min:
-        I_v = k_l / (c_0 * math.log(z_min / z_0))
+        I_v = k_l / (C_0 * math.log(z_min / z_0))
     else:
-        I_v = k_l / (c_0 * math.log(z / z_0))
+        I_v = k_l / (C_0 * math.log(z / z_0))
 
 
     # Vindkasthastigheten
@@ -58,7 +64,7 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, c_0, terrengk
     # Vindkasthastighetstrykket
     q_p = q_m * (1 + 2 * k_p * I_v)  # [N/m^2]
 
-    return q_p, v_b, v_m, v_p, q_m
+    return q_p, v_b, v_m, v_p, q_m, I_v, k_l
 
 
 def c_alt(v_b_0, region, H):

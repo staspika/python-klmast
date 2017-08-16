@@ -93,6 +93,45 @@ def beregn(i):
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
 
+
+
+
+    """
+    # VERIFIKASJON AV STREKK I FASTAVSPENTE LEDNINGER
+    import matplotlib.pyplot as plt
+    strekkdata = {}
+
+    antall_ikkekonvergert = 0
+    #temperaturer = range(-40, 6)
+    temperaturer = (-40, -25, 0, 5)
+    lengder = [l/10 for l in range(300, 751)]
+
+    plt.figure()
+    x = range(1,1001)
+
+    for ledning in sys.ledninger:
+        if isinstance(ledning, system.Fastavspent):
+            namn = ledning.type + ": " + ledning.navn
+            strekkdata[namn] = {}
+            for T in temperaturer:
+                strekkdata[namn][str(T)] = {}
+                for L in lengder:
+                    strekkdata[namn][str(T)][str(L)] = ledning._newtonraphson(L=L, G_sno=0, T=T,
+                                                                              debug=True)
+                    if isinstance(strekkdata[namn][str(T)][str(L)], tuple):
+                        antall_ikkekonvergert += 1
+                        H_x = strekkdata[namn][str(T)][str(L)][1]
+                        plt.plot(x, H_x)
+
+    plt.show()
+
+    print("\nIkke-konvergerte beregninger: {}\n".format(antall_ikkekonvergert))
+    """
+
+
+
+
+
     # F_statisk_ledn = laster uavhengige av temperatur, snø og vind
     # F_dynamisk_ledn = laster som varierer med én eller flere klimaforhold
     F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.h)
@@ -111,11 +150,11 @@ def beregn(i):
             psi_T = lastsituasjoner.get(lastsituasjon)["psi_T"]
             psi_S = lastsituasjoner.get(lastsituasjon)["psi_S"]
             psi_V = lastsituasjoner.get(lastsituasjon)["psi_V"]
-            T = lastsituasjoner.get(lastsituasjon)["T"]
+            temp = lastsituasjoner.get(lastsituasjon)["T"]
 
             # F_T = klimaavhengige laster ved gitt temperatur
             F_T = []
-            F_T.extend([f for f in F_dynamisk if f.T==T or f.T==None])
+            F_T.extend([f for f in F_dynamisk if f.T==temp or f.T==None])
 
             # 0: Vind fra mast mot spor
             # 1: Vind fra spor mot mast
@@ -150,7 +189,7 @@ def beregn(i):
                                     t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning,
                                                           grensetilstand=0, F=F, R=R, G=G, L=L,
                                                           T=T, S=S, V=V, psi_T=psi_T, psi_S=psi_S,
-                                                          psi_V=psi_V, iterasjon=iterasjon)
+                                                          psi_V=psi_V, temp=temp, iterasjon=iterasjon)
                                     mast.lagre_tilstand(t)
 
                                     iterasjon += 1

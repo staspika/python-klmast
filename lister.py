@@ -204,6 +204,7 @@ terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
 regioner = {"Sør-Norge ekskl. Nord-Trøndelag": {"H_0": 900, "H_topp": 1500},
             "Nord-Trøndelag, Nordland, Troms": {"H_0": 700, "H_topp": 1300},
                          "Finnmark, Svalbard": {"H_0": 400, "H_topp": 1000}}
+regioner_list = ["Sør-Norge ekskl. Nord-Trøndelag", "Nord-Trøndelag, Nordland, Troms", "Finnmark, Svalbard"]
 
 # Sidekrefter som gir bidrag til utliggerdeformasjon
 sidekraftbidrag_strekk = ["Strekk: Bæreline", "Strekk: Kontakttråd"]
@@ -237,7 +238,7 @@ def hent_lastkombinasjoner(ec3):
     else:
         # Lastsituasjoner og faktorer ihht. NEK (bransjestandard)
         lastsituasjoner = {"Maksimal temperaturlast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0, "T": -40},
-                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0, "T": -25},
+                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0, "T": 5},
                            "Maksimal snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0, "T": 0},
                            "Kombinert vind- og snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0.5, "T": -25}}
         lastfaktorer = {"G": (1.3, 1.0), "L": (1.3, 0), "T": (1.3, 0),

@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     ###################################################################
 
-    print("Velkommen til Bane NORs fantastiske nye beregningsverktøy!")
+    print("\nVelkommen til Bane NORs fantastiske nye beregningsverktøy!\n")
 
     values = []
 
@@ -51,11 +51,13 @@ if __name__ == "__main__":
         i = inndata.Inndata(ini)
         master = beregning.beregn(i)
 
+
     for mast in master:
         mast.sorter(0)
     master_sortert = sorted(master, key=lambda mast:mast.bruddgrense[0].utnyttelsesgrad, reverse=True)
     for mast in master_sortert:
         print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
+    print()
 
     mast = None
     for m in master_sortert:
@@ -63,13 +65,14 @@ if __name__ == "__main__":
         if m.navn == "H5":
             mast = m
 
+    """
     mast.sorter_grenseverdier()
     print()
     print("Anbefalt mast:")
     print()
     print(mast)
     print()
-
+    """
 
     ###################################################################
 

@@ -89,8 +89,6 @@ class KL_mast(tk.Tk):
         self.a2 = tk.DoubleVar()
         self.delta_h1 = tk.DoubleVar()
         self.delta_h2 = tk.DoubleVar()
-        self.referansevindhastighet = tk.DoubleVar()
-        self.kastvindhastighet = tk.DoubleVar()
         self.vindkasthastighetstrykk = tk.DoubleVar()
 
         # Geometri
@@ -159,8 +157,6 @@ class KL_mast(tk.Tk):
                                      ("hogfjellsgrense", self.hogfjellsgrense.get()),
                                      ("a1", self.a1.get()), ("a2", self.a2.get()),
                                      ("delta_h1", self.delta_h1.get()), ("delta_h2", self.delta_h2.get()),
-                                     ("referansevindhastighet", self.referansevindhastighet.get()),
-                                     ("kastvindhastighet", self.kastvindhastighet.get()),
                                      ("vindkasthastighetstrykk", self.vindkasthastighetstrykk.get()*1000)])
         cfg["Geometri"] = OrderedDict([("h", self.h.get()), ("hfj", self.hfj.get()),
                                        ("hf", self.hf.get()), ("hj", self.hj.get()),
@@ -183,7 +179,6 @@ class KL_mast(tk.Tk):
 
 
 
-
 class Hovedvindu(tk.Frame):
     """Vindu for hovedprogram."""
 
@@ -199,39 +194,36 @@ class Hovedvindu(tk.Frame):
         self._alternativ_funksjon = tk.IntVar()
 
         # Hjelpevariabler, vind
-        self.refvindhastighet = tk.IntVar()
+        self.referansevindhastighet = tk.IntVar()
         self.c_dir = tk.DoubleVar()
         self.c_season = tk.DoubleVar()
         self.c_alt = tk.DoubleVar()
-        self.tregrense = tk.IntVar()
+        self.region = tk.StringVar()
+        self.H = tk.IntVar()
         self.c_prob = tk.DoubleVar()
         self.overgangssoner = tk.BooleanVar()
         self.terrengruhetskategori = tk.IntVar()
         self.z = tk.IntVar()
-        self.Iv = tk.DoubleVar()
-        self.k_l = tk.DoubleVar()
         self.C_0 = tk.DoubleVar()
 
         # Hjelpevariabel, resultater
         self.mast_resultater = tk.StringVar()
         self.gittermast = tk.BooleanVar()
 
-
         # initierer
         self._mastefelt.set(0)
         self._alternative_mastefunksjoner.set(False)
         self._alternativ_funksjon.set(0)
-        self.refvindhastighet.set(22)
+        self.referansevindhastighet.set(22)
         self.c_dir.set(1.0)
         self.c_season.set(1.0)
         self.c_alt.set(1.0)
-        self.tregrense.set(900)
+        self.region.set("Sør-Norge ekskl. Nord-Trøndelag")
+        self.H.set(900)
         self.c_prob.set(1.00)
         self.overgangssoner.set(False)
         self.terrengruhetskategori.set(2)
         self.z.set(10)
-        self.Iv.set(0.19)
-        self.k_l.set(1)
         self.C_0.set(1)
         self.mast_resultater.set(lister.master_list[5])
         self.gittermast.set(True)
@@ -243,9 +235,6 @@ class Hovedvindu(tk.Frame):
 
         # Kopi av inndataobjekt fra beregning
         self.i = None
-
-
-
 
 
         #--------------------------------------Info--------------------------------------
@@ -430,7 +419,7 @@ class Hovedvindu(tk.Frame):
         tk.Label(system, text="Radius:", font=plain).grid(row=1, column=0)
         self.master.radius.set(lister.radius_list[11])
         radius_menu = tk.OptionMenu(system, self.master.radius, *lister.radius_list)
-        radius_menu.config(font=plain, width=7)
+        radius_menu.config(font=plain, width=8)
         radius_menu.grid(row=1, column=0, sticky="E")
         tk.Label(system, text="[m]", font=plain).grid(row=1, column=1, sticky="W")
 
@@ -472,17 +461,17 @@ class Hovedvindu(tk.Frame):
                  .format(self.master.masteavstand_range[2]), font=italic)\
                  .grid(row=5, column=0, sticky="W", columnspan=2)
 
-        # vind
-        self.master.referansevindhastighet.set(22.0)
-        self.master.kastvindhastighet.set(33.7)
-        self.master.vindkasthastighetstrykk.set(0.71)
+        # klima
+        self.master.vindkasthastighetstrykk.set(710)
         klima_btn = tk.Button(system, text="Klima", font=bold, width=12,
                              command=self._klima)
         klima_btn.grid(row=6, column=0, sticky="W")
-        self.master.vindkasthastighetstrykk.set(0.71)
-        tk.Label(system, text="(Vindkasthastighetstrykk = {} kN/m^2)"
-                 .format(self.master.vindkasthastighetstrykk.get()), font=italic) \
-            .grid(row=7, column=0, columnspan=1, sticky="W")
+        self.vk_label = tk.Label(system, text="(Vindkasthastighetstrykk = {:.2f} kN/m^2)"
+                                                .format(self.master.vindkasthastighetstrykk.get()/1000), font=italic)
+        self.vk_label.grid(row=7, column=0, columnspan=1, sticky="W")
+        self.master.vindkasthastighetstrykk.trace("w", lambda *args:
+                                                  self.vk_label.config(text="(Vindkasthastighetstrykk = {:.2f} kN/m^2)"
+                                                  .format(self.master.vindkasthastighetstrykk.get()/1000)))
 
         # --------------------------------Geometriske data--------------------------------
         geom_data = tk.LabelFrame(hoyre, text="System", font=bold)
@@ -748,52 +737,76 @@ class Klima(tk.Frame):
         # v_b,0
         tk.Label(refvind_frame, text="v_b,0:",
                  font=plain).grid(row=0, column=0, sticky="W")
-        self.refvind_spinbox = tk.Spinbox(refvind_frame, from_=22, to=30, width=10)
+        self.refvind_spinbox = tk.Spinbox(refvind_frame, from_=20, to=30, width=10)
         self.refvind_spinbox.delete(0, "end")
-        self.refvind_spinbox.insert(0, int(self.M.refvindhastighet.get()))
-        self.refvind_spinbox.config(font=plain, state="readonly")
+        self.refvind_spinbox.insert(0, int(self.M.referansevindhastighet.get()))
+        self.refvind_spinbox.config(font=plain, state="readonly",
+                                    command=lambda: self.M.referansevindhastighet.set(self.refvind_spinbox.get()))
         self.refvind_spinbox.grid(row=0, column=1, sticky="W")
         tk.Label(refvind_frame, text="[m/s]", font=plain).grid(row=0, column=2, sticky="W")
 
         # --------------------------------c-faktorer--------------------------------
         c_faktorer = tk.LabelFrame(self, text="Faktorer som påvirker basisvindhastigheten", font=bold)
         c_faktorer.grid(row=1, column=0, sticky="W")
+        c_faktorer.columnconfigure(0, weight=1)
+        c_faktorer.columnconfigure(1, weight=49)
 
         # c_dir
         tk.Label(c_faktorer, text="c_dir:",
-                 font=plain).grid(row=0, column=0, sticky="W")
+                 font=italic).grid(row=0, column=0, sticky="W")
         self.c_dir_spinbox = tk.Spinbox(c_faktorer, values=(0.8, 0.9, 1.0), width=10)
         self.c_dir_spinbox.delete(0, "end")
         self.c_dir_spinbox.insert(0, float(self.M.c_dir.get()))
-        self.c_dir_spinbox.config(font=plain, state="readonly")
+        self.c_dir_spinbox.config(font=plain, state="readonly",
+                                  command=lambda: self.M.c_dir.set(self.c_dir_spinbox.get()))
+
         self.c_dir_spinbox.grid(row=0, column=1, sticky="W")
 
         # c_season
         tk.Label(c_faktorer, text="c_season:",
-                 font=plain).grid(row=1, column=0, sticky="W")
+                 font=italic).grid(row=1, column=0, sticky="W")
         self.c_season_spinbox = tk.Spinbox(c_faktorer, values=(0.8, 0.9, 1.0), width=10)
         self.c_season_spinbox.delete(0, "end")
         self.c_season_spinbox.insert(0, float(self.M.c_season.get()))
-        self.c_season_spinbox.config(font=plain, state="readonly")
+        self.c_season_spinbox.config(font=plain, state="readonly",
+                                     command=lambda: self.M.c_season.set(self.c_season_spinbox.get()))
         self.c_season_spinbox.grid(row=1, column=1, sticky="W")
-
-        # c_alt
-        tk.Label(c_faktorer, text="c_alt:",
-                 font=plain).grid(row=2, column=0, sticky="W")
-        self.M.c_alt.set(1.0)
-        c_alt_entry = tk.Entry(c_faktorer, textvariable=self.M.c_alt, width=10, state="readonly")
-        c_alt_entry.config(font=plain)
-        c_alt_entry.grid(row=2, column=1, sticky="W")
 
         # c_prob
         tk.Label(c_faktorer, text="c_prob:",
-                 font=plain).grid(row=3, column=0, sticky="W")
+                 font=italic).grid(row=2, column=0, sticky="W")
         self.c_prob_spinbox = tk.Spinbox(c_faktorer, from_=0.8, to=1.0, increment=0.01,
                                         repeatinterval=50, width=10)
         self.c_prob_spinbox.delete(0,"end")
         self.c_prob_spinbox.insert(0, float(self.M.c_prob.get()))
-        self.c_prob_spinbox.config(font=plain, state="readonly")
-        self.c_prob_spinbox.grid(row=3, column=1, sticky="W")
+        self.c_prob_spinbox.config(font=plain, state="readonly",
+                                   command=lambda: self.M.c_prob.set(self.c_prob_spinbox.get()))
+        self.c_prob_spinbox.grid(row=2, column=1, sticky="W")
+
+        # --------------------------------Høydefaktor--------------------------------
+        c_alt_frame = tk.Frame(c_faktorer, relief="groove", bd=1)
+        c_alt_frame.grid(row=3, column=0, columnspan=2, sticky="W")
+        tk.Label(c_alt_frame, text="c_alt: ", font=italic).grid(row=0, column=0, sticky="W")
+        self.c_alt_entry = tk.Entry(c_alt_frame, width=11, state="readonly")
+        self.c_alt_entry.config(font=plain)
+        self.c_alt_entry.grid(row=0, column=1, sticky="W")
+        self.regioner_menu = tk.OptionMenu(c_alt_frame, self.M.region,
+                                                   *lister.regioner_list)
+        self.regioner_menu.config(font=plain, width=28)
+        self.regioner_menu.grid(row=0, column=2)
+        tk.Label(c_alt_frame, text="Stedshøyde:", font=plain).grid(row=1, column=0, sticky="W")
+        self.H_spinbox = tk.Spinbox(c_alt_frame, from_=lister.regioner[self.M.region.get()]["H_0"],
+                                    to=lister.regioner[self.M.region.get()]["H_topp"], increment=50,
+                                    repeatinterval=50, width=6)
+        self.H_spinbox.delete(0, "end")
+        self.H_spinbox.insert(0, int(self.M.H.get()))
+        self.H_spinbox.config(font=plain, state="readonly", command=lambda *args: self.M.H.set(self.H_spinbox.get()))
+        self.H_spinbox.grid(row=1, column=1, sticky="W")
+        tk.Label(c_alt_frame, text="[m]", font=plain).grid(row=1, column=1, sticky="E")
+        self.H_label = tk.Label(c_alt_frame, font=plain,
+                                text="(Tregrensa = {} m.o.h.)".format(lister.regioner[self.M.region.get()]["H_0"]))
+        self.H_label.grid(row=1, column=2, sticky="E")
+
 
         # -------------------------------Terrengfaktorer-------------------------------
         terrengfaktorer = tk.LabelFrame(self, text="Faktorer (terrengfaktorer) som påvirker"
@@ -801,9 +814,9 @@ class Klima(tk.Frame):
         terrengfaktorer.grid(row=1, column=1, sticky="W")
 
         # overgangssoner
-        overgangssoner = tk.Checkbutton(terrengfaktorer, text="Overgangssoner",
+        overgangssoner = tk.Checkbutton(terrengfaktorer, text="Overgangssoner (INAKTIV)",
                                                 font=plain, variable=self.M.overgangssoner,
-                                                onvalue=True, offvalue=False)
+                                                onvalue=True, offvalue=False, state="disabled")
         overgangssoner.grid(row=0, column=0, sticky="W")
 
         # terrengruhetskategori
@@ -822,24 +835,9 @@ class Klima(tk.Frame):
                                     repeatinterval=50, width=10)
         self.z_spinbox.delete(0, "end")
         self.z_spinbox.insert(0, int(self.M.z.get()))
-        self.z_spinbox.config(font=plain, state="readonly")
+        self.z_spinbox.config(font=plain, state="readonly",
+                              command=lambda: self.M.z.set(self.z_spinbox.get()))
         self.z_spinbox.grid(row=2, column=1)
-
-        # turbulensintensitet Iv
-        tk.Label(terrengfaktorer, text="Turbulensintensitet Iv:",
-                 font=plain).grid(row=3, column=0, sticky="W")
-        self.M.Iv.set(0.19)
-        Iv_entry = tk.Entry(terrengfaktorer, textvariable=self.M.Iv, width=10, state="readonly")
-        Iv_entry.config(font=plain)
-        Iv_entry.grid(row=4, column=0)
-
-        # turbulensfaktor k_l
-        tk.Label(terrengfaktorer, text="Turbulensfaktor k_l:",
-                 font=plain).grid(row=3, column=1)
-        self.M.k_l.set(1)
-        Iv_entry = tk.Entry(terrengfaktorer, textvariable=self.M.k_l, width=10, state="readonly")
-        Iv_entry.config(font=plain)
-        Iv_entry.grid(row=4, column=1)
 
         # terrengformfaktor C_0
         tk.Label(terrengfaktorer, text="Terrengformfaktor C_0:",
@@ -848,50 +846,47 @@ class Klima(tk.Frame):
                                       increment=0.1, repeatinterval=100, width=10)
         self.C_0_spinbox.delete(0, "end")
         self.C_0_spinbox.insert(0, float(self.M.C_0.get()))
-        self.C_0_spinbox.config(font=plain, state="readonly")
+        self.C_0_spinbox.config(font=plain, state="readonly",
+                                command=lambda: self.M.C_0.set(self.C_0_spinbox.get()))
         self.C_0_spinbox.grid(row=4, column=2)
 
-        # -------------------------------MANUELLE VERDIER-------------------------------
-        # Midlertidig implementasjon for å kunne endre vindlast ved beregninger
-        manuelle_verdier = tk.LabelFrame(self, text="MANUELLE VERDIER", font=bold)
-        manuelle_verdier.grid(row=2, column=0, columnspan=2, sticky="W")
+        # -------------------------------BEREGNEDE VERDIER-------------------------------
 
-        # referansevindhastighet v_b,0
-        tk.Label(manuelle_verdier, text="Referansevindhastighet v_b,0:",
-                 font=plain).grid(row=0, column=0, sticky="W")
-        refvind_entry = tk.Entry(manuelle_verdier, textvariable=self.M.master.referansevindhastighet, width=10)
-        refvind_entry.config(font=plain)
-        refvind_entry.grid(row=0, column=1, sticky="E")
-        tk.Label(manuelle_verdier, text="[m/s]",
-                 font=plain).grid(row=0, column=2, sticky="W")
+        # turbulensintensitet I_v
+        tk.Label(terrengfaktorer, text="Turbulensintensitet I_v:",
+                 font=plain).grid(row=3, column=0, sticky="W")
+        self.I_v_entry = tk.Entry(terrengfaktorer, width=10, state="readonly")
+        self.I_v_entry.config(font=plain)
+        self.I_v_entry.grid(row=4, column=0)
 
-        # kastvindhastighet
-        tk.Label(manuelle_verdier, text="Kastvindhastighet:",
-                 font=plain).grid(row=1, column=0, sticky="W")
-        kastvind_entry = tk.Entry(manuelle_verdier, textvariable=self.M.master.kastvindhastighet, width=10)
-        kastvind_entry.config(font=plain)
-        kastvind_entry.grid(row=1, column=1, sticky="E")
-        tk.Label(manuelle_verdier, text="[m/s]",
-                 font=plain).grid(row=1, column=2, sticky="W")
+        # turbulensfaktor k_l
+        tk.Label(terrengfaktorer, text="Turbulensfaktor k_l:",
+                 font=plain).grid(row=3, column=1)
+        self.k_l_entry = tk.Entry(terrengfaktorer, width=10, state="readonly")
+        self.k_l_entry.config(font=plain)
+        self.k_l_entry.grid(row=4, column=1)
 
-        # vindkasthastighetstrykk
-        tk.Label(manuelle_verdier, text="Vindkasthastighetstrykk:",
-                 font=plain).grid(row=2, column=0, sticky="W")
-        vindkast_entry = tk.Entry(manuelle_verdier, textvariable=self.M.master.vindkasthastighetstrykk, width=10)
-        vindkast_entry.config(font=plain)
-        vindkast_entry.grid(row=2, column=1, sticky="E")
-        tk.Label(manuelle_verdier, text="[kN/m^2]",
-                 font=plain).grid(row=2, column=2, sticky="W")
+        beregnede_verdier = tk.LabelFrame(self, text="Beregnede vindparametre", font=bold)
+        beregnede_verdier.grid(row=2, column=0, columnspan=1, sticky="W")
+        self.beregnede_verdier_label = tk.Label(beregnede_verdier, font=plain, justify="left", height=6)
+        self.beregnede_verdier_label.grid(row=0, column=0, sticky="W")
+
+        # vindkasthastighetstrykk q_p
+        brukes_frame = tk.LabelFrame(self, text="Brukes i beregninger", font=bold)
+        brukes_frame.grid(row=2, column=1, columnspan=2, sticky="W")
+        self.q_p_label = tk.Label(brukes_frame, font=bold)
+        self.q_p_label.grid(row=0, column=0, sticky="W")
 
         # isklasse
-        tk.Label(manuelle_verdier, text="Isklasse:",
-                 font=plain).grid(row=3, column=0)
-        self.isklasse_menu = tk.OptionMenu(manuelle_verdier, self.M.master.isklasse,
-                                                   *lister.isklasse_list)
-        self.isklasse_menu.config(font=plain, width=12)
-        self.isklasse_menu.grid(row=3, column=1)
-        tk.Label(manuelle_verdier, text="(Kun gjeldende ved NEK-beregning)",
-                 font=italic).grid(row=4, column=0, columnspan=2, sticky="E")
+        tk.Label(brukes_frame, text="                         Isklasse:", font=bold).grid(row=1, column=0, sticky="W")
+        self.isklasse_menu = tk.OptionMenu(brukes_frame, self.M.master.isklasse, *lister.isklasse_list)
+        self.isklasse_menu.config(font=bold, width=12)
+        self.isklasse_menu.grid(row=1, column=0, sticky="E")
+
+        self._beregn_c_alt()
+        self._beregn_klimaverdier()
+
+
 
         # -------------------------------Lukk vindu------------------------------
         lukk = tk.Frame(self)
@@ -899,19 +894,92 @@ class Klima(tk.Frame):
         lukk_btn = tk.Button(lukk, text="Lukk vindu", font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5)
 
+
+        # tracers
+        self.referansevindhastighet_tracer = self.M.referansevindhastighet.trace("w", self._beregn_klimaverdier)
+        self.c_dir_tracer = self.M.c_dir.trace("w", self._beregn_klimaverdier)
+        self.c_season_tracer = self.M.c_season.trace("w", self._beregn_klimaverdier)
+        self.region_tracer = self.M.region.trace("w", self._sett_H)
+        self.H_tracer = self.M.H.trace("w", self._beregn_c_alt)
+        self.c_alt_tracer = self.M.c_alt.trace("w", self._beregn_klimaverdier)
+        self.c_prob_tracer = self.M.c_prob.trace("w", self._beregn_klimaverdier)
+        self.terrengruhetskategori_tracer = self.M.terrengruhetskategori.trace("w", self._beregn_klimaverdier)
+        self.z_tracer = self.M.z.trace("w", self._beregn_klimaverdier)
+        self.C_0_tracer = self.M.C_0.trace("w", self._beregn_klimaverdier)
+
+    def _sett_H(self, *args):
+        self.H_spinbox.config(state="normal")
+        self.H_spinbox.config(from_=lister.regioner[self.M.region.get()]["H_0"],
+                              to=lister.regioner[self.M.region.get()]["H_topp"])
+        self.M.H.set(self.H_spinbox.get())
+        self.H_spinbox.config(state="readonly")
+        self.H_label.config(text="(Tregrensa = {} m.o.h.)".format(lister.regioner[self.M.region.get()]["H_0"]))
+
+    def _beregn_c_alt(self, *args):
+        """Beregner og lagrer høydefaktor c_alt"""
+
+        v_b_0 = self.M.referansevindhastighet.get()
+        region = self.M.region.get()
+        H = self.M.H.get()
+
+        c_alt = hjelpefunksjoner.c_alt(v_b_0, region, H)
+        self.M.c_alt.set(c_alt)
+
+        self.c_alt_entry.config(state="normal")
+        self.c_alt_entry.delete(0, "end")
+        self.c_alt_entry.insert(0, round(c_alt, 2))
+        self.c_alt_entry.config(state="readonly")
+
+    def _beregn_klimaverdier(self, *args):
+        """Beregner øvrige klimaverdier."""
+
+        v_b_0 = self.M.referansevindhastighet.get()
+        c_dir = self.M.c_dir.get()
+        c_season = self.M.c_season.get()
+        c_alt = self.M.c_alt.get()
+        c_prob = self.M.c_prob.get()
+        C_0 = self.M.C_0.get()
+        terrengkategori = self.M.terrengruhetskategori.get()
+        z = self.M.z.get()
+
+        q_p, v_b, v_m, v_p, q_m, I_v, k_l = hjelpefunksjoner.vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt,
+                                                                                     c_prob, C_0, terrengkategori, z)
+
+        self.I_v_entry.config(state="normal")
+        self.I_v_entry.delete(0, "end")
+        self.I_v_entry.insert(0, round(I_v, 2))
+        self.I_v_entry.config(state="readonly")
+        self.k_l_entry.config(state="normal")
+        self.k_l_entry.delete(0, "end")
+        self.k_l_entry.insert(0, round(k_l, 2))
+        self.k_l_entry.config(state="readonly")
+
+        tekst = "Basisvindhastighet  v_b = {:.1f} m/s\n".format(v_b)
+        tekst += "Middelvindhastighet  v_m = {:.1f} m/s\n".format(v_m)
+        tekst += "Vindhastighet svarende til\nvindkasthastighetstrykket  v_p = {:.1f} m/s\n".format(v_p)
+        tekst += "Vindhastighetstrykk  q_m = {:.2f} kN/m^2".format(q_m / 1000)
+        self.beregnede_verdier_label.config(text=tekst)
+
+        tekst = "Vindkasthastighetstrykk  q_p = {:.2f} kN/m^2".format(q_p / 1000)
+        self.q_p_label.config(text=tekst)
+
+        self.M.master.vindkasthastighetstrykk.set(q_p)
+
     def _lukk_vindu(self):
         """Lagrer verdier fra spinboxer og lukker vindu."""
 
-        self.M.refvindhastighet.set(self.refvind_spinbox.get())
-        self.M.c_dir.set(self.c_dir_spinbox.get())
-        self.M.c_season.set(self.c_season_spinbox.get())
-        self.M.c_prob.set(self.c_prob_spinbox.get())
-        self.M.z.set(self.z_spinbox.get())
-        self.M.C_0.set(self.C_0_spinbox.get())
+        self.M.referansevindhastighet.trace_vdelete("w", self.referansevindhastighet_tracer)
+        self.M.c_dir.trace_vdelete("w", self.c_dir_tracer)
+        self.M.c_season.trace_vdelete("w", self.c_season_tracer)
+        self.M.region.trace_vdelete("w", self.region_tracer)
+        self.M.H.trace_vdelete("w", self.H_tracer)
+        self.M.c_alt.trace_vdelete("w", self.c_alt_tracer)
+        self.M.c_prob.trace_vdelete("w", self.c_prob_tracer)
+        self.M.terrengruhetskategori.trace_vdelete("w", self.terrengruhetskategori_tracer)
+        self.M.z.trace_vdelete("w", self.z_tracer)
+        self.M.C_0.trace_vdelete("w", self.C_0_tracer)
 
-        # lukker vindu
         self.master.destroy()
-
 
 
 class Avansert(tk.Frame):
@@ -978,24 +1046,26 @@ class Avansert(tk.Frame):
         bardun_checkbtn.grid(row=4, column=0, columnspan=3, sticky="W")
 
         # differansestrekk
-        autodiff_checkbtn = tk.Checkbutton(alternativer, text="Automatisk beregning av differansestrekk",
+        differansestrekk_frame = tk.Frame(alternativer, relief="groove", bd=1)
+        differansestrekk_frame.grid(row=5, column=0, columnspan=3)
+        autodiff_checkbtn = tk.Checkbutton(differansestrekk_frame, text="Automatisk beregning av differansestrekk",
                                          font=plain, variable=self.M.master.auto_differansestrekk,
                                          onvalue=True, offvalue=False)
-        autodiff_checkbtn.grid(row=5, column=0, columnspan=3, sticky="W")
-        tk.Label(alternativer, text="   Differansestrekk:",
-                 font=plain).grid(row=6, column=0, sticky="E")
-        self.differansestrekk_spinbox = tk.Spinbox(alternativer, from_=0.0, to=2.0,
+        autodiff_checkbtn.grid(row=0, column=0, columnspan=3, sticky="W")
+        tk.Label(differansestrekk_frame, text="Differansestrekk:",
+                 font=plain).grid(row=1, column=0, sticky="E")
+        self.differansestrekk_spinbox = tk.Spinbox(differansestrekk_frame, from_=0.0, to=2.0,
                                                    increment=0.05, width=10)
         self.differansestrekk_spinbox.delete(0, "end")
         self.differansestrekk_spinbox.insert(0, float(self.M.master.differansestrekk.get()))
         self.differansestrekk_spinbox.config(font=plain, state="readonly")
-        self.differansestrekk_spinbox.grid(row=6, column=1, sticky="E")
+        self.differansestrekk_spinbox.grid(row=1, column=1, sticky="E")
         tk.Label(alternativer, text="[kN]",
-                 font=plain).grid(row=6, column=2, sticky="W")
+                 font=plain).grid(row=1, column=2, sticky="W")
 
         # høydedifferanse
         alternativer_2 = tk.Frame(alternativer, relief="groove", bd=1)
-        alternativer_2.grid(row=7, column=0, columnspan=3)
+        alternativer_2.grid(row=6, column=0, columnspan=3)
         tk.Label(alternativer_2, text="Ledningers midlere innfestingshøyde i \n"
                                       "aktuell mast i forhold til...",
                 font=plain).grid(row=0, column=0, columnspan=3)
@@ -1133,7 +1203,9 @@ class Resultater(tk.Frame):
         system_menu.config(font=plain, width=7)
         system_menu.grid(row=1, column=2, sticky="W")
 
-        self.tracer = self.M.mast_resultater.trace("w", self.callback_krefter)
+
+        # tracer
+        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", self._callback_krefter)
 
 
         self.kraftboks = tk.Text(hovedvindu, width=96, height=15)
@@ -1180,12 +1252,12 @@ class Resultater(tk.Frame):
                              font=bold, command=self.lukk_resultater)
         lukk_btn.pack(padx=20, pady=5, side="left")
 
-    def callback_krefter(self, *args):
+    def _callback_krefter(self, *args):
         self._skriv_krefter()
         self._skriv_dimensjonerende_faktorer()
 
     def lukk_resultater(self):
-        self.M.mast_resultater.trace_vdelete("w", self.tracer)
+        self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
         self.master.destroy()
 
     def _skriv_krefter(self):
@@ -1254,13 +1326,14 @@ class Resultater(tk.Frame):
         s += "\n\n"
 
         lastsituasjon = mast.tilstand_My_max.lastsituasjon
+        temp = mast.tilstand_My_max.temp
         vindretning = "vind fra mast mot spor"
         if mast.tilstand_My_max.vindretning == 1:
             vindretning = "vind fra spor mot mast"
         elif mast.tilstand_My_max.vindretning == 2:
             vindretning = "vind parallelt spor"
 
-        s += "Dimensjonerende lastsituasjon:  {}, ".format(lastsituasjon)
+        s += "Dimensjonerende lastsituasjon:  {} (T = {}C), ".format(lastsituasjon, temp)
         s += "{}\n\n".format(vindretning)
 
         T = round(mast.tilstand_T_max.K[5] / 1000, 2)
@@ -1455,7 +1528,10 @@ class Bidrag(tk.Frame):
         system_menu.config(font=plain, width=7)
         system_menu.grid(row=1, column=2, sticky="W")
 
-        self.tracer = self.M.mast_resultater.trace("w", self.callback_bidrag)
+
+        # tracer
+        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", self._callback_bidrag)
+
 
         self.bidragsboks = tk.Text(hovedvindu, width=86, height=40)
         self.bidragsboks.grid(row=2, column=0, columnspan=3)
@@ -1466,11 +1542,11 @@ class Bidrag(tk.Frame):
                              font=bold, command=self.lukk_bidrag)
         lukk_btn.pack(padx=5, pady=5, side="right")
 
-    def callback_bidrag(self, *args):
+    def _callback_bidrag(self, *args):
         self._skriv_bidrag()
 
     def lukk_bidrag(self):
-        self.M.mast_resultater.trace_vdelete("w", self.tracer)
+        self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
         self.master.destroy()
 
     def _skriv_bidrag(self):
