@@ -31,22 +31,6 @@ class KL_mast(tk.Tk):
         #self.geometry("{}x{}".format(self.x, self.y))
 
 
-        # Range = [default, minste, storste]
-        self.masteavstand_range = [63.0, 30.0, 75.0]
-        self.fh_range = [5.6, 4.8, 6.5]
-        self.sh_range = [1.6, 0.2, 2.0]
-        self.e_range = [0.0, -5.9, 3.0]
-        self.sms_range = [3.5, 2.0, 6.0]
-        self.h_range = [8.0, 1.5, 17.0]
-        self.hfj_type = "fjern-/AT-ledning"
-        self.hfj_range = [8.5, 4.8, 19.0]
-        self.hf_type = "forbigangs-/fiberoptisk ledning"
-        self.hf_range = [7.8, 4.8, 15.5]
-        self.hj_range = [7.0, 4.8, 15.5]
-        self.hr_range = [7.3, 4.8, 15.5]
-
-
-
         # --- Variabeloversikt ---
 
         # Info
@@ -84,7 +68,6 @@ class KL_mast(tk.Tk):
         # System
         self.systemnavn = tk.StringVar()
         self.radius = tk.IntVar()
-        self.hogfjellsgrense = tk.BooleanVar()
         self.a1 = tk.DoubleVar()
         self.a2 = tk.DoubleVar()
         self.delta_h1 = tk.DoubleVar()
@@ -154,10 +137,9 @@ class KL_mast(tk.Tk):
                                           ("differansestrekk", self.differansestrekk.get()*1000)])
         cfg["System"] = OrderedDict([("systemnavn", self.systemnavn.get()),
                                      ("radius", self.radius.get()),
-                                     ("hogfjellsgrense", self.hogfjellsgrense.get()),
                                      ("a1", self.a1.get()), ("a2", self.a2.get()),
                                      ("delta_h1", self.delta_h1.get()), ("delta_h2", self.delta_h2.get()),
-                                     ("vindkasthastighetstrykk", self.vindkasthastighetstrykk.get()*1000)])
+                                     ("vindkasthastighetstrykk", self.vindkasthastighetstrykk.get())])
         cfg["Geometri"] = OrderedDict([("h", self.h.get()), ("hfj", self.hfj.get()),
                                        ("hf", self.hf.get()), ("hj", self.hj.get()),
                                        ("hr", self.hr.get()), ("fh", self.fh.get()),
@@ -188,10 +170,50 @@ class Hovedvindu(tk.Frame):
         tk.Frame.__init__(self, *args, **kwargs)
         self.pack(fill="both")
 
+        # Initialiserer primærvariabler
+        self.master.banestrekning.set(lister.kilometer_list[0])
+        self.master.km.set(lister.kilometer[lister.kilometer_list[0]][0])
+        self.master.prosjektnr.set(0)
+        self.master.mastenr.set(0)
+        self.master.signatur.set("ANONYM")
+        today = date.today()
+        self.master.dato.set("{}.{}.{}".format(today.day, today.month, today.year))
+        self.master.avstand_fixpunkt.set(700)
+        self.master.strekkutligger.set(True)
+        self.master.matefjern_antall.set(1)
+        self.master.at_type.set(lister.at_list[0])
+        self.master.jord_type.set(lister.jord_list[0])
+        self.master.systemnavn.set(lister.system_list[0])
+        self.master.radius.set(lister.radius_list[11])
+        self.master.a1.set(63.0)
+        self.master.a2.set(63.0)
+        self.master.vindkasthastighetstrykk.set(710)
+        self.master.h.set(8.0)
+        self.master.hfj.set(10.0)
+        self.master.hf.set(7.8)
+        self.master.hj.set(7.0)
+        self.master.hr.set(7.2)
+        self.master.fh.set(5.6)
+        self.master.sh.set(1.6)
+        self.master.e.set(0.0)
+        self.master.sms.set(3.5)
+        self.master.avspenningsbardun.set(True)
+        self.master.auto_differansestrekk.set(True)
+        self.master.delta_h1.set(0.0)
+        self.master.delta_h2.set(0.0)
+        self.master.materialkoeff.set(1.05)
+        self.master.traverslengde.set(0.6)
+        self.master.ec3.set(True)
+        self.master.isklasse.set(lister.isklasse_list[2])
+        self.master.stromavtaker_type.set(lister.stromavtaker_list[2])
+        self.master.brukerdefinert_last.set(False)
+
         # Hjelpevariabler, hovedvindu
         self._mastefelt = tk.IntVar()
         self._alternative_mastefunksjoner = tk.BooleanVar()
         self._alternativ_funksjon = tk.IntVar()
+        self._hoyfjellsgrense = tk.BooleanVar()
+        self._samme_avstand_a = tk.BooleanVar()
 
         # Hjelpevariabler, vind
         self.referansevindhastighet = tk.IntVar()
@@ -214,6 +236,8 @@ class Hovedvindu(tk.Frame):
         self._mastefelt.set(0)
         self._alternative_mastefunksjoner.set(False)
         self._alternativ_funksjon.set(0)
+        self._hoyfjellsgrense.set(False)
+        self._samme_avstand_a.set(True)
         self.referansevindhastighet.set(22)
         self.c_dir.set(1.0)
         self.c_season.set(1.0)
@@ -245,14 +269,12 @@ class Hovedvindu(tk.Frame):
                  font=banner, fg="blue").grid(row=0, column=0, sticky="W", columnspan=4)
 
         # banestrekning
-        self.master.banestrekning.set(lister.kilometer_list[0])
         tk.Label(info, text="Banestrekning:", font=plain).grid(row=1, column=0, sticky="E")
         strekning_menu = tk.OptionMenu(info, self.master.banestrekning, *lister.kilometer_list)
         strekning_menu.config(font=plain)
         strekning_menu.grid(row=1, column=1, sticky="EW")
 
         # km
-        self.master.km.set(lister.kilometer[lister.kilometer_list[0]][0])
         tk.Label(info, text="Km:", font=plain).grid(row=1, column=2, sticky="E")
         km_entry = tk.Entry(info, textvariable=self.master.km, bg="red")
         km_entry.config(font=plain)
@@ -260,27 +282,22 @@ class Hovedvindu(tk.Frame):
         createToolTip(self.master, km_entry, "km")
 
         # prosjektnr
-        self.master.prosjektnr.set(0)
         tk.Label(info, text="Prosj.nr:", font=plain).grid(row=0, column=4, sticky="E")
         prosj_entry = tk.Entry(info, textvariable=self.master.prosjektnr, bg="red")
         prosj_entry.config(font=plain)
         prosj_entry.grid(row=0, column=5, sticky="W")
 
         # mastenr
-        self.master.mastenr.set(0)
         tk.Label(info, text="Mastenr:", font=plain).grid(row=1, column=4, sticky="E")
         mastenr_entry = tk.Entry(info, textvariable=self.master.mastenr, bg="red")
         mastenr_entry.config(font=plain)
         mastenr_entry.grid(row=1, column=5, sticky="W")
 
         # signatur
-        self.master.signatur.set("ANONYM")
         tk.Label(info, text="Sign.:", font=plain).grid(row=0, column=6, sticky="E")
         tk.Entry(info, textvariable=self.master.signatur, bg="red").grid(row=0, column=7, sticky="W")
 
         # dato
-        today = date.today()
-        self.master.dato.set("{}.{}.{}".format(today.day, today.month, today.year))
         tk.Label(info, text="Dato:", font=plain).grid(row=0, column=8, sticky="E")
         dato_entry = tk.Entry(info, textvariable=self.master.dato, state="readonly")
         dato_entry.config(font=plain)
@@ -317,12 +334,13 @@ class Hovedvindu(tk.Frame):
         tk.Radiobutton(mastefelt, text="Siste seksjonsmast før avspenning", font=plain,
                        variable=self._mastefelt, value=2).pack(anchor="w")
         tk.Label(mastefelt, text="Avstand til fixpunkt:", font=plain).pack(anchor="w", side="left")
-        self.master.avstand_fixpunkt.set(700)
         self.fixavstand_spinbox = tk.Spinbox(mastefelt, from_=0.0, to=800, increment=25,
-                                               width=10, repeatinterval=100)
+                                             width=10, font=plain, repeatinterval=100,
+                                             command=lambda: self.master.avstand_fixpunkt.set(
+                                                 self.fixavstand_spinbox.get()))
         self.fixavstand_spinbox.delete(0,"end")
         self.fixavstand_spinbox.insert(0, self.master.avstand_fixpunkt.get())
-        self.fixavstand_spinbox.config(font=plain, state="readonly")
+        self.fixavstand_spinbox.config(state="readonly")
         self.fixavstand_spinbox.pack(anchor="e", side="left", padx=5, pady=8)
         tk.Label(mastefelt, text="[m]", font=plain).pack(anchor="e", side="left")
 
@@ -333,76 +351,73 @@ class Hovedvindu(tk.Frame):
                                                 font=plain, variable=self._alternative_mastefunksjoner,
                                                 onvalue=True, offvalue=False)
         alternative_funksjoner.pack(anchor="w")
-        tk.Radiobutton(mastefunksjoner, text="Fixpunktmast", font=plain,
-                       variable=self._alternativ_funksjon, value=0)\
-                       .pack(anchor="w", padx=15)
-        tk.Radiobutton(mastefunksjoner, text="Fixavspenningsmast", font=plain,
-                       variable=self._alternativ_funksjon, value=1)\
-                       .pack(anchor="w", padx=15)
-        tk.Radiobutton(mastefunksjoner, text="Avspenningsmast", font=plain,
-                       variable=self._alternativ_funksjon, value=2)\
-                       .pack(anchor="w", padx=15)
+        self.alternativ_funksjon_radiobutton_0 = tk.Radiobutton(mastefunksjoner, text="Fixpunktmast", font=plain,
+                                                                variable=self._alternativ_funksjon, value=0)
+        self.alternativ_funksjon_radiobutton_0.pack(anchor="w", padx=15)
+        self.alternativ_funksjon_radiobutton_1 = tk.Radiobutton(mastefunksjoner, text="Fixavspenningsmast", font=plain,
+                                                                variable=self._alternativ_funksjon, value=1)
+        self.alternativ_funksjon_radiobutton_1.pack(anchor="w", padx=15)
+        self.alternativ_funksjon_radiobutton_2 = tk.Radiobutton(mastefunksjoner, text="Avspenningsmast", font=plain,
+                                                                variable=self._alternativ_funksjon, value=2)
+        self.alternativ_funksjon_radiobutton_2.pack(anchor="w", padx=15)
         mastefunksjoner_2 = tk.Frame(mastefunksjoner, relief="groove", bd=1)
         mastefunksjoner_2.pack(pady=(10,0))
-        self.master.strekkutligger.set(True)
         tk.Radiobutton(mastefunksjoner_2, text="Strekkutligger", font=plain,
-                       variable=self.master.strekkutligger, value=True)\
-                       .grid(row=0, column=0, sticky="W", pady=2)
+                       variable=self.master.strekkutligger, value=True).grid(row=0, column=0, sticky="W", pady=2)
         tk.Radiobutton(mastefunksjoner_2, text="Trykkutligger", font=plain,
-                       variable=self.master.strekkutligger, value=False)\
-                       .grid(row=0, column=1, sticky="W", pady=2)
+                       variable=self.master.strekkutligger, value=False).grid(row=0, column=1, sticky="W", pady=2)
         tk.Checkbutton(mastefunksjoner_2, text="Neste mast på andre siden av sporet", font=plain,
-                       variable=self.master.master_bytter_side, onvalue=True, offvalue=False)\
-                       .grid(row=1, column=0, sticky="W", columnspan=2, pady=(0,2))
+                       variable=self.master.master_bytter_side, onvalue=True, offvalue=False).grid(row=1, column=0, sticky="W", columnspan=2, pady=(0,2))
 
         # -------------------------------Fastavspente ledninger-------------------------------
         fastavspente = tk.LabelFrame(venstre, text="Fastavspente ledninger", font=bold)
         fastavspente.pack(fill="both")
 
         # mate-/fjernledninger
-        tk.Checkbutton(fastavspente, text="Mate-/fjernledninger", font=plain,
-                       variable=self.master.matefjern_ledn, onvalue=True,
-                       offvalue=False).grid(row=0, column=0, sticky="W")
-        tk.Label(fastavspente, text="Antall:", font=plain).grid(row=0, column=1, sticky="E")
-        self.master.matefjern_antall.set(1)
-        self.matefjern_spinbox = tk.Spinbox(fastavspente, values=(1, 2), width=10)
-        self.matefjern_spinbox.config(font=plain, state="readonly")
+        self.matefjern_button = tk.Checkbutton(fastavspente, text="Mate-/fjernledninger", font=plain,
+                                               variable=self.master.matefjern_ledn, onvalue=True, offvalue=False)
+        self.matefjern_button.grid(row=0, column=0, sticky="W")
+        self.matefjern_label = tk.Label(fastavspente, text="Antall:", font=plain)
+        self.matefjern_label.grid(row=0, column=1, sticky="E")
+        self.matefjern_spinbox = tk.Spinbox(fastavspente, values=(1, 2), width=10, font=plain, state="readonly",
+                                            command=lambda: self.master.matefjern_antall.set(
+                                                self.matefjern_spinbox.get()))
         self.matefjern_spinbox.grid(row=0, column=2, sticky="W")
 
         # at-ledninger
-        tk.Checkbutton(fastavspente, text="AT-ledninger (2 stk.)", font=plain,
-                       variable=self.master.at_ledn, onvalue=True,
-                       offvalue=False).grid(row=1, column=0, sticky="W")
-        self.master.at_type.set(lister.at_list[0])
-        tk.Label(fastavspente, text="Type:", font=plain).grid(row=1, column=1, sticky="E")
-        at_menu = tk.OptionMenu(fastavspente, self.master.at_type, *lister.at_list)
-        at_menu.config(font=plain)
-        at_menu.grid(row=1, column=2, sticky="W")
+        self.at_button = tk.Checkbutton(fastavspente, text="AT-ledninger (2 stk.)", font=plain,
+                                        variable=self.master.at_ledn, onvalue=True, offvalue=False)
+        self.at_button.grid(row=1, column=0, sticky="W")
+        self.at_label = tk.Label(fastavspente, text="Type:", font=plain)
+        self.at_label.grid(row=1, column=1, sticky="E")
+        self.at_menu = tk.OptionMenu(fastavspente, self.master.at_type, *lister.at_list)
+        self.at_menu.config(font=plain)
+        self.at_menu.grid(row=1, column=2, sticky="W")
 
         # forbigangsledning
-        tk.Checkbutton(fastavspente, text="Forbigangsledning (1 stk.)", font=plain,
-                       variable=self.master.forbigang_ledn, onvalue=True,
-                       offvalue=False).grid(row=2, column=0, sticky="W")
+        self.forbigang_button = tk.Checkbutton(fastavspente, text="Forbigangsledning (1 stk.)", font=plain,
+                                               variable=self.master.forbigang_ledn, onvalue=True, offvalue=False)
+        self.forbigang_button.grid(row=2, column=0, sticky="W")
 
         # jordledning
-        tk.Checkbutton(fastavspente, text="Jordledning (1 stk.)", font=plain,
-                       variable=self.master.jord_ledn, onvalue=True,
-                       offvalue=False).grid(row=3, column=0, sticky="W")
-        self.master.jord_type.set(lister.jord_list[0])
-        tk.Label(fastavspente, text="Type:", font=plain).grid(row=3, column=1, sticky="E")
-        jord_menu = tk.OptionMenu(fastavspente, self.master.jord_type, *lister.jord_list)
-        jord_menu.config(font=plain)
-        jord_menu.grid(row=3, column=2, sticky="W")
+        self.jord_button = tk.Checkbutton(fastavspente, text="Jordledning (1 stk.)", font=plain,
+                                          variable=self.master.jord_ledn, onvalue=True, offvalue=False)
+        self.jord_button.grid(row=3, column=0, sticky="W")
+        self.jord_label = tk.Label(fastavspente, text="Type:", font=plain)
+        self.jord_label.grid(row=3, column=1, sticky="E")
+        self.jord_menu = tk.OptionMenu(fastavspente, self.master.jord_type, *lister.jord_list)
+        self.jord_menu.config(font=plain)
+        self.jord_menu.grid(row=3, column=2, sticky="W")
 
         # returledninger
-        tk.Checkbutton(fastavspente, text="Returledninger (2 stk.)", font=plain,
-                       variable=self.master.retur_ledn, onvalue=True,
-                       offvalue=False).grid(row=4, column=0, sticky="W")
+        self.retur_button = tk.Checkbutton(fastavspente, text="Returledninger (2 stk.)", font=plain,
+                                           variable=self.master.retur_ledn, onvalue=True, offvalue=False)
+        self.retur_button.grid(row=4, column=0, sticky="W")
 
         # fiberoptisk ledning
-        tk.Checkbutton(fastavspente, text="Fiberoptisk ledning (1 stk.)", font=plain,
-                       variable=self.master.fiberoptisk_ledn, onvalue=True,
-                       offvalue=False).grid(row=5, column=0, sticky="W")
+        self.fiberoptisk_button = tk.Checkbutton(fastavspente, text="Fiberoptisk ledning (1 stk.)", font=plain,
+                                                 variable=self.master.fiberoptisk_ledn, onvalue=True, offvalue=False)
+        self.fiberoptisk_button.grid(row=5, column=0, sticky="W")
 
 
         # ------------------------------------System------------------------------------
@@ -410,201 +425,185 @@ class Hovedvindu(tk.Frame):
         system.pack(fill="both")
 
         # system
-        self.master.systemnavn.set(lister.system_list[0])
         system_menu = tk.OptionMenu(system, self.master.systemnavn, *lister.system_list)
         system_menu.config(font=plain)
         system_menu.grid(row=0, column=0, sticky="W", columnspan=2)
 
         # radius
         tk.Label(system, text="Radius:", font=plain).grid(row=1, column=0)
-        self.master.radius.set(lister.radius_list[11])
         radius_menu = tk.OptionMenu(system, self.master.radius, *lister.radius_list)
         radius_menu.config(font=plain, width=8)
         radius_menu.grid(row=1, column=0, sticky="E")
         tk.Label(system, text="[m]", font=plain).grid(row=1, column=1, sticky="W")
 
         # høgfjellsgrense
-        hogfjellsgrense = tk.Checkbutton(system, text="Vindutsatt strekning (høyfjell)",
-                                        font=plain, variable=self.master.hogfjellsgrense,
+        hoyfjellsgrense = tk.Checkbutton(system, text="Vindutsatt strekning (høyfjell)",
+                                        font=plain, variable=self._hoyfjellsgrense,
                                         onvalue=True, offvalue=False)
-        hogfjellsgrense.grid(row=2, column=0, sticky="W")
+        hoyfjellsgrense.grid(row=2, column=0, sticky="W")
 
-        # masteavstander
-        tk.Label(system, text="Avstand til forrige mast:", font=plain) \
-            .grid(row=3, column=0, sticky="W")
-        self.master.a1.set(self.master.masteavstand_range[0])
-        self.master.a2.set(self.master.masteavstand_range[0])
+        # samme avstand a
+        samme_avstad_button = tk.Checkbutton(system, text="Samme avstand forrige/neste mast",
+                                             font=plain, variable=self._samme_avstand_a,
+                                             onvalue=True, offvalue=False,
+                                             command=self._masteavstand_a1)
+        samme_avstad_button.grid(row=3, column=0, sticky="W")
 
         # avstand forrige mast
-        self.a1_spinbox = tk.Spinbox(system, from_=self.master.masteavstand_range[1],
-                                               to=self.master.masteavstand_range[2], increment=0.1,
-                                               width=10, repeatinterval=25)
+        tk.Label(system, text="Avstand til forrige mast:", font=plain) \
+            .grid(row=4, column=0, sticky="W")
+        self.a1_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=25,
+                                     command=self._masteavstand_a1)
         self.a1_spinbox.delete(0, "end")
         self.a1_spinbox.insert(0, self.master.a1.get())
         self.a1_spinbox.config(font=plain)
-        self.a1_spinbox.grid(row=3, column=0, sticky="E")
-        tk.Label(system, text="[m]", font=plain).grid(row=3, column=1, sticky="W")
+        self.a1_spinbox.grid(row=4, column=0, sticky="E")
+        tk.Label(system, text="[m]", font=plain).grid(row=4, column=1, sticky="W")
 
         # avstand neste mast
         tk.Label(system, text="Avstand til neste mast:", font=plain) \
-            .grid(row=4, column=0, sticky="W")
-        self.a2_spinbox = tk.Spinbox(system, from_=self.master.masteavstand_range[1],
-                                               to=self.master.masteavstand_range[2], increment=0.1,
-                                               width=10, repeatinterval=25)
+            .grid(row=5, column=0, sticky="W")
+        self.a2_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=25,
+                                     command=self._masteavstand_a2)
         self.a2_spinbox.delete(0, "end")
         self.a2_spinbox.insert(0, self.master.a2.get())
         self.a2_spinbox.config(font=plain)
-        self.a2_spinbox.grid(row=4, column=0, sticky="E")
-        tk.Label(system, text="[m]", font=plain).grid(row=4, column=1, sticky="W")
+        self.a2_spinbox.grid(row=5, column=0, sticky="E")
+        tk.Label(system, text="[m]", font=plain).grid(row=5, column=1, sticky="W")
 
-        tk.Label(system, text="(Max. masteavstand = {} m)"
-                 .format(self.master.masteavstand_range[2]), font=italic)\
-                 .grid(row=5, column=0, sticky="W", columnspan=2)
+        # masteavstand max
+        self.masteavstand_max_label = tk.Label(system, font=italic)
+        self.masteavstand_max_label.grid(row=6, column=0, sticky="W", columnspan=2)
 
         # klima
-        self.master.vindkasthastighetstrykk.set(710)
         klima_btn = tk.Button(system, text="Klima", font=bold, width=12,
                              command=self._klima)
-        klima_btn.grid(row=6, column=0, sticky="W")
+        klima_btn.grid(row=7, column=0, sticky="W")
         self.vk_label = tk.Label(system, text="(Vindkasthastighetstrykk = {:.2f} kN/m^2)"
                                                 .format(self.master.vindkasthastighetstrykk.get()/1000), font=italic)
-        self.vk_label.grid(row=7, column=0, columnspan=1, sticky="W")
+        self.vk_label.grid(row=8, column=0, columnspan=1, sticky="W")
         self.master.vindkasthastighetstrykk.trace("w", lambda *args:
                                                   self.vk_label.config(text="(Vindkasthastighetstrykk = {:.2f} kN/m^2)"
                                                   .format(self.master.vindkasthastighetstrykk.get()/1000)))
 
         # --------------------------------Geometriske data--------------------------------
-        geom_data = tk.LabelFrame(hoyre, text="System", font=bold)
+        geom_data = tk.LabelFrame(hoyre, text="Høyder", font=bold)
         geom_data.pack(fill="both")
         g_1 = tk.Frame(geom_data, relief="groove", bd=1)
         g_1.pack(fill="both")
 
         # h
-        tk.Label(g_1, text="    (mastehøyde):", font=plain).grid(row=0, column=0, sticky="W")
-        tk.Label(g_1, text="H", font=bold) \
-            .grid(row=0, column=0, sticky="W")
-        self.master.h.set(self.master.h_range[0])
-        self.h_spinbox = tk.Spinbox(g_1, from_=self.master.h_range[1], to=self.master.h_range[2],
-                                    increment=0.5, repeatinterval=120, width=10)
+        self.h_label_1 = tk.Label(g_1, text="    (mastehøyde):                              ", font=plain)
+        self.h_label_1.grid(row=0, column=0, sticky="W")
+        self.h_label_2 = tk.Label(g_1, text="H", font=bold)
+        self.h_label_2.grid(row=0, column=0, sticky="W")
+        self.h_spinbox = tk.Spinbox(g_1, increment=0.5, repeatinterval=120, width=10, font=plain,
+                                    command=lambda: self.master.h.set(self.h_spinbox.get()))
         self.h_spinbox.delete(0, "end")
         self.h_spinbox.insert(0, self.master.h.get())
-        self.h_spinbox.config(font=plain, state="readonly")
         self.h_spinbox.grid(row=0, column=1, sticky="E")
-        tk.Label(g_1, text="[m]", font=plain).grid(row=0, column=2, sticky="W")
+        self.h_label_3 = tk.Label(g_1, text="[m]", font=plain)
+        self.h_label_3.grid(row=0, column=2, sticky="W")
 
         # hfj
-        tk.Label(g_1, text="      ({}):".format(self.master.hfj_type), font=plain) \
-            .grid(row=1, column=0, sticky="W")
-        tk.Label(g_1, text="Hfj", font=bold) \
-            .grid(row=1, column=0, sticky="W")
-        self.master.hfj.set(self.master.hfj_range[0])
-        self.hfj_spinbox = tk.Spinbox(g_1, from_=self.master.hfj_range[1], to=self.master.hfj_range[2],
-                                    increment=0.1, repeatinterval=60, width=10)
+        self.hfj_label_1 = tk.Label(g_1, text="      (fjern-/AT-ledning):", font=plain)
+        self.hfj_label_1.grid(row=1, column=0, sticky="W")
+        self.hfj_label_2 = tk.Label(g_1, text="Hfj", font=bold)
+        self.hfj_label_2.grid(row=1, column=0, sticky="W")
+        self.hfj_spinbox = tk.Spinbox(g_1, increment=0.1, repeatinterval=60, width=10, font=plain,
+                                    command=lambda: self.master.hfj.set(self.hfj_spinbox.get()))
         self.hfj_spinbox.delete(0, "end")
         self.hfj_spinbox.insert(0, self.master.hfj.get())
-        self.hfj_spinbox.config(font=plain, state="readonly")
         self.hfj_spinbox.grid(row=1, column=1, sticky="E")
-        tk.Label(g_1, text="[m]", font=plain).grid(row=1, column=2, sticky="W")
+        self.hfj_label_3 = tk.Label(g_1, text="[m]", font=plain)
+        self.hfj_label_3.grid(row=1, column=2, sticky="W")
 
         # hf
-        tk.Label(g_1, text="     ({}):".format(self.master.hf_type), font=plain) \
-            .grid(row=2, column=0, sticky="W")
-        tk.Label(g_1, text="Hf", font=bold) \
-            .grid(row=2, column=0, sticky="W")
-        self.master.hf.set(self.master.hf_range[0])
-        self.hf_spinbox = tk.Spinbox(g_1, from_=self.master.hf_range[1], to=self.master.hf_range[2],
-                                      increment=0.1, repeatinterval=60, width=10)
+        self.hf_label_1 = tk.Label(g_1, text="     (forbigangs-/fiberoptisk ledning):", font=plain)
+        self.hf_label_1.grid(row=2, column=0, sticky="W")
+        self.hf_label_2 = tk.Label(g_1, text="Hf", font=bold)
+        self.hf_label_2.grid(row=2, column=0, sticky="W")
+        self.hf_spinbox = tk.Spinbox(g_1, increment=0.1, repeatinterval=60, width=10, font=plain,
+                                    command=lambda: self.master.hf.set(self.hf_spinbox.get()))
         self.hf_spinbox.delete(0, "end")
         self.hf_spinbox.insert(0, self.master.hf.get())
-        self.hf_spinbox.config(font=plain, state="readonly")
         self.hf_spinbox.grid(row=2, column=1, sticky="E")
-        tk.Label(g_1, text="[m]", font=plain).grid(row=2, column=2, sticky="W")
+        self.hf_label_3 = tk.Label(g_1, text="[m]", font=plain)
+        self.hf_label_3.grid(row=2, column=2, sticky="W")
 
         # hj
-        tk.Label(g_1, text="     (jordledning):", font=plain) \
-            .grid(row=3, column=0, sticky="W")
-        tk.Label(g_1, text="Hj", font=bold) \
-            .grid(row=3, column=0, sticky="W")
-        self.master.hj.set(self.master.hj_range[0])
-        self.hj_spinbox = tk.Spinbox(g_1, from_=self.master.hj_range[1], to=self.master.hj_range[2],
-                                     increment=0.1, repeatinterval=60, width=10)
+        self.hj_label_1 = tk.Label(g_1, text="     (jordledning):", font=plain)
+        self.hj_label_1.grid(row=3, column=0, sticky="W")
+        self.hj_label_2 = tk.Label(g_1, text="Hj", font=bold)
+        self.hj_label_2.grid(row=3, column=0, sticky="W")
+        self.hj_spinbox = tk.Spinbox(g_1, increment=0.1, repeatinterval=60, width=10, font=plain,
+                                    command=lambda: self.master.hj.set(self.hj_spinbox.get()))
         self.hj_spinbox.delete(0, "end")
         self.hj_spinbox.insert(0, self.master.hj.get())
-        self.hj_spinbox.config(font=plain, state="readonly")
         self.hj_spinbox.grid(row=3, column=1, sticky="E")
-        tk.Label(g_1, text="[m]", font=plain).grid(row=3, column=2, sticky="W")
+        self.hj_label_3 = tk.Label(g_1, text="[m]", font=plain)
+        self.hj_label_3.grid(row=3, column=2, sticky="W")
 
         # hr
-        tk.Label(g_1, text="     (returledning):", font=plain) \
-            .grid(row=4, column=0, sticky="W")
-        tk.Label(g_1, text="Hr", font=bold) \
-            .grid(row=4, column=0, sticky="W")
-        self.master.hr.set(self.master.hr_range[0])
-        self.hr_spinbox = tk.Spinbox(g_1, from_=self.master.hr_range[1], to=self.master.hr_range[2],
-                                     increment=0.1, repeatinterval=60, width=10)
+        self.hr_label_1 = tk.Label(g_1, text="     (returledning):", font=plain)
+        self.hr_label_1.grid(row=4, column=0, sticky="W")
+        self.hr_label_2 = tk.Label(g_1, text="Hr", font=bold)
+        self.hr_label_2.grid(row=4, column=0, sticky="W")
+        self.hr_spinbox = tk.Spinbox(g_1, increment=0.1, repeatinterval=60, width=10, font=plain,
+                                    command=lambda: self.master.hr.set(self.hr_spinbox.get()))
         self.hr_spinbox.delete(0, "end")
         self.hr_spinbox.insert(0, self.master.hr.get())
-        self.hr_spinbox.config(font=plain, state="readonly")
         self.hr_spinbox.grid(row=4, column=1, sticky="E")
-        tk.Label(g_1, text="[m]", font=plain).grid(row=4, column=2, sticky="W")
+        self.hr_label_3 = tk.Label(g_1, text="[m]", font=plain)
+        self.hr_label_3.grid(row=4, column=2, sticky="W")
 
 
         g_2 = tk.Frame(geom_data, relief="groove", bd=1)
         g_2.pack(fill="both")
 
         # fh
-        tk.Label(g_2, text="      (kontakttråd):", font=plain) \
-            .grid(row=0, column=0, sticky="W")
-        tk.Label(g_2, text="FH", font=bold) \
-            .grid(row=0, column=0, sticky="W")
-        self.master.fh.set(self.master.fh_range[0])
-        self.fh_spinbox = tk.Spinbox(g_2, from_=self.master.fh_range[1], to=self.master.fh_range[2],
-                                     increment=0.1, repeatinterval=60, width=10)
+        tk.Label(g_2, text="      (kontakttråd):                              ", font=plain).grid(row=0, column=0, sticky="W")
+        tk.Label(g_2, text="FH", font=bold).grid(row=0, column=0, sticky="W")
+        self.fh_spinbox = tk.Spinbox(g_2, increment=0.1, repeatinterval=60, width=10,
+                                     from_=4.8, to=6.5)
         self.fh_spinbox.delete(0, "end")
         self.fh_spinbox.insert(0, self.master.fh.get())
-        self.fh_spinbox.config(font=plain, state="readonly")
+        self.fh_spinbox.config(font=plain, state="readonly",
+                               command=lambda: self.master.fh.set(self.fh_spinbox.get()))
         self.fh_spinbox.grid(row=0, column=1, sticky="E")
         tk.Label(g_2, text="[m]", font=plain).grid(row=0, column=2, sticky="W")
 
         # sh
-        tk.Label(g_2, text="      (systemhøyde):", font=plain) \
-            .grid(row=1, column=0, sticky="W")
-        tk.Label(g_2, text="SH", font=bold) \
-            .grid(row=1, column=0, sticky="W")
-        self.master.sh.set(self.master.sh_range[0])
-        self.sh_spinbox = tk.Spinbox(g_2, from_=self.master.sh_range[1], to=self.master.sh_range[2],
-                                     increment=0.1, repeatinterval=60, width=10)
+        tk.Label(g_2, text="      (systemhøyde):", font=plain).grid(row=1, column=0, sticky="W")
+        tk.Label(g_2, text="SH", font=bold).grid(row=1, column=0, sticky="W")
+        self.sh_spinbox = tk.Spinbox(g_2, increment=0.1, repeatinterval=60, width=10,
+                                     from_=0.2, to=2.0)
         self.sh_spinbox.delete(0, "end")
         self.sh_spinbox.insert(0, self.master.sh.get())
-        self.sh_spinbox.config(font=plain, state="readonly")
+        self.sh_spinbox.config(font=plain, state="readonly",
+                               command=lambda: self.master.sh.set(self.sh_spinbox.get()))
         self.sh_spinbox.grid(row=1, column=1, sticky="E")
         tk.Label(g_2, text="[m]", font=plain).grid(row=1, column=2, sticky="W")
 
         # e
-        tk.Label(g_2, text="    (SOK - top fundament):", font=plain) \
-            .grid(row=2, column=0, sticky="W")
-        tk.Label(g_2, text="e", font=bold) \
-            .grid(row=2, column=0, sticky="W")
-        self.master.e.set(self.master.e_range[0])
-        self.e_spinbox = tk.Spinbox(g_2, from_=self.master.e_range[1], to=self.master.e_range[2],
-                                     increment=0.1, repeatinterval=60, width=10)
+        tk.Label(g_2, text="    (SOK - top fundament):", font=plain).grid(row=2, column=0, sticky="W")
+        tk.Label(g_2, text="e", font=bold).grid(row=2, column=0, sticky="W")
+        self.e_spinbox = tk.Spinbox(g_2, increment=0.1, repeatinterval=60, width=10, font=plain,
+                                    command=lambda: self.master.e.set(self.e_spinbox.get()))
         self.e_spinbox.delete(0, "end")
         self.e_spinbox.insert(0, self.master.e.get())
-        self.e_spinbox.config(font=plain, state="readonly")
         self.e_spinbox.grid(row=2, column=1, sticky="E")
         tk.Label(g_2, text="[m]", font=plain).grid(row=2, column=2, sticky="W")
 
         # sms
-        tk.Label(g_2, text="      (s mast - s spor):", font=plain) \
-            .grid(row=3, column=0, sticky="W")
-        tk.Label(g_2, text="SMS", font=bold) \
-            .grid(row=3, column=0, sticky="W")
-        self.master.sms.set(self.master.sms_range[0])
-        self.sms_spinbox = tk.Spinbox(g_2, from_=self.master.sms_range[1], to=self.master.sms_range[2],
-                                    increment=0.1, repeatinterval=60, width=10)
+        tk.Label(g_2, text="      (s mast - s spor):", font=plain).grid(row=3, column=0, sticky="W")
+        tk.Label(g_2, text="SMS", font=bold).grid(row=3, column=0, sticky="W")
+        self.sms_spinbox = tk.Spinbox(g_2, increment=0.1, repeatinterval=60, width=10,
+                                     from_=2.0, to=6.0)
         self.sms_spinbox.delete(0, "end")
         self.sms_spinbox.insert(0, self.master.sms.get())
-        self.sms_spinbox.config(font=plain, state="readonly")
+        self.sms_spinbox.config(font=plain, state="readonly",
+                               command=lambda: self.master.e.set(self.e_spinbox.get()))
         self.sms_spinbox.grid(row=3, column=1, sticky="E")
         tk.Label(g_2, text="[m]", font=plain).grid(row=3, column=2, sticky="W")
 
@@ -617,31 +616,321 @@ class Hovedvindu(tk.Frame):
         tk.Radiobutton(mast, text="S355", font=plain,
                        variable=self.master.s235, value=False).grid(row=0, column=2)
 
+
+        # advarsel ledningshøyde
+        self.advarsel_ledningshoyde = tk.Label(self, font=italic, fg="red")
+        self.advarsel_ledningshoyde.pack(side="left")
+
+
+        self._tillat_alternative_mastefunksjoner()
+        self._tillat_matefjern_antall()
+        self._tillat_at_jord()
+        self._beregn_masteavstand_max()
+        self._masteavstand_a1()
+        self._masteavstand_a2()
+        self._beregn_hoyder()
+        self._sjekk_avstand_kl()
+
+
         # -------------------------------Avansert/beregn-------------------------------
         av_beregn = tk.LabelFrame(hoyre)
         av_beregn.pack(fill="both")
-        self.master.avspenningsbardun.set(True)
-        self.master.auto_differansestrekk.set(True)
-        self.master.delta_h1.set(0.0)
-        self.master.delta_h2.set(0.0)
-        self.master.materialkoeff.set(1.05)
-        self.master.traverslengde.set(0.6)
-        self.master.ec3.set(True)
-        self.master.isklasse.set(lister.isklasse_list[2])
-        self.master.stromavtaker_type.set(lister.stromavtaker_list[2])
-        self.master.brukerdefinert_last.set(False)
-        avansert_btn = tk.Button(av_beregn, text="Avansert", font=bold,
-                                 command=self._avansert)
+        avansert_btn = tk.Button(av_beregn, text="Avansert", font=bold, command=self._avansert)
         avansert_btn.grid(row=0, column=0, padx=12)
-        beregn_btn = tk.Button(av_beregn, text="Kjør beregning", font=bold,
-                               command=self._beregn)
+        beregn_btn = tk.Button(av_beregn, text="Kjør beregning", font=bold, command=self._beregn)
         beregn_btn.grid(row=0, column=1, padx=12)
-        self.resultater_btn = tk.Button(av_beregn, text="Resultater", font=bold,
-                                   fg="blue", command=self._resultater)
+        self.resultater_btn = tk.Button(av_beregn, text="Resultater", font=bold, fg="blue", command=self._resultater)
         self.resultater_btn.grid(row=0, column=2, padx=12)
         self.resultater_btn.grid_remove()
 
 
+        # tracers
+        self._alternative_mastefunksjoner_tracer =\
+            self._alternative_mastefunksjoner.trace("w", self._tillat_alternative_mastefunksjoner)
+        self.matefjern_tracer = self.master.matefjern_ledn.trace("w", lambda *args:
+                                                                      (self._sjekk_ledningskombinasjon(*args),
+                                                                       self._beregn_hoyder(*args),
+                                                                       self._tillat_matefjern_antall(*args)))
+        self.at_tracer = self.master.at_ledn.trace("w", lambda *args:
+                                                        (self._sjekk_ledningskombinasjon(*args),
+                                                         self._beregn_hoyder(*args),
+                                                         self._tillat_at_jord(*args),
+                                                         self._sjekk_avstand_kl()))
+        self.forbigang_tracer = self.master.forbigang_ledn.trace("w", lambda *args:
+                                                                      (self._sjekk_ledningskombinasjon(*args),
+                                                                       self._beregn_hoyder(*args)))
+        self.jord_tracer = self.master.jord_ledn.trace("w", lambda *args: (self._beregn_hoyder(*args),
+                                                                           self._tillat_at_jord(*args)))
+        self.fiberoptisk_tracer = self.master.fiberoptisk_ledn.trace("w", lambda *args:
+                                                                          (self._sjekk_ledningskombinasjon(*args),
+                                                                           self._beregn_hoyder(*args)))
+        self.retur_tracer = self.master.retur_ledn.trace("w", lambda *args: (self._sjekk_ledningskombinasjon(*args),
+                                                                             self._beregn_hoyder(*args)))
+        self.hoyfjellsgrense_tracer = self._hoyfjellsgrense.trace("w", self._beregn_masteavstand_max)
+        self.vindkasthastighetstrykk_tracer = self.master.vindkasthastighetstrykk.trace("w",
+                                                                                        self._beregn_masteavstand_max)
+        self.h_tracer = self.master.h.trace("w", self._beregn_hoyder)
+        self.hfj_tracer = self.master.hfj.trace("w", lambda *args: (self._beregn_hoyder(*args),
+                                                                    self._sjekk_avstand_kl(*args)))
+        self.hf_tracer = self.master.hf.trace("w", self._beregn_hoyder)
+        self.hj_tracer = self.master.hj.trace("w", self._beregn_hoyder)
+        self.hr_tracer = self.master.hr.trace("w", self._beregn_hoyder)
+        self.fh_tracer = self.master.fh.trace("w", self._beregn_hoyder)
+        self.sh_tracer = self.master.sh.trace("w", self._beregn_hoyder)
+        self.e_tracer = self.master.e.trace("w", self._beregn_hoyder)
+        self.sms_tracer = self.master.sms.trace("w", self._beregn_hoyder)
+
+    def _sjekk_ledningskombinasjon(self, *args):
+        """Sjekker hvilke ledningsknapper som til enhver til er aktive."""
+
+        matefjern_ledn = self.master.matefjern_ledn.get()
+        at_ledn = self.master.at_ledn.get()
+        forbigang_ledn = self.master.forbigang_ledn.get()
+        jord_ledn = self.master.jord_ledn.get()
+        fiberoptisk_ledn = self.master.fiberoptisk_ledn.get()
+        retur_ledn = self.master.retur_ledn.get()
+
+        self.matefjern_button.config(state="normal")
+        self.at_button.config(state="normal")
+        self.forbigang_button.config(state="normal")
+        self.jord_button.config(state="normal")
+        self.fiberoptisk_button.config(state="normal")
+        self.retur_button.config(state="normal")
+
+        if matefjern_ledn or forbigang_ledn or retur_ledn:
+            self.at_button.config(state="disabled")
+        if at_ledn:
+            self.matefjern_button.config(state="disabled")
+            self.forbigang_button.config(state="disabled")
+            self.retur_button.config(state="disabled")
+        if fiberoptisk_ledn:
+            self.forbigang_button.config(state="disabled")
+
+    def _tillat_alternative_mastefunksjoner(self, *args):
+        """Tillater radiobuttons dersom alternative mastefunksjoner er aktivert."""
+
+        if self._alternative_mastefunksjoner.get():
+            self.alternativ_funksjon_radiobutton_0.config(state="normal")
+            self.alternativ_funksjon_radiobutton_1.config(state="normal")
+            self.alternativ_funksjon_radiobutton_2.config(state="normal")
+        else:
+            self.alternativ_funksjon_radiobutton_0.config(state="disabled")
+            self.alternativ_funksjon_radiobutton_1.config(state="disabled")
+            self.alternativ_funksjon_radiobutton_2.config(state="disabled")
+
+    def _tillat_matefjern_antall(self, *args):
+        """Tillater spinbox dersom mate-/fjernledning er aktivert."""
+
+        if self.master.matefjern_ledn.get():
+            self.matefjern_label.config(state="normal")
+            self.matefjern_spinbox.config(state="readonly")
+        else:
+            self.matefjern_label.config(state="disabled")
+            self.matefjern_spinbox.config(state="disabled")
+
+    def _tillat_at_jord(self, *args):
+        """Tillater nedtrekkslister dersom AT/jord aktivert."""
+
+        if self.master.at_ledn.get():
+            self.at_label.config(state="normal")
+            self.at_menu.config(state="normal")
+        else:
+            self.at_label.config(state="disabled")
+            self.at_menu.config(state="disabled")
+
+        if self.master.jord_ledn.get():
+            self.jord_label.config(state="normal")
+            self.jord_menu.config(state="normal")
+        else:
+            self.jord_label.config(state="disabled")
+            self.jord_menu.config(state="disabled")
+
+    def _beregn_masteavstand_max(self, *args):
+        """Beregner maksimal tillatt masteavstand grunnet utblåsning av KL."""
+
+        masteavstand_max = self.master.vindkasthastighetstrykk.get() / 10
+
+        self.a1_spinbox.config(state="normal")
+        self.a2_spinbox.config(state="normal")
+        self.a1_spinbox.config(from_=masteavstand_max/2, to=masteavstand_max)
+        self.a2_spinbox.config(from_=masteavstand_max/2, to=masteavstand_max)
+        self.a1_spinbox.config(state="readonly")
+        self.a2_spinbox.config(state="readonly")
+
+        masteavstand_max_avrundet = math.floor(masteavstand_max*10)/10
+        self.masteavstand_max_label.config(text="(Max. masteavstand = {:.1f} m)".format(masteavstand_max_avrundet))
+
+    def _masteavstand_a1(self):
+        """Korrigerer spinboxer ved justering av verdi."""
+
+        self.a1_spinbox.config(state="normal")
+        self.a2_spinbox.config(state="normal")
+        self.master.a1.set(self.a1_spinbox.get())
+        if self._samme_avstand_a.get():
+            self.a2_spinbox.delete(0, "end")
+            self.a2_spinbox.insert(0, self.a1_spinbox.get())
+            self.master.a2.set(self.a2_spinbox.get())
+        self.a1_spinbox.config(state="readonly")
+        self.a2_spinbox.config(state="readonly")
+
+    def _masteavstand_a2(self):
+        """Korrigerer spinboxer ved justering av verdi."""
+
+        self.a1_spinbox.config(state="normal")
+        self.a2_spinbox.config(state="normal")
+        self.master.a2.set(self.a2_spinbox.get())
+        if self._samme_avstand_a.get():
+            self.a1_spinbox.delete(0, "end")
+            self.a1_spinbox.insert(0, self.a2_spinbox.get())
+            self.master.a1.set(self.a1_spinbox.get())
+        self.a1_spinbox.config(state="readonly")
+        self.a2_spinbox.config(state="readonly")
+
+    def _beregn_hoyder(self, *args):
+        """Beregner tillatte høydeintervaller for ledninger og e."""
+
+        matefjern_ledn = self.master.matefjern_ledn.get()
+        at_ledn = self.master.at_ledn.get()
+        forbigang_ledn = self.master.forbigang_ledn.get()
+        jord_ledn = self.master.jord_ledn.get()
+        fiberoptisk_ledn = self.master.fiberoptisk_ledn.get()
+        retur_ledn = self.master.retur_ledn.get()
+        h = self.master.h.get()
+        hfj = self.master.hfj.get()
+        hf = self.master.hf.get()
+        hr = self.master.hr.get()
+        fh = self.master.fh.get()
+        sh = self.master.sh.get()
+        e = self.master.e.get()
+
+        # h
+        if matefjern_ledn or at_ledn or jord_ledn:
+            H = fh + sh + e + 2.5
+        elif forbigang_ledn and retur_ledn:
+            H = fh + sh + e + 2.0
+        else:
+            H = fh + sh + e + 0.7
+        h_min = H - 1.5 + (0.5 - (H - 1.5) % 0.5)
+        h_max = H + 5.0 + (0.5 - (H + 5.0) % 0.5)
+
+        # hfj
+        hfj_min = h - e
+        hfj_max = h_max + 2.0
+
+        # hf
+        if matefjern_ledn or at_ledn or jord_ledn:
+            Hf = fh + sh + 0.5
+            hf_min = Hf - 1.0
+            hf_max = hfj - 2.0
+        else:
+            hf_min = h - e
+            hf_max = h_max + 2.0
+
+        # hr
+        Hr = fh + sh
+        hr_min = Hr - 1.0
+        if matefjern_ledn or at_ledn or jord_ledn:
+            hr_max = hfj - 0.5
+        elif forbigang_ledn:
+            hr_max = hf - 0.5
+        else:
+            hr_max = h - e - 0.1
+
+        # hj
+        hj_min = fh
+        hj_max = h
+        if retur_ledn:
+            hj_min = hr
+        if forbigang_ledn:
+            hj_max = hf
+
+        # e
+        e_min = - fh + 0.6
+        e_max = 3.0
+
+
+        # Setter tilstand for tekst og spinboxer samt skriver verdier
+        self.h_spinbox.config(state="normal")
+        self.h_spinbox.config(from_=h_min, to=max(h_min, h_max))
+        self.h_spinbox.config(state="readonly")
+        self.e_spinbox.config(state="normal")
+        self.e_spinbox.config(from_=e_min, to=max(e_min, e_max))
+        self.e_spinbox.config(state="readonly")
+
+
+        self.hfj_label_1.config(state="normal")
+        self.hfj_label_1.config(text = "      (fjern-/AT-ledning):")
+        self.hfj_label_1.config(state="disabled")
+        self.hfj_label_2.config(state="disabled")
+        self.hfj_label_3.config(state="disabled")
+        self.hfj_spinbox.config(state="disabled")
+        self.hf_label_1.config(state="normal")
+        self.hf_label_1.config(text = "     (forbigangs-/fiberoptisk ledning):")
+        self.hf_label_1.config(state="disabled")
+        self.hf_label_2.config(state="disabled")
+        self.hf_label_3.config(state="disabled")
+        self.hf_spinbox.config(state="disabled")
+        self.hj_label_1.config(state="disabled")
+        self.hj_label_2.config(state="disabled")
+        self.hj_label_3.config(state="disabled")
+        self.hj_spinbox.config(state="disabled")
+        self.hr_label_1.config(state="disabled")
+        self.hr_label_2.config(state="disabled")
+        self.hr_label_3.config(state="disabled")
+        self.hr_spinbox.config(state="disabled")
+
+        if matefjern_ledn or at_ledn:
+            self.hfj_label_1.config(state="normal")
+            self.hfj_label_2.config(state="normal")
+            self.hfj_label_3.config(state="normal")
+            if matefjern_ledn:
+                self.hfj_label_1.config(text="      (mate-/fjernledning):")
+            else:
+                self.hfj_label_1.config(text="      (AT-ledning):")
+            self.hfj_spinbox.config(state="normal")
+            self.hfj_spinbox.config(from_=hfj_min, to=max(hfj_min, hfj_max))
+            self.hfj_spinbox.config(state="readonly")
+        if forbigang_ledn or fiberoptisk_ledn:
+            self.hf_label_1.config(state="normal")
+            self.hf_label_2.config(state="normal")
+            self.hf_label_3.config(state="normal")
+            if forbigang_ledn:
+                self.hf_label_1.config(text="     (forbigangsledning):")
+            else:
+                self.hf_label_1.config(text="     (fiberoptisk ledning):")
+            self.hf_spinbox.config(state="normal")
+            self.hf_spinbox.config(state="normal")
+            self.hf_spinbox.config(from_=hf_min, to=max(hf_min, hf_max))
+            self.hf_spinbox.config(state="readonly")
+        if jord_ledn:
+            self.hj_label_1.config(state="normal")
+            self.hj_label_2.config(state="normal")
+            self.hj_label_3.config(state="normal")
+            self.hj_spinbox.config(state="normal")
+            self.hj_spinbox.config(state="normal")
+            self.hj_spinbox.config(from_=hj_min, to=max(hj_min, hj_max))
+            self.hj_spinbox.config(state="readonly")
+        if retur_ledn:
+            self.hr_label_1.config(state="normal")
+            self.hr_label_2.config(state="normal")
+            self.hr_label_3.config(state="normal")
+            self.hr_spinbox.config(state="normal")
+            self.hr_spinbox.config(state="normal")
+            self.hr_spinbox.config(from_=hr_min, to=max(hr_min, hr_max))
+            self.hr_spinbox.config(state="readonly")
+
+    def _sjekk_avstand_kl(self, *args):
+        """Sjekker AT-ledningens avstand til KL-anlegget."""
+
+        at_ledn = self.master.at_ledn.get()
+        hfj = self.master.hfj.get()
+        fh = self.master.fh.get()
+        sh = self.master.sh.get()
+
+        if at_ledn and hfj < fh + sh + 2.0:
+            self.advarsel_ledningshoyde.config(text="AT-leder kan gi kritisk\nliten avstand til KL-anlegg!")
+        else:
+            self.advarsel_ledningshoyde.config(text="")
 
     def _klima(self):
         """Oppretter vindu for klima."""
@@ -735,8 +1024,7 @@ class Klima(tk.Frame):
         refvind_frame.grid(row=0, column=0, sticky="W")
 
         # v_b,0
-        tk.Label(refvind_frame, text="v_b,0:",
-                 font=plain).grid(row=0, column=0, sticky="W")
+        tk.Label(refvind_frame, text="v_b,0:", font=plain).grid(row=0, column=0, sticky="W")
         self.refvind_spinbox = tk.Spinbox(refvind_frame, from_=20, to=30, width=10)
         self.refvind_spinbox.delete(0, "end")
         self.refvind_spinbox.insert(0, int(self.M.referansevindhastighet.get()))
@@ -759,7 +1047,6 @@ class Klima(tk.Frame):
         self.c_dir_spinbox.insert(0, float(self.M.c_dir.get()))
         self.c_dir_spinbox.config(font=plain, state="readonly",
                                   command=lambda: self.M.c_dir.set(self.c_dir_spinbox.get()))
-
         self.c_dir_spinbox.grid(row=0, column=1, sticky="W")
 
         # c_season
@@ -775,8 +1062,7 @@ class Klima(tk.Frame):
         # c_prob
         tk.Label(c_faktorer, text="c_prob:",
                  font=italic).grid(row=2, column=0, sticky="W")
-        self.c_prob_spinbox = tk.Spinbox(c_faktorer, from_=0.8, to=1.0, increment=0.01,
-                                        repeatinterval=50, width=10)
+        self.c_prob_spinbox = tk.Spinbox(c_faktorer, from_=0.8, to=1.0, increment=0.01, repeatinterval=50, width=10)
         self.c_prob_spinbox.delete(0,"end")
         self.c_prob_spinbox.insert(0, float(self.M.c_prob.get()))
         self.c_prob_spinbox.config(font=plain, state="readonly",
@@ -790,8 +1076,7 @@ class Klima(tk.Frame):
         self.c_alt_entry = tk.Entry(c_alt_frame, width=11, state="readonly")
         self.c_alt_entry.config(font=plain)
         self.c_alt_entry.grid(row=0, column=1, sticky="W")
-        self.regioner_menu = tk.OptionMenu(c_alt_frame, self.M.region,
-                                                   *lister.regioner_list)
+        self.regioner_menu = tk.OptionMenu(c_alt_frame, self.M.region, *lister.regioner_list)
         self.regioner_menu.config(font=plain, width=28)
         self.regioner_menu.grid(row=0, column=2)
         tk.Label(c_alt_frame, text="Stedshøyde:", font=plain).grid(row=1, column=0, sticky="W")
@@ -828,8 +1113,8 @@ class Klima(tk.Frame):
         terrengruhetskategori_menu.config(font=plain, width=3)
         terrengruhetskategori_menu.grid(row=2, column=0)
 
-        # høgde over terrenget z
-        tk.Label(terrengfaktorer, text="Høgde over terrenget z [m]:",
+        # høyde over terrenget z
+        tk.Label(terrengfaktorer, text="Høyde over terrenget z [m]:",
                  font=plain).grid(row=1, column=1, sticky="W")
         self.z_spinbox = tk.Spinbox(terrengfaktorer, from_=1, to=50,
                                     repeatinterval=50, width=10)
@@ -886,14 +1171,11 @@ class Klima(tk.Frame):
         self._beregn_c_alt()
         self._beregn_klimaverdier()
 
-
-
         # -------------------------------Lukk vindu------------------------------
         lukk = tk.Frame(self)
         lukk.grid(row=2, column=1, sticky="SE")
         lukk_btn = tk.Button(lukk, text="Lukk vindu", font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5)
-
 
         # tracers
         self.referansevindhastighet_tracer = self.M.referansevindhastighet.trace("w", self._beregn_klimaverdier)
@@ -908,6 +1190,8 @@ class Klima(tk.Frame):
         self.C_0_tracer = self.M.C_0.trace("w", self._beregn_klimaverdier)
 
     def _sett_H(self, *args):
+        """Justerer byggehøyde basert på valg av region."""
+
         self.H_spinbox.config(state="normal")
         self.H_spinbox.config(from_=lister.regioner[self.M.region.get()]["H_0"],
                               to=lister.regioner[self.M.region.get()]["H_topp"])
@@ -966,7 +1250,7 @@ class Klima(tk.Frame):
         self.M.master.vindkasthastighetstrykk.set(q_p)
 
     def _lukk_vindu(self):
-        """Lagrer verdier fra spinboxer og lukker vindu."""
+        """Sletter variabel-tracere og lukker vindu."""
 
         self.M.referansevindhastighet.trace_vdelete("w", self.referansevindhastighet_tracer)
         self.M.c_dir.trace_vdelete("w", self.c_dir_tracer)
@@ -997,8 +1281,7 @@ class Avansert(tk.Frame):
         alternativer.pack(fill="both")
 
         # beregningsprosedyre
-        tk.Label(alternativer, text="Beregningsprosedyre:",
-                 font=plain).grid(row=0, column=0, sticky="W")
+        tk.Label(alternativer, text="Beregningsprosedyre:", font=plain).grid(row=0, column=0, sticky="W")
         tk.Radiobutton(alternativer, text="Eurokode (EC3)", font=plain,
                        variable=self.M.master.ec3, value=True).grid(row=0, column=1)
         tk.Radiobutton(alternativer, text="Bransjestandard (NEK)", font=plain,
@@ -1007,43 +1290,41 @@ class Avansert(tk.Frame):
         # materialkoeffisient
         tk.Label(alternativer, text="Materialkoeffisient:",
                  font=plain).grid(row=1, column=0, sticky="W")
-        self.materialkoeff_spinbox = tk.Spinbox(alternativer, from_=1.0, to=1.15,
-                                                increment=0.05, width=10)
+        self.materialkoeff_spinbox = tk.Spinbox(alternativer, from_=1.0, to=1.15, increment=0.05, width=10,
+                                                command=lambda: self.M.master.materialkoeff.set(
+                                                    self.materialkoeff_spinbox.get()))
         self.materialkoeff_spinbox.delete(0, "end")
         self.materialkoeff_spinbox.insert(0, float(self.M.master.materialkoeff.get()))
         self.materialkoeff_spinbox.config(font=plain, state="readonly")
         self.materialkoeff_spinbox.grid(row=1, column=1, sticky="E")
-        tk.Label(alternativer, text="Anbefalt: 1.05 (EC3), 1.10 (NEK)",
+        tk.Label(alternativer, text="Anbefalt verdi: 1.05",
                  font=italic).grid(row=1, column=2, columnspan=2, sticky="W")
 
         # traverslengde
-        tk.Label(alternativer, text="Traverslengde hver side:",
-                 font=plain).grid(row=2, column=0, sticky="W")
-        self.traverslengde_spinbox = tk.Spinbox(alternativer, from_=0.3, to=1.0,
-                                           increment=0.1, width=10)
+        self.traverslengde_label_1 = tk.Label(alternativer, text="Traverslengde hver side:", font=plain)
+        self.traverslengde_label_1.grid(row=2, column=0, sticky="W")
+        self.traverslengde_spinbox = tk.Spinbox(alternativer, font=plain, from_=0.3, to=1.0, increment=0.1, width=10,
+                                                command=lambda: self.M.master.traverslengde.set(
+                                                    self.traverslengde_spinbox.get()))
         self.traverslengde_spinbox.delete(0, "end")
         self.traverslengde_spinbox.insert(0, float(self.M.master.traverslengde.get()))
-        self.traverslengde_spinbox.config(font=plain, state="readonly")
         self.traverslengde_spinbox.grid(row=2, column=1, sticky="E")
-        tk.Label(alternativer, text="[m]",
-                 font=plain).grid(row=2, column=2, sticky="W")
+        self.traverslengde_label_2 = tk.Label(alternativer, text="[m]", font=plain)
+        self.traverslengde_label_2.grid(row=2, column=2, sticky="W")
 
         # strømavtaker
-        tk.Label(alternativer, text="Strømavtakerbredde:",
-                 font=plain).grid(row=3, column=0, sticky="W")
-        system_menu = tk.OptionMenu(alternativer, self.M.master.stromavtaker_type,
-                                    *lister.stromavtaker_list)
+        tk.Label(alternativer, text="Strømavtakerbredde:", font=plain).grid(row=3, column=0, sticky="W")
+        system_menu = tk.OptionMenu(alternativer, self.M.master.stromavtaker_type, *lister.stromavtaker_list)
         system_menu.config(font=plain, width=7)
         system_menu.grid(row=3, column=1, sticky="E")
-        tk.Label(alternativer, text="[mm]",
-                 font=plain).grid(row=3, column=2, sticky="W")
-
+        tk.Label(alternativer, text="[mm]", font=plain).grid(row=3, column=2, sticky="W")
 
         # avspenningsbardun
-        bardun_checkbtn = tk.Checkbutton(alternativer, text="Avspenningsbardun (dersom fixavsp.- eller avsp.mast)",
-                                           font=plain, variable=self.M.master.avspenningsbardun,
-                                           onvalue=True, offvalue=False)
-        bardun_checkbtn.grid(row=4, column=0, columnspan=3, sticky="W")
+        self.avspenningsbardun_checkbtn = tk.Checkbutton(alternativer, font=plain,
+                                                         text="Avspenningsbardun (dersom fixavsp.- eller avsp.mast)",
+                                                         variable=self.M.master.avspenningsbardun,
+                                                         onvalue=True, offvalue=False)
+        self.avspenningsbardun_checkbtn.grid(row=4, column=0, columnspan=3, sticky="W")
 
         # differansestrekk
         differansestrekk_frame = tk.Frame(alternativer, relief="groove", bd=1)
@@ -1052,16 +1333,13 @@ class Avansert(tk.Frame):
                                          font=plain, variable=self.M.master.auto_differansestrekk,
                                          onvalue=True, offvalue=False)
         autodiff_checkbtn.grid(row=0, column=0, columnspan=3, sticky="W")
-        tk.Label(differansestrekk_frame, text="Differansestrekk:",
-                 font=plain).grid(row=1, column=0, sticky="E")
-        self.differansestrekk_spinbox = tk.Spinbox(differansestrekk_frame, from_=0.0, to=2.0,
-                                                   increment=0.05, width=10)
-        self.differansestrekk_spinbox.delete(0, "end")
-        self.differansestrekk_spinbox.insert(0, float(self.M.master.differansestrekk.get()))
-        self.differansestrekk_spinbox.config(font=plain, state="readonly")
-        self.differansestrekk_spinbox.grid(row=1, column=1, sticky="E")
-        tk.Label(alternativer, text="[kN]",
-                 font=plain).grid(row=1, column=2, sticky="W")
+        self.differansestrekk_label_1 = tk.Label(differansestrekk_frame, text="Differansestrekk:", font=plain)
+        self.differansestrekk_label_1.grid(row=1, column=0, sticky="E")
+        self.differansestrekk_entry = tk.Entry(differansestrekk_frame, width=10, font=plain,
+                                               textvariable=self.M.master.differansestrekk)
+        self.differansestrekk_entry.grid(row=1, column=1, sticky="E")
+        self.differansestrekk_label_2 = tk.Label(differansestrekk_frame, text="[kN]", font=plain)
+        self.differansestrekk_label_2.grid(row=1, column=2, sticky="W")
 
         # høydedifferanse
         alternativer_2 = tk.Frame(alternativer, relief="groove", bd=1)
@@ -1069,18 +1347,12 @@ class Avansert(tk.Frame):
         tk.Label(alternativer_2, text="Ledningers midlere innfestingshøyde i \n"
                                       "aktuell mast i forhold til...",
                 font=plain).grid(row=0, column=0, columnspan=3)
-        tk.Label(alternativer_2, text="forrige mast:",
-                 font=plain).grid(row=1, column=0, sticky="E")
-        tk.Entry(alternativer_2, textvariable=self.M.master.delta_h1,
-                 font=plain, width=10).grid(row=1, column=1)
-        tk.Label(alternativer_2, text="[m]",
-                 font=plain).grid(row=1, column=2, sticky="W")
-        tk.Label(alternativer_2, text="neste mast:",
-                 font=plain).grid(row=2, column=0, sticky="E")
-        tk.Entry(alternativer_2, textvariable=self.M.master.delta_h2,
-                 font=plain, width=10).grid(row=2, column=1)
-        tk.Label(alternativer_2, text="[m]",
-                 font=plain).grid(row=2, column=2, sticky="W")
+        tk.Label(alternativer_2, text="forrige mast:", font=plain).grid(row=1, column=0, sticky="E")
+        tk.Entry(alternativer_2, textvariable=self.M.master.delta_h1, font=plain, width=10).grid(row=1, column=1)
+        tk.Label(alternativer_2, text="[m]", font=plain).grid(row=1, column=2, sticky="W")
+        tk.Label(alternativer_2, text="neste mast:", font=plain).grid(row=2, column=0, sticky="E")
+        tk.Entry(alternativer_2, textvariable=self.M.master.delta_h2, font=plain, width=10).grid(row=2, column=1)
+        tk.Label(alternativer_2, text="[m]", font=plain).grid(row=2, column=2, sticky="W")
         tk.Label(alternativer_2, text="(Positiv verdi = aktuell mast høyere)",
                  font=italic).grid(row=3, column=0, columnspan=3)
 
@@ -1096,71 +1368,85 @@ class Avansert(tk.Frame):
         # lastvektor
         lastvektor_frame = tk.LabelFrame(brukerdef_frame, text="Lastvektor", font=bold)
         lastvektor_frame.grid(row=1, column=0, sticky="W")
-        tk.Label(lastvektor_frame, text="f_x = positiv nedover",
-                 font=italic).grid(row=4, column=0, columnspan=3, sticky="E")
+        self.last_label_1 = tk.Label(lastvektor_frame, text="f_x = positiv nedover", font=italic)
+        self.last_label_1.grid(row=4, column=0, columnspan=3, sticky="E")
 
-        tk.Label(lastvektor_frame, text="f_x:",
-                 font=plain).grid(row=1, column=0, sticky="E")
-        tk.Entry(lastvektor_frame, textvariable=self.M.master.f_x,
-                 font=plain, width=10).grid(row=1, column=1)
-        tk.Label(lastvektor_frame, text="[N]",
-                 font=plain).grid(row=1, column=2, sticky="W")
-        tk.Label(lastvektor_frame, text="f_y:",
-                 font=plain).grid(row=2, column=0, sticky="E")
-        tk.Entry(lastvektor_frame, textvariable=self.M.master.f_y,
-                 font=plain, width=10).grid(row=2, column=1)
-        tk.Label(lastvektor_frame, text="[N]",
-                 font=plain).grid(row=2, column=2, sticky="W")
-        tk.Label(lastvektor_frame, text="f_z:",
-                 font=plain).grid(row=3, column=0, sticky="E")
-        tk.Entry(lastvektor_frame, textvariable=self.M.master.f_z,
-                 font=plain, width=10).grid(row=3, column=1)
-        tk.Label(lastvektor_frame, text="[N]",
-                 font=plain).grid(row=3, column=2, sticky="W")
+        self.last_label_2 = tk.Label(lastvektor_frame, text="f_x:", font=plain)
+        self.last_label_2.grid(row=1, column=0, sticky="E")
+        self.last_entry_1 = tk.Entry(lastvektor_frame, textvariable=self.M.master.f_x, font=plain, width=10)
+        self.last_entry_1.grid(row=1, column=1)
+        self.last_label_3 = tk.Label(lastvektor_frame, text="[N]", font=plain)
+        self.last_label_3.grid(row=1, column=2, sticky="W")
+        self.last_label_4 = tk.Label(lastvektor_frame, text="f_y:", font=plain)
+        self.last_label_4.grid(row=2, column=0, sticky="E")
+        self.last_entry_2 = tk.Entry(lastvektor_frame, textvariable=self.M.master.f_y, font=plain, width=10)
+        self.last_entry_2.grid(row=2, column=1)
+        self.last_label_5 = tk.Label(lastvektor_frame, text="[N]", font=plain)
+        self.last_label_5.grid(row=2, column=2, sticky="W")
+        self.last_label_6 = tk.Label(lastvektor_frame, text="f_z:", font=plain)
+        self.last_label_6.grid(row=3, column=0, sticky="E")
+        self.last_entry_3 = tk.Entry(lastvektor_frame, textvariable=self.M.master.f_z, font=plain, width=10)
+        self.last_entry_3.grid(row=3, column=1)
+        self.last_label_7 = tk.Label(lastvektor_frame, text="[N]", font=plain)
+        self.last_label_7.grid(row=3, column=2, sticky="W")
 
         # eksentrisitet
         eksentrisitet_frame = tk.LabelFrame(brukerdef_frame, text="Eksentrisitet fra masteinnspenning", font=bold)
         eksentrisitet_frame.grid(row=1, column=1, sticky="W")
-        tk.Label(eksentrisitet_frame, text="e_x = positiv oppover",
-                 font=italic).grid(row=4, column=0, columnspan=3, sticky="E")
+        self.eksentrisitet_label_1 = tk.Label(eksentrisitet_frame, text="e_x = positiv oppover", font=italic)
+        self.eksentrisitet_label_1.grid(row=4, column=0, columnspan=3, sticky="E")
 
-        tk.Label(eksentrisitet_frame, text="e_x:",
-                 font=plain).grid(row=1, column=0, sticky="E")
-        tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_x,
-                 font=plain, width=10).grid(row=1, column=1)
-        tk.Label(eksentrisitet_frame, text="[m]",
-                 font=plain).grid(row=1, column=2, sticky="W")
-        tk.Label(eksentrisitet_frame, text="e_y:",
-                 font=plain).grid(row=2, column=0, sticky="E")
-        tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_y,
-                 font=plain, width=10).grid(row=2, column=1)
-        tk.Label(eksentrisitet_frame, text="[m]",
-                 font=plain).grid(row=2, column=2, sticky="W")
-        tk.Label(eksentrisitet_frame, text="e_z:",
-                 font=plain).grid(row=3, column=0, sticky="E")
-        tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_z,
-                 font=plain, width=10).grid(row=3, column=1)
-        tk.Label(eksentrisitet_frame, text="[m]",
-                 font=plain).grid(row=3, column=2, sticky="W")
+        self.eksentrisitet_label_2 = tk.Label(eksentrisitet_frame, text="e_x:", font=plain)
+        self.eksentrisitet_label_2.grid(row=1, column=0, sticky="E")
+        self.eksentrisitet_entry_1 = tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_x, font=plain, width=10)
+        self.eksentrisitet_entry_1.grid(row=1, column=1)
+        self.eksentrisitet_label_3 = tk.Label(eksentrisitet_frame, text="[m]", font=plain)
+        self.eksentrisitet_label_3.grid(row=1, column=2, sticky="W")
+        self.eksentrisitet_label_4 = tk.Label(eksentrisitet_frame, text="e_y:", font=plain)
+        self.eksentrisitet_label_4.grid(row=2, column=0, sticky="E")
+        self.eksentrisitet_entry_2 = tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_y, font=plain, width=10)
+        self.eksentrisitet_entry_2.grid(row=2, column=1)
+        self.eksentrisitet_label_5 = tk.Label(eksentrisitet_frame, text="[m]", font=plain)
+        self.eksentrisitet_label_5.grid(row=2, column=2, sticky="W")
+        self.eksentrisitet_label_6 = tk.Label(eksentrisitet_frame, text="e_z:", font=plain)
+        self.eksentrisitet_label_6.grid(row=3, column=0, sticky="E")
+        self.eksentrisitet_entry_3 = tk.Entry(eksentrisitet_frame, textvariable=self.M.master.e_z, font=plain, width=10)
+        self.eksentrisitet_entry_3.grid(row=3, column=1)
+        self.eksentrisitet_label_7 = tk.Label(eksentrisitet_frame, text="[m]", font=plain)
+        self.eksentrisitet_label_7.grid(row=3, column=2, sticky="W")
 
         # vindareal
         areal_frame = tk.LabelFrame(brukerdef_frame, text="Vindfang", font=bold)
         areal_frame.grid(row=2, column=0, columnspan=2, sticky="W")
-        tk.Label(areal_frame, text="Effektivt areal for vind...",
-                 font=plain).grid(row=0, column=0, columnspan=3)
+        self.vindareal_label_1 = tk.Label(areal_frame, text="Effektivt areal for vind...", font=plain)
+        self.vindareal_label_1.grid(row=0, column=0, columnspan=3)
 
-        tk.Label(areal_frame, text="normalt sporet (A_xy):",
-                 font=plain).grid(row=1, column=0, sticky="E")
-        tk.Entry(areal_frame, textvariable=self.M.master.a_vind,
-                 font=plain, width=10).grid(row=1, column=1)
-        tk.Label(areal_frame, text="[m^2]",
-                 font=plain).grid(row=1, column=2, sticky="W")
-        tk.Label(areal_frame, text="parallelt sporet (A_xz):",
-                 font=plain).grid(row=2, column=0, sticky="E")
-        tk.Entry(areal_frame, textvariable=self.M.master.a_vind_par,
-                 font=plain, width=10).grid(row=2, column=1)
-        tk.Label(areal_frame, text="[m^2]",
-                 font=plain).grid(row=2, column=2, sticky="W")
+        self.vindareal_label_2 = tk.Label(areal_frame, text="normalt sporet (A_xy):", font=plain)
+        self.vindareal_label_2.grid(row=1, column=0, sticky="E")
+        self.vindareal_entry_1 = tk.Entry(areal_frame, textvariable=self.M.master.a_vind, font=plain, width=10)
+        self.vindareal_entry_1.grid(row=1, column=1)
+        self.vindareal_label_3 = tk.Label(areal_frame, text="[m^2]", font=plain)
+        self.vindareal_label_3.grid(row=1, column=2, sticky="W")
+        self.vindareal_label_4 = tk.Label(areal_frame, text="parallelt sporet (A_xz):", font=plain)
+        self.vindareal_label_4.grid(row=2, column=0, sticky="E")
+        self.vindareal_entry_2 = tk.Entry(areal_frame, textvariable=self.M.master.a_vind_par, font=plain, width=10)
+        self.vindareal_entry_2.grid(row=2, column=1)
+        self.vindareal_label_5 = tk.Label(areal_frame, text="[m^2]", font=plain)
+        self.vindareal_label_5.grid(row=2, column=2, sticky="W")
+
+
+        # tracers
+        self._mastefelt_tracer = self.M._mastefelt.trace("w", self._tillat_traverslengde)
+        self._alternativ_funksjon_tracer = self.M._alternativ_funksjon.trace("w", self._tillat_avspenningsbardun)
+        self._alternative_mastefunksjoner_tracer = self.M._alternative_mastefunksjoner.trace("w", self._tillat_avspenningsbardun)
+        self.auto_differansestrekk_tracer = self.M.master.auto_differansestrekk.trace("w", self._tillat_differansestrekk)
+        self.brukerdefinert_last_tracer = self.M.master.brukerdefinert_last.trace("w", self._tillat_brukerdefinert_last)
+
+        self._tillat_traverslengde()
+        self._tillat_avspenningsbardun()
+        self._tillat_differansestrekk()
+        self._tillat_brukerdefinert_last()
+
 
         # -------------------------------Lukk vindu-------------------------------
         lukk = tk.Frame(self)
@@ -1168,14 +1454,161 @@ class Avansert(tk.Frame):
         lukk_btn = tk.Button(lukk, text="Lukk vindu", font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5)
 
+    def _tillat_traverslengde(self, *args):
+        """Tillater spinbox dersom to utliggere er valgt."""
+
+        if not self.M._mastefelt.get() == 0:
+            self.traverslengde_label_1.config(state="normal")
+            self.traverslengde_label_2.config(state="normal")
+            self.traverslengde_spinbox.config(state="readonly")
+        else:
+            self.traverslengde_label_1.config(state="disabled")
+            self.traverslengde_label_2.config(state="disabled")
+            self.traverslengde_spinbox.config(state="disabled")
+
+    def _tillat_avspenningsbardun(self, *args):
+        """Tillater spinbox dersom fiavspenningsmast/avspenningsmast er valgt."""
+
+        if self.M._alternative_mastefunksjoner.get() and not self.M._alternativ_funksjon.get() == 0:
+            self.avspenningsbardun_checkbtn.config(state="normal")
+        else:
+            self.avspenningsbardun_checkbtn.config(state="disabled")
+
+    def _tillat_differansestrekk(self, *args):
+        """Tillater spinbox dersom automatisk differansestrekk ikke er valgt."""
+
+        if not self.M.master.auto_differansestrekk.get():
+            self.differansestrekk_label_1.config(state="normal")
+            self.differansestrekk_label_2.config(state="normal")
+            self.differansestrekk_entry.config(state="normal")
+        else:
+            self.differansestrekk_label_1.config(state="disabled")
+            self.differansestrekk_label_2.config(state="disabled")
+            self.differansestrekk_entry.config(state="disabled")
+
+    def _tillat_brukerdefinert_last(self, *args):
+        """Tillater tekstfelter dersom egendefinert kraftvektor er valgt."""
+
+        if self.M.master.brukerdefinert_last.get():
+            self.last_label_1.config(state="normal")
+            self.last_label_1.config(state="normal")
+            self.last_label_2.config(state="normal")
+            self.last_label_2.config(state="normal")
+            self.last_label_3.config(state="normal")
+            self.last_label_3.config(state="normal")
+            self.last_label_4.config(state="normal")
+            self.last_label_4.config(state="normal")
+            self.last_label_5.config(state="normal")
+            self.last_label_5.config(state="normal")
+            self.last_label_6.config(state="normal")
+            self.last_label_6.config(state="normal")
+            self.last_label_7.config(state="normal")
+            self.last_label_7.config(state="normal")
+            self.last_entry_1.config(state="normal")
+            self.last_entry_1.config(state="normal")
+            self.last_entry_2.config(state="normal")
+            self.last_entry_2.config(state="normal")
+            self.last_entry_3.config(state="normal")
+            self.last_entry_3.config(state="normal")
+            self.eksentrisitet_label_1.config(state="normal")
+            self.eksentrisitet_label_1.config(state="normal")
+            self.eksentrisitet_label_2.config(state="normal")
+            self.eksentrisitet_label_2.config(state="normal")
+            self.eksentrisitet_label_3.config(state="normal")
+            self.eksentrisitet_label_3.config(state="normal")
+            self.eksentrisitet_label_4.config(state="normal")
+            self.eksentrisitet_label_4.config(state="normal")
+            self.eksentrisitet_label_5.config(state="normal")
+            self.eksentrisitet_label_5.config(state="normal")
+            self.eksentrisitet_label_6.config(state="normal")
+            self.eksentrisitet_label_6.config(state="normal")
+            self.eksentrisitet_label_7.config(state="normal")
+            self.eksentrisitet_label_7.config(state="normal")
+            self.eksentrisitet_entry_1.config(state="normal")
+            self.eksentrisitet_entry_1.config(state="normal")
+            self.eksentrisitet_entry_2.config(state="normal")
+            self.eksentrisitet_entry_2.config(state="normal")
+            self.eksentrisitet_entry_3.config(state="normal")
+            self.eksentrisitet_entry_3.config(state="normal")
+            self.vindareal_label_1.config(state="normal")
+            self.vindareal_label_1.config(state="normal")
+            self.vindareal_label_2.config(state="normal")
+            self.vindareal_label_2.config(state="normal")
+            self.vindareal_label_3.config(state="normal")
+            self.vindareal_label_3.config(state="normal")
+            self.vindareal_label_4.config(state="normal")
+            self.vindareal_label_4.config(state="normal")
+            self.vindareal_label_5.config(state="normal")
+            self.vindareal_label_5.config(state="normal")
+            self.vindareal_entry_1.config(state="normal")
+            self.vindareal_entry_1.config(state="normal")
+            self.vindareal_entry_2.config(state="normal")
+            self.vindareal_entry_2.config(state="normal")
+        else:
+            self.last_label_1.config(state="disabled")
+            self.last_label_1.config(state="disabled")
+            self.last_label_2.config(state="disabled")
+            self.last_label_2.config(state="disabled")
+            self.last_label_3.config(state="disabled")
+            self.last_label_3.config(state="disabled")
+            self.last_label_4.config(state="disabled")
+            self.last_label_4.config(state="disabled")
+            self.last_label_5.config(state="disabled")
+            self.last_label_5.config(state="disabled")
+            self.last_label_6.config(state="disabled")
+            self.last_label_6.config(state="disabled")
+            self.last_label_7.config(state="disabled")
+            self.last_label_7.config(state="disabled")
+            self.last_entry_1.config(state="disabled")
+            self.last_entry_1.config(state="disabled")
+            self.last_entry_2.config(state="disabled")
+            self.last_entry_2.config(state="disabled")
+            self.last_entry_3.config(state="disabled")
+            self.last_entry_3.config(state="disabled")
+            self.eksentrisitet_label_1.config(state="disabled")
+            self.eksentrisitet_label_1.config(state="disabled")
+            self.eksentrisitet_label_2.config(state="disabled")
+            self.eksentrisitet_label_2.config(state="disabled")
+            self.eksentrisitet_label_3.config(state="disabled")
+            self.eksentrisitet_label_3.config(state="disabled")
+            self.eksentrisitet_label_4.config(state="disabled")
+            self.eksentrisitet_label_4.config(state="disabled")
+            self.eksentrisitet_label_5.config(state="disabled")
+            self.eksentrisitet_label_5.config(state="disabled")
+            self.eksentrisitet_label_6.config(state="disabled")
+            self.eksentrisitet_label_6.config(state="disabled")
+            self.eksentrisitet_label_7.config(state="disabled")
+            self.eksentrisitet_label_7.config(state="disabled")
+            self.eksentrisitet_entry_1.config(state="disabled")
+            self.eksentrisitet_entry_1.config(state="disabled")
+            self.eksentrisitet_entry_2.config(state="disabled")
+            self.eksentrisitet_entry_2.config(state="disabled")
+            self.eksentrisitet_entry_3.config(state="disabled")
+            self.eksentrisitet_entry_3.config(state="disabled")
+            self.vindareal_label_1.config(state="disabled")
+            self.vindareal_label_1.config(state="disabled")
+            self.vindareal_label_2.config(state="disabled")
+            self.vindareal_label_2.config(state="disabled")
+            self.vindareal_label_3.config(state="disabled")
+            self.vindareal_label_3.config(state="disabled")
+            self.vindareal_label_4.config(state="disabled")
+            self.vindareal_label_4.config(state="disabled")
+            self.vindareal_label_5.config(state="disabled")
+            self.vindareal_label_5.config(state="disabled")
+            self.vindareal_entry_1.config(state="disabled")
+            self.vindareal_entry_1.config(state="disabled")
+            self.vindareal_entry_2.config(state="disabled")
+            self.vindareal_entry_2.config(state="disabled")
+
     def _lukk_vindu(self):
-        """Lagrer verdier fra spinboxer og lukker vindu."""
+        """Sletter variabel-tracere og lukker vindu."""
 
-        self.M.master.materialkoeff.set(self.materialkoeff_spinbox.get())
-        self.M.master.traverslengde.set(self.traverslengde_spinbox.get())
-        self.M.master.differansestrekk.set(self.differansestrekk_spinbox.get())
+        self.M._mastefelt.trace_vdelete("w", self._mastefelt_tracer)
+        self.M._alternativ_funksjon.trace_vdelete("w", self._alternativ_funksjon_tracer)
+        self.M._alternative_mastefunksjoner.trace_vdelete("w", self._alternative_mastefunksjoner_tracer)
+        self.M.master.auto_differansestrekk.trace_vdelete("w", self.auto_differansestrekk_tracer)
+        self.M.master.brukerdefinert_last.trace_vdelete("w", self.brukerdefinert_last_tracer)
 
-        # lukker vindu
         self.master.destroy()
 
 
@@ -1205,12 +1638,13 @@ class Resultater(tk.Frame):
 
 
         # tracer
-        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", self._callback_krefter)
+        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", lambda *args:
+                                                                        (self._skriv_krefter(*args),
+                                                                         self._skriv_dimensjonerende_faktorer(*args)))
 
 
         self.kraftboks = tk.Text(hovedvindu, width=96, height=15)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
-        self._skriv_krefter()
 
         tk.Label(hovedvindu, text="Faktorer for utregning av UR",
                  font=plain).grid(row=0, column=4)
@@ -1219,7 +1653,6 @@ class Resultater(tk.Frame):
 
         self.faktorboks = tk.Text(hovedvindu, width=28, height=35)
         self.faktorboks.grid(row=2, column=4, rowspan=6, sticky="N")
-        self._skriv_dimensjonerende_faktorer()
 
 
         tk.Label(hovedvindu, text="Velg mastetype:",
@@ -1236,6 +1669,9 @@ class Resultater(tk.Frame):
 
         self.masteboks = tk.Text(hovedvindu, width=96, height=16)
         self.masteboks.grid(row=7, column=0, columnspan=3)
+
+        self._skriv_krefter()
+        self._skriv_dimensjonerende_faktorer()
         self._skriv_master()
 
 
@@ -1249,19 +1685,17 @@ class Resultater(tk.Frame):
                                   font=bold, command=self._eksporter_fundamast)
         self.eksporter_btn.pack(padx=20, pady=5, side="left")
         lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
-                             font=bold, command=self.lukk_resultater)
+                             font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=20, pady=5, side="left")
 
-    def _callback_krefter(self, *args):
-        self._skriv_krefter()
-        self._skriv_dimensjonerende_faktorer()
+    def _lukk_vindu(self):
+        """Sletter variabel-tracere og lukker vindu."""
 
-    def lukk_resultater(self):
         self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
         self.master.destroy()
 
-    def _skriv_krefter(self):
-        """Skriver krefter til tekstboks."""
+    def _skriv_krefter(self, *args):
+        """Formaterer og printer resultater for valgt mast."""
 
         if self.kraftboks.get(0.0) is not None:
             self.kraftboks.delete(1.0, "end")
@@ -1353,8 +1787,8 @@ class Resultater(tk.Frame):
 
         self.kraftboks.insert("end", s)
 
-    def _skriv_dimensjonerende_faktorer(self):
-        """Skriver dimensjonerende faktorer til tekstbokser (TIL VERIFIKASJONSFORMÅL)"""
+    def _skriv_dimensjonerende_faktorer(self, *args):
+        """Skriver parametre for utregning av utnyttelsesgrad til egen tekstboks."""
 
         if self.faktorboks.get(0.0) is not None:
             self.faktorboks.delete(1.0, "end")
@@ -1391,6 +1825,8 @@ class Resultater(tk.Frame):
 
 
     def _skriv_master(self):
+        """Formaterer og printer resultater for samtlige master av valgt type."""
+
         self.masteboks.delete(1.0, "end")
         masteliste = self.M.gittermaster if self.M.gittermast.get() else self.M.bjelkemaster
 
@@ -1404,7 +1840,7 @@ class Resultater(tk.Frame):
         if anbefalt_mast:
             s += "Anbefalt mast:  {}   ".format(anbefalt_mast.navn)
             UR = round(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100, 1)
-            s += "({:.1f}% utnyttelsesgrad, høydekrav OK)\n\n".format(UR)
+            s += "({:.1f}% utnyttelsesgrad, slankhetskrav OK)\n\n".format(UR)
         else:
             s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n"
 
@@ -1530,7 +1966,7 @@ class Bidrag(tk.Frame):
 
 
         # tracer
-        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", self._callback_bidrag)
+        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", self._skriv_bidrag)
 
 
         self.bidragsboks = tk.Text(hovedvindu, width=86, height=40)
@@ -1539,17 +1975,16 @@ class Bidrag(tk.Frame):
         self._skriv_bidrag()
 
         lukk_btn = tk.Button(self, text="Lukk vindu",
-                             font=bold, command=self.lukk_bidrag)
+                             font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5, side="right")
 
-    def _callback_bidrag(self, *args):
-        self._skriv_bidrag()
+    def _lukk_vindu(self):
+        """Sletter variabel-tracere og lukker vindu."""
 
-    def lukk_bidrag(self):
         self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
         self.master.destroy()
 
-    def _skriv_bidrag(self):
+    def _skriv_bidrag(self, *args):
         """Skriver bidrag inkl. alle lastfaktorer."""
 
         if self.bidragsboks.get(0.0) is not None:

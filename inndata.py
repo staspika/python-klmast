@@ -50,7 +50,6 @@ class Inndata(object):
         # System
         self.systemnavn = cfg.get("System", "systemnavn")
         self.radius = cfg.getint("System", "radius")
-        self.hogfjellsgrense = cfg.getboolean("System", "hogfjellsgrense")
         self.a1 = cfg.getfloat("System", "a1")
         self.a2 = cfg.getfloat("System", "a2")
         self.delta_h1 = cfg.getfloat("System", "delta_h1")

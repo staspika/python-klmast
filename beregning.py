@@ -95,7 +95,6 @@ def beregn(i):
 
 
 
-
     """
     # VERIFIKASJON AV STREKK I FASTAVSPENTE LEDNINGER
     import matplotlib.pyplot as plt
