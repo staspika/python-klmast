@@ -19,6 +19,7 @@ banner = (skrifttype, int(math.floor(skriftstr*1.3)))
 plain = (skrifttype, skriftstr)
 bold = (skrifttype, skriftstr, "bold")
 italic = (skrifttype, skriftstr, "italic")
+italic_small = (skrifttype, int(math.floor(skriftstr*0.8)), "italic")
 
 class KL_mast(tk.Tk):
     """Hovedprogram."""
@@ -597,7 +598,7 @@ class Hovedvindu(tk.Frame):
         tk.Label(g_2, text="[m]", font=plain).grid(row=2, column=2, sticky="W")
 
         # sms
-        tk.Label(g_2, text="      (s mast - s spor):", font=plain).grid(row=3, column=0, sticky="W")
+        tk.Label(g_2, text="          (senter mast - senter spor):", font=plain).grid(row=3, column=0, sticky="W")
         tk.Label(g_2, text="SMS", font=bold).grid(row=3, column=0, sticky="W")
         self.sms_spinbox = tk.Spinbox(g_2, increment=0.1, repeatinterval=60, width=10,
                                      from_=2.0, to=6.0)
@@ -639,51 +640,114 @@ class Hovedvindu(tk.Frame):
         avansert_btn = tk.Button(av_beregn, text="Avansert", font=bold, command=self._avansert)
         avansert_btn.grid(row=0, column=0, padx=12)
         beregn_btn = tk.Button(av_beregn, text="Kjør beregning", font=bold, command=self._beregn)
-        beregn_btn.grid(row=0, column=1, padx=12)
+        beregn_btn.grid(row=0, column=1, padx=12, pady=1)
         self.resultater_btn = tk.Button(av_beregn, text="Resultater", font=bold, fg="blue", command=self._resultater)
         self.resultater_btn.grid(row=0, column=2, padx=12)
         self.resultater_btn.grid_remove()
+        self.resultater_label = tk.Label(av_beregn, text="Gjennomfør\nny beregning", font=italic_small, state="disabled")
+        self.resultater_label.grid(row=0, column=2, padx=12)
+        self.resultater_label.grid_remove()
 
 
         # tracers
+        self.banestrekning_tracer = self.master.banestrekning.trace("w", self._krev_ny_beregning)
+        self.km_tracer = self.master.km.trace("w", self._krev_ny_beregning)
+        self.prosjektnr_tracer = self.master.prosjektnr.trace("w", self._krev_ny_beregning)
+        self.mastenr_tracer = self.master.mastenr.trace("w", self._krev_ny_beregning)
+        self.signatur_tracer = self.master.signatur.trace("w", self._krev_ny_beregning)
+        self.dato_tracer = self.master.dato.trace("w", self._krev_ny_beregning)
+        self._mastefelt_tracer = self._mastefelt.trace("w", self._krev_ny_beregning)
+        self.avstand_fixpunkt_tracer = self.master.avstand_fixpunkt.trace("w", self._krev_ny_beregning)
         self._alternative_mastefunksjoner_tracer =\
-            self._alternative_mastefunksjoner.trace("w", self._tillat_alternative_mastefunksjoner)
+            self._alternative_mastefunksjoner.trace("w", lambda args: (self._krev_ny_beregning(*args),
+                                                                       self._tillat_alternative_mastefunksjoner(*args)))
+        self._alternativ_funksjon_tracer = self._alternativ_funksjon.trace("w", self._krev_ny_beregning)
+        self.strekkutligger_tracer = self.master.strekkutligger.trace("w", self._krev_ny_beregning)
+        self.master_bytter_side_tracer = self.master.master_bytter_side.trace("w", self._krev_ny_beregning)
+        self.avspenningsbardun_tracer = self.master.avspenningsbardun.trace("w", self._krev_ny_beregning)
         self.matefjern_tracer = self.master.matefjern_ledn.trace("w", lambda *args:
-                                                                      (self._sjekk_ledningskombinasjon(*args),
+                                                                      (self._krev_ny_beregning(*args),
+                                                                       self._sjekk_ledningskombinasjon(*args),
                                                                        self._beregn_hoyder(*args),
                                                                        self._tillat_matefjern_antall(*args)))
+        self.matefjern_antall_tracer = self.master.matefjern_antall.trace("w", self._krev_ny_beregning)
         self.at_tracer = self.master.at_ledn.trace("w", lambda *args:
-                                                        (self._sjekk_ledningskombinasjon(*args),
+                                                        (self._krev_ny_beregning(*args),
+                                                         self._sjekk_ledningskombinasjon(*args),
                                                          self._beregn_hoyder(*args),
                                                          self._tillat_at_jord(*args),
-                                                         self._sjekk_avstand_kl()))
+                                                         self._sjekk_avstand_kl(*args)))
+        self.at_type_tracer = self.master.at_type.trace("w", self._krev_ny_beregning)
         self.forbigang_tracer = self.master.forbigang_ledn.trace("w", lambda *args:
-                                                                      (self._sjekk_ledningskombinasjon(*args),
+                                                                      (self._krev_ny_beregning(*args),
+                                                                       self._sjekk_ledningskombinasjon(*args),
                                                                        self._beregn_hoyder(*args)))
-        self.jord_tracer = self.master.jord_ledn.trace("w", lambda *args: (self._beregn_hoyder(*args),
+        self.jord_tracer = self.master.jord_ledn.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                           self._beregn_hoyder(*args),
                                                                            self._tillat_at_jord(*args)))
+        self.jord_type_tracer = self.master.jord_type.trace("w", self._krev_ny_beregning)
         self.fiberoptisk_tracer = self.master.fiberoptisk_ledn.trace("w", lambda *args:
-                                                                          (self._sjekk_ledningskombinasjon(*args),
+                                                                          (self._krev_ny_beregning(*args),
+                                                                           self._sjekk_ledningskombinasjon(*args),
                                                                            self._beregn_hoyder(*args)))
-        self.retur_tracer = self.master.retur_ledn.trace("w", lambda *args: (self._sjekk_ledningskombinasjon(*args),
+        self.retur_tracer = self.master.retur_ledn.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                             self._sjekk_ledningskombinasjon(*args),
                                                                              self._beregn_hoyder(*args)))
+        self.auto_differansestrekk_tracer = self.master.auto_differansestrekk.trace("w", self._krev_ny_beregning)
+        self.differansestrekk_tracer = self.master.differansestrekk.trace("w", self._krev_ny_beregning)
         self.hoyfjellsgrense_tracer = self._hoyfjellsgrense.trace("w", self._beregn_masteavstand_max)
-        self.vindkasthastighetstrykk_tracer = self.master.vindkasthastighetstrykk.trace("w",
-                                                                                        self._beregn_masteavstand_max)
-        self.systemnavn_tracer = self.master.systemnavn.trace("w", self._beregn_masteavstand_max)
-        self.radius_tracer = self.master.radius.trace("w", self._beregn_masteavstand_max)
+        self.systemnavn_tracer = self.master.systemnavn.trace("w", lambda *args:
+                                                                          (self._krev_ny_beregning(*args),
+                                                                           self._beregn_masteavstand_max(*args)))
+        self.radius_tracer = self.master.radius.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                          self._beregn_masteavstand_max(*args)))
+        self.a1_tracer = self.master.a1.trace("w", self._krev_ny_beregning)
+        self.a2_tracer = self.master.a2.trace("w", self._krev_ny_beregning)
+        self.delta_h1_tracer = self.master.delta_h1.trace("w", self._krev_ny_beregning)
+        self.delta_h2_tracer = self.master.delta_h2.trace("w", self._krev_ny_beregning)
+        self.vindkasthastighetstrykk_tracer = self.master.vindkasthastighetstrykk.trace("w", self._krev_ny_beregning)
         self.stromavtakerbredde_tracer = self.stromavtakerbredde.trace("w", self._beregn_masteavstand_max)
-        self.h_tracer = self.master.h.trace("w", self._beregn_hoyder)
-        self.hfj_tracer = self.master.hfj.trace("w", lambda *args: (self._beregn_hoyder(*args),
+        self.h_tracer = self.master.h.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                self._beregn_hoyder(*args)))
+        self.hfj_tracer = self.master.hfj.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                    self._beregn_hoyder(*args),
                                                                     self._sjekk_avstand_kl(*args)))
-        self.hf_tracer = self.master.hf.trace("w", self._beregn_hoyder)
-        self.hj_tracer = self.master.hj.trace("w", self._beregn_hoyder)
-        self.hr_tracer = self.master.hr.trace("w", self._beregn_hoyder)
-        self.fh_tracer = self.master.fh.trace("w", lambda *args: (self._beregn_masteavstand_max(*args),
+        self.hf_tracer = self.master.hf.trace("w", lambda *args: (self._krev_ny_beregning(*args),
                                                                   self._beregn_hoyder(*args)))
-        self.sh_tracer = self.master.sh.trace("w", self._beregn_hoyder)
-        self.e_tracer = self.master.e.trace("w", self._beregn_hoyder)
-        self.sms_tracer = self.master.sms.trace("w", self._beregn_hoyder)
+        self.hj_tracer = self.master.hj.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                  self._beregn_hoyder(*args)))
+        self.hr_tracer = self.master.hr.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                  self._beregn_hoyder(*args)))
+        self.fh_tracer = self.master.fh.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                  self._beregn_masteavstand_max(*args),
+                                                                  self._beregn_hoyder(*args)))
+        self.sh_tracer = self.master.sh.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                  self._beregn_hoyder(*args)))
+        self.e_tracer = self.master.e.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                self._beregn_hoyder(*args)))
+        self.sms_tracer = self.master.sms.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                    self._beregn_hoyder(*args)))
+        self.s235_tracer = self.master.s235.trace("w", self._krev_ny_beregning)
+        self.materialkoeff_tracer = self.master.materialkoeff.trace("w", self._krev_ny_beregning)
+        self.traverslengde_tracer = self.master.traverslengde.trace("w", self._krev_ny_beregning)
+        self.ec3_tracer = self.master.ec3.trace("w", self._krev_ny_beregning)
+        self.isklasse_tracer = self.master.isklasse.trace("w", self._krev_ny_beregning)
+        self.brukerdefinert_last_tracer = self.master.brukerdefinert_last.trace("w", self._krev_ny_beregning)
+        self.f_x_tracer = self.master.f_x.trace("w", self._krev_ny_beregning)
+        self.f_y_tracer = self.master.f_y.trace("w", self._krev_ny_beregning)
+        self.f_z_tracer = self.master.f_z.trace("w", self._krev_ny_beregning)
+        self.e_x_tracer = self.master.e_x.trace("w", self._krev_ny_beregning)
+        self.e_y_tracer = self.master.e_y.trace("w", self._krev_ny_beregning)
+        self.e_z_tracer = self.master.e_z.trace("w", self._krev_ny_beregning)
+        self.a_vind_tracer = self.master.a_vind.trace("w", self._krev_ny_beregning)
+        self.a_vind_par_tracer = self.master.a_vind_par.trace("w", self._krev_ny_beregning)
+
+    def _krev_ny_beregning(self, *args):
+        """Krever ny beregning dersom endring av primærvariabler."""
+
+        if self.resultater_btn.winfo_viewable():
+            self.resultater_btn.grid_remove()
+            self.resultater_label.grid()
 
     def _sjekk_ledningskombinasjon(self, *args):
         """Sjekker hvilke ledningsknapper som til enhver til er aktive."""
@@ -777,9 +841,7 @@ class Hovedvindu(tk.Frame):
         else:
             v = 30
         rho = 1.25
-        q_p_0 = 0.5 * rho * v**2
-        q_p = self.master.vindkasthastighetstrykk.get()
-        q_p = q_p if q_p >= q_p_0 else q_p_0
+        q_p = 0.5 * rho * v**2
         c_f = 1.1
         q = 1.2 * q_p * c_f * A_ref
 
@@ -1052,6 +1114,7 @@ class Hovedvindu(tk.Frame):
             self.bjelkemaster.extend(b)
             self.i = i
 
+        self.resultater_label.grid_remove()
         self.resultater_btn.grid()
 
 
@@ -1222,6 +1285,7 @@ class Klima(tk.Frame):
         lukk.grid(row=2, column=1, sticky="SE")
         lukk_btn = tk.Button(lukk, text="Lukk vindu", font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5)
+        self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
         # tracers
         self.referansevindhastighet_tracer = self.M.referansevindhastighet.trace("w", self._beregn_klimaverdier)
@@ -1310,7 +1374,6 @@ class Klima(tk.Frame):
         self.M.C_0.trace_vdelete("w", self.C_0_tracer)
 
         self.master.destroy()
-
 
 class Avansert(tk.Frame):
     """Vindu for avanserte funksjoner."""
@@ -1499,6 +1562,7 @@ class Avansert(tk.Frame):
         lukk.pack()
         lukk_btn = tk.Button(lukk, text="Lukk vindu", font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5)
+        self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
     def _tillat_traverslengde(self, *args):
         """Tillater spinbox dersom to utliggere er valgt."""
@@ -1737,6 +1801,7 @@ class Resultater(tk.Frame):
         lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
                              font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=20, pady=5, side="left")
+        self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
     def _lukk_vindu(self):
         """Sletter variabel-tracere og lukker vindu."""
@@ -2044,6 +2109,7 @@ class Bidrag(tk.Frame):
         lukk_btn = tk.Button(self, text="Lukk vindu",
                              font=bold, command=self._lukk_vindu)
         lukk_btn.pack(padx=5, pady=5, side="right")
+        self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
     def _lukk_vindu(self):
         """Sletter variabel-tracere og lukker vindu."""

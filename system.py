@@ -258,7 +258,7 @@ class Fastavspent(Ledning):
 
         return {"s": s, "s_diff": s_diff}
 
-    def _newtonraphson(self, L, G_sno, T, H_0=None, debug=False):
+    def _newtonraphson(self, L, G_sno, T, H_0=None, debug=False, metode=1):
         """Numerisk løsning av kabelstrekk i fastavspente ledninger.
 
         Følgende likevektsligning ligger til grunn for beregningene:
@@ -301,28 +301,39 @@ class Fastavspent(Ledning):
         a = E * A * (G_x * L) ** 2 / 24
         b = - H_0 + E * A * (G_0 * L) ** 2 / (24 * H_0 ** 2) + E * A * alpha * delta_T
 
-        # Initialverdier
-        iterasjoner = 0
-        H_x = H_0
-        H_list = []
-        delta_H_x = 0
 
-        while iterasjoner < 1000:
-            H_x -= delta_H_x
-            H_list.append(H_x)
-            r = a - H_x ** 3 - b * H_x ** 2
-            e = abs(r / a)
+        if metode == 1:
+            # Initialverdier
+            iterasjoner = 0
+            H_x = H_0
+            H_list = []
+            delta_H_x = 0
 
-            if e < 10 ** (-2):
-                return H_x
+            roots = numpy.roots([-1, -b, 0, a])
+            R = 0
+            for r in roots:
+                if numpy.isreal(r) and r > 0:
+                    R = numpy.real(r)
+                    break
 
-            r_d = - 3 * H_x ** 2 - 2 * b * H_x
-            delta_H_x = r / r_d
+            while iterasjoner < 1000:
+                H_x -= delta_H_x
+                H_list.append(H_x)
+                r = a - H_x ** 3 - b * H_x ** 2
+                e = abs(r / a)
 
-            iterasjoner += 1
+                if e < 10 ** (-2):
+                    print("{}, R = {}, H_x = {}, diff = {} %".format(self.navn, R, H_x, 100*R/H_x))
+                    return H_x
 
-        if debug:
-            return H_x, H_list, iterasjoner
+                r_d = - 3 * H_x ** 2 - 2 * b * H_x
+                delta_H_x = r / r_d
+
+                iterasjoner += 1
+
+            if debug:
+                return H_x, H_list, iterasjoner
+
 
         return H_x
 
