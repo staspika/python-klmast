@@ -94,43 +94,6 @@ def beregn(i):
     sys = system.hent_system(i)
 
 
-
-    """
-    # VERIFIKASJON AV STREKK I FASTAVSPENTE LEDNINGER
-    import matplotlib.pyplot as plt
-    strekkdata = {}
-
-    antall_ikkekonvergert = 0
-    #temperaturer = range(-40, 6)
-    temperaturer = (-40, -25, 0, 5)
-    lengder = [l/10 for l in range(300, 751)]
-
-    plt.figure()
-    x = range(1,1001)
-
-    for ledning in sys.ledninger:
-        if isinstance(ledning, system.Fastavspent):
-            namn = ledning.type + ": " + ledning.navn
-            strekkdata[namn] = {}
-            for T in temperaturer:
-                strekkdata[namn][str(T)] = {}
-                for L in lengder:
-                    strekkdata[namn][str(T)][str(L)] = ledning._newtonraphson(L=L, G_sno=0, T=T,
-                                                                              debug=True)
-                    if isinstance(strekkdata[namn][str(T)][str(L)], tuple):
-                        antall_ikkekonvergert += 1
-                        H_x = strekkdata[namn][str(T)][str(L)][1]
-                        plt.plot(x, H_x)
-
-    plt.show()
-
-    print("\nIkke-konvergerte beregninger: {}\n".format(antall_ikkekonvergert))
-    """
-
-
-
-
-
     # F_statisk_ledn = laster uavhengige av temperatur, snø og vind
     # F_dynamisk_ledn = laster som varierer med én eller flere klimaforhold
     F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.h)

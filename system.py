@@ -247,30 +247,27 @@ class Fastavspent(Ledning):
         :rtype: :class:`dict`
         """
 
-        s = self._newtonraphson(L=Ledning.a_mid, G_sno=G_sno, T=T, H_0=H_0)
+        s = self._strekklikevekt(L=Ledning.a_mid, G_sno=G_sno, T=T, H_0=H_0)
 
         if Fastavspent.auto_differansestrekk:
-            s_1 = self._newtonraphson(L=Ledning.a1, G_sno=G_sno, T=T, H_0=H_0)
-            s_2 = self._newtonraphson(L=Ledning.a2, G_sno=G_sno, T=T, H_0=H_0)
+            s_1 = self._strekklikevekt(L=Ledning.a1, G_sno=G_sno, T=T, H_0=H_0)
+            s_2 = self._strekklikevekt(L=Ledning.a2, G_sno=G_sno, T=T, H_0=H_0)
             s_diff = abs(s_1-s_2)
         else:
             s_diff = Fastavspent.differansestrekk_manuelt
 
         return {"s": s, "s_diff": s_diff}
 
-    def _newtonraphson(self, L, G_sno, T, H_0=None, debug=False, metode=1):
-        """Numerisk løsning av kabelstrekk i fastavspente ledninger.
+    def _strekklikevekt(self, L, G_sno, T, H_0=None):
+        """Finner kabelstrekk under gitte forhold for fastavspent ledning.
 
         Følgende likevektsligning ligger til grunn for beregningene:
 
         :math:`H_x^2 [H_x - H_0 + \\frac{EA(G_0 L)^2}{24H_0^2} + EA\\alpha \\Delta_T]
         = \\frac{EA(G_x L)^2}{24}`
 
-        Løsningen finnes ved hjelp av Newton-Raphson-iterasjoner
-        for en residualfunksjon utledet fra likevekstligningen
-        til en fastavspent kabel.
-        Løsning returneres dersom feilkriteriet ``e`` er innenfor
-        valgt grense eller antall iterasjoner overgår 1000.
+        Løsningen finnes ved å finne den reelle, positive egenverdien
+        tilhørende "companion matrix" for residualfunksjonens koeffisienter.
 
         :param float H_0: Initiell spennkraft i kabel :math:`[N]`
         :param float E: Kabelens E-modul :math:`[\\frac{N}{mm^2}]`
@@ -280,7 +277,6 @@ class Fastavspent(Ledning):
         :param float L: Masteavstand :math:`[m]`
         :param float alpha: Lengdeutvidelseskoeffisient :math:`[\\frac{1}{^{\\circ}C}]`
         :param float T: Lufttemperatur :math:`[^{\\circ}C]`
-        :param Boolean debug: Returnerer data for debugging i form av en :class:`tuple`
         :return: Endelig kabelstrekk ``H_x`` :math:`[N]`
         :rtype: :class:`float`
         """
@@ -301,39 +297,12 @@ class Fastavspent(Ledning):
         a = E * A * (G_x * L) ** 2 / 24
         b = - H_0 + E * A * (G_0 * L) ** 2 / (24 * H_0 ** 2) + E * A * alpha * delta_T
 
-
-        if metode == 1:
-            # Initialverdier
-            iterasjoner = 0
-            H_x = H_0
-            H_list = []
-            delta_H_x = 0
-
-            roots = numpy.roots([-1, -b, 0, a])
-            R = 0
-            for r in roots:
-                if numpy.isreal(r) and r > 0:
-                    R = numpy.real(r)
-                    break
-
-            while iterasjoner < 1000:
-                H_x -= delta_H_x
-                H_list.append(H_x)
-                r = a - H_x ** 3 - b * H_x ** 2
-                e = abs(r / a)
-
-                if e < 10 ** (-2):
-                    print("{}, R = {}, H_x = {}, diff = {} %".format(self.navn, R, H_x, 100*R/H_x))
-                    return H_x
-
-                r_d = - 3 * H_x ** 2 - 2 * b * H_x
-                delta_H_x = r / r_d
-
-                iterasjoner += 1
-
-            if debug:
-                return H_x, H_list, iterasjoner
-
+        roots = numpy.roots([-1, -b, 0, a])
+        H_x = 0
+        for r in roots:
+            if numpy.isreal(r) and r > 0:
+                H_x = numpy.real(r)
+                break
 
         return H_x
 
