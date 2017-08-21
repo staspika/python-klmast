@@ -71,7 +71,6 @@ class Inndata(object):
         self.s235 = cfg.getboolean("Div", "s235")
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
-        self.stromavtaker_type = cfg.get("Div", "stromavtaker_type")
         self.ec3 = cfg.getboolean("Div", "ec3")
         self.isklasse = cfg.get("Div", "isklasse")
 

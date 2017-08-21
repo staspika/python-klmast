@@ -111,7 +111,12 @@ at_list = ["Al 400-37", "Al 240-19", "Al 150-19"]
 jord_list = ["KHF-70", "KHF-95"]
 
 # Liste over strømavtakere
-stromavtaker_list = ["1600", "1800", "1950"]
+stromavtaker_1600 = {"Navn": "1600", "b_v": 0.746, "b_w": 0.800, "b_wc": 0.600, "alpha": 30}
+stromavtaker_1800 = {"Navn": "1800", "b_v": 0.806, "b_w": 0.900, "b_wc": 0.731, "alpha": 40}
+stromavtaker_1950 = {"Navn": "1950", "b_v": 0.954, "b_w": 0.975, "b_wc": 0.725, "alpha": 40}
+stromavtakere = [stromavtaker_1600, stromavtaker_1800, stromavtaker_1950]
+stromavtaker_list = [s["Navn"] for s in stromavtakere]
+
 
 # Liste over systemer
 system_list = ["System 20A", "System 20B", "System 25", "System 35"]
@@ -199,7 +204,7 @@ kat1 = {"k_r": 0.17, "z_0": 0.01, "z_min": 2}
 kat2 = {"k_r": 0.19, "z_0": 0.05, "z_min": 4}
 kat3 = {"k_r": 0.22, "z_0": 0.3, "z_min": 8}
 kat4 = {"k_r": 0.24, "z_0": 1.0, "z_min": 16}
-terrengkategorier = ([kat0, kat1, kat2, kat3, kat4])
+terrengkategorier = [kat0, kat1, kat2, kat3, kat4]
 
 regioner = {"Sør-Norge ekskl. Nord-Trøndelag": {"H_0": 900, "H_topp": 1500},
             "Nord-Trøndelag, Nordland, Troms": {"H_0": 700, "H_topp": 1300},

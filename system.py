@@ -11,14 +11,13 @@ class System(object):
     """Klasse for å representere alle valg av system."""
 
     def __init__(self, navn, ledninger, utligger,
-                 stromavtaker, B1, B2, arm, arm_sum,
+                 B1, B2, arm, arm_sum,
                  G_sno_tung, G_sno_lett):
         """Initialiserer :class:`System`-objekt.
 
         :param str navn: Systemets navn (20A, 20B, 25, 35)
         :param List ledninger: Ledninger påsatt systemet
         :param dict utligger: Systemets utligger
-        :param dict stromavtaker: Systemets stromavtaker
         :param float B1: Første sikksakkverdi :math:`[m]`
         :param float B2: Andre sikksakkverdi :math:`[m]`
         :param float arm: Momentarm utligger :math:`[m]`
@@ -30,7 +29,6 @@ class System(object):
         self.navn = navn
         self.ledninger = ledninger
         self.utligger = utligger
-        self.stromavtaker = stromavtaker
         self.B1 = B1
         self.B2 = B2
         self.arm = arm
@@ -494,14 +492,6 @@ def hent_system(i):
     utligger_s2x = {"Egenvekt": 170, "Momentarm": 0.35}
     utligger_s3x = {"Egenvekt": 200, "Momentarm": 0.40}
 
-    # Strømavtakere
-    stromavtakere = []
-    stromavtaker_1600 = {"Navn": "1600", "b_v": 0.746, "b_w": 0.800, "b_wc": 0.600, "alpha": 30}
-    stromavtaker_1800 = {"Navn": "1800", "b_v": 0.806, "b_w": 0.900, "b_wc": 0.731, "alpha": 40}
-    stromavtaker_1950 = {"Navn": "1950", "b_v": 0.954, "b_w": 0.975, "b_wc": 0.725, "alpha": 40}
-    stromavtakere.extend([stromavtaker_1600, stromavtaker_1800, stromavtaker_1950])
-
-
     # Legger til ledninger og utligger avhengig av valgt system
     if systemnavn == "20A":
         ledninger = [Bz_II_50_19, Ri_100_Cu, Bz_II_10_49]
@@ -552,17 +542,7 @@ def hent_system(i):
     if i.retur_ledn:
         ledninger.append(Al_240_61_iso)
 
-    # Legger til valgt strømavtaker
-    stromavtaker = None
-    # Setter strømavtaker
-    for s in stromavtakere:
-        if s["Navn"] == i.stromavtaker_type:
-            stromavtaker = s
-            break
-
-
-    return System(systemnavn, ledninger, utligger, stromavtaker,
-                  B1, B2, arm, arm_sum, Ledning.G_sno_tung, Ledning.G_sno_lett)
+    return System(systemnavn, ledninger, utligger, B1, B2, arm, arm_sum, Ledning.G_sno_tung, Ledning.G_sno_lett)
 
 
 def _beregn_arm(systemnavn, radius, sms, fh, strekkutligger, B1):

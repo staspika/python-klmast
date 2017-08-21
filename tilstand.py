@@ -180,6 +180,14 @@ class Tilstand(object):
             X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
             UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
 
+            self.dimensjonerende_faktorer["N_Ed_diag"] = N_Ed_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_diag"] = N_cr_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_diag"] = alpha_d
+            self.dimensjonerende_faktorer["lam_diag"] = lam_d
+            self.dimensjonerende_faktorer["phi_diag"] = phi_d
+            self.dimensjonerende_faktorer["X_diag"] = X_d
+            self.dimensjonerende_faktorer["UR_diag"] = UR_d
+
             # Gurt (vinkelprofil)
             N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
             L_g = mast.k_g * 1000
@@ -190,6 +198,14 @@ class Tilstand(object):
             phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
             X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
             UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
+
+            self.dimensjonerende_faktorer["N_Ed_gurt"] = N_Ed_g / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_gurt"] = N_cr_g / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_gurt"] = alpha_g
+            self.dimensjonerende_faktorer["lam_gurt"] = lam_g
+            self.dimensjonerende_faktorer["phi_gurt"] = phi_g
+            self.dimensjonerende_faktorer["X_gurt"] = X_g
+            self.dimensjonerende_faktorer["UR_gurt"] = UR_g
 
         return max(u, UR_y, UR_z, UR_d, UR_g)
 
@@ -224,9 +240,6 @@ class Tilstand(object):
 
         A = abs(M_vind/M_total)
         B = 1 -A
-
-        self.dimensjonerende_faktorer["M_total"] = M_total / 1000
-        self.dimensjonerende_faktorer["M_vind"] = M_vind / 1000
 
         return A, B
 
@@ -283,6 +296,7 @@ class Tilstand(object):
         """
 
         X_LT = 1.0
+
         if not mast.type == "H":
             # H-masten har ingen parameter It.
             my_vind, my_punkt = 2.05, 1.28

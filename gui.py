@@ -89,7 +89,6 @@ class KL_mast(tk.Tk):
         self.s235 = tk.BooleanVar()
         self.materialkoeff = tk.DoubleVar()
         self.traverslengde = tk.DoubleVar()
-        self.stromavtaker_type = tk.StringVar()
         self.ec3 = tk.BooleanVar()
         self.isklasse = tk.StringVar()
 
@@ -147,7 +146,6 @@ class KL_mast(tk.Tk):
                                        ("sms", self.sms.get())])
         cfg["Div"] = OrderedDict([("s235", self.s235.get()), ("materialkoeff", self.materialkoeff.get()),
                                   ("traverslengde", self.traverslengde.get()),
-                                  ("stromavtaker_type", self.stromavtaker_type.get()),
                                   ("ec3", self.ec3.get()), ("isklasse", self.isklasse.get())])
         cfg["Brukerdefinert last"] = OrderedDict([("brukerdefinert_last", self.brukerdefinert_last.get()),
                                                   ("f_x", self.f_x.get()), ("f_y", self.f_y.get()),
@@ -205,7 +203,6 @@ class Hovedvindu(tk.Frame):
         self.master.traverslengde.set(0.6)
         self.master.ec3.set(True)
         self.master.isklasse.set(lister.isklasse_list[2])
-        self.master.stromavtaker_type.set(lister.stromavtaker_list[2])
         self.master.brukerdefinert_last.set(False)
 
         # Hjelpevariabler, hovedvindu
@@ -228,6 +225,9 @@ class Hovedvindu(tk.Frame):
         self.z = tk.IntVar()
         self.C_0 = tk.DoubleVar()
 
+        # Hjelpevariabler, avansert
+        self.stromavtakerbredde = tk.StringVar()
+
         # Hjelpevariabel, resultater
         self.mast_resultater = tk.StringVar()
         self.gittermast = tk.BooleanVar()
@@ -249,6 +249,7 @@ class Hovedvindu(tk.Frame):
         self.terrengruhetskategori.set(2)
         self.z.set(10)
         self.C_0.set(1)
+        self.stromavtakerbredde.set(lister.stromavtaker_list[2])
         self.mast_resultater.set(lister.master_list[5])
         self.gittermast.set(True)
 
@@ -452,7 +453,7 @@ class Hovedvindu(tk.Frame):
         # avstand forrige mast
         tk.Label(system, text="Avstand til forrige mast:", font=plain) \
             .grid(row=4, column=0, sticky="W")
-        self.a1_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=25,
+        self.a1_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=20,
                                      command=self._masteavstand_a1)
         self.a1_spinbox.delete(0, "end")
         self.a1_spinbox.insert(0, self.master.a1.get())
@@ -463,7 +464,7 @@ class Hovedvindu(tk.Frame):
         # avstand neste mast
         tk.Label(system, text="Avstand til neste mast:", font=plain) \
             .grid(row=5, column=0, sticky="W")
-        self.a2_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=25,
+        self.a2_spinbox = tk.Spinbox(system, increment=0.1, width=10, repeatinterval=20,
                                      command=self._masteavstand_a2)
         self.a2_spinbox.delete(0, "end")
         self.a2_spinbox.insert(0, self.master.a2.get())
@@ -669,13 +670,17 @@ class Hovedvindu(tk.Frame):
         self.hoyfjellsgrense_tracer = self._hoyfjellsgrense.trace("w", self._beregn_masteavstand_max)
         self.vindkasthastighetstrykk_tracer = self.master.vindkasthastighetstrykk.trace("w",
                                                                                         self._beregn_masteavstand_max)
+        self.systemnavn_tracer = self.master.systemnavn.trace("w", self._beregn_masteavstand_max)
+        self.radius_tracer = self.master.radius.trace("w", self._beregn_masteavstand_max)
+        self.stromavtakerbredde_tracer = self.stromavtakerbredde.trace("w", self._beregn_masteavstand_max)
         self.h_tracer = self.master.h.trace("w", self._beregn_hoyder)
         self.hfj_tracer = self.master.hfj.trace("w", lambda *args: (self._beregn_hoyder(*args),
                                                                     self._sjekk_avstand_kl(*args)))
         self.hf_tracer = self.master.hf.trace("w", self._beregn_hoyder)
         self.hj_tracer = self.master.hj.trace("w", self._beregn_hoyder)
         self.hr_tracer = self.master.hr.trace("w", self._beregn_hoyder)
-        self.fh_tracer = self.master.fh.trace("w", self._beregn_hoyder)
+        self.fh_tracer = self.master.fh.trace("w", lambda *args: (self._beregn_masteavstand_max(*args),
+                                                                  self._beregn_hoyder(*args)))
         self.sh_tracer = self.master.sh.trace("w", self._beregn_hoyder)
         self.e_tracer = self.master.e.trace("w", self._beregn_hoyder)
         self.sms_tracer = self.master.sms.trace("w", self._beregn_hoyder)
@@ -748,16 +753,57 @@ class Hovedvindu(tk.Frame):
     def _beregn_masteavstand_max(self, *args):
         """Beregner maksimal tillatt masteavstand grunnet utblåsning av KL."""
 
-        masteavstand_max = self.master.vindkasthastighetstrykk.get() / 10
+        systemnavn = self.master.systemnavn.get()
+        systemnavn = systemnavn.split()[1] if systemnavn.startswith("System") else systemnavn
+        radius = self.master.radius.get()
+        fh = self.master.fh.get()
+        stromavtakerbredde = self.stromavtakerbredde.get()
+
+        B1, B2 = hjelpefunksjoner.beregn_sikksakk(systemnavn, radius)
+        e = hjelpefunksjoner.vindutblasning(systemnavn, radius, fh, stromavtakerbredde)
+
+        if systemnavn == "20A" or "20B":
+            s_kl = 2 * 10000
+            A_ref = (12 + 9)/1000  # [m^2/m]
+        elif systemnavn == "25":
+            s_kl = 2 * 15000
+            A_ref = (13.2 + 10.5)/1000  # [m^2/m]
+        else:  # System 35
+            s_kl = 2 * 7100
+            A_ref = (12 + 9)/1000  # [m^2/m]
+
+        if self._hoyfjellsgrense.get():
+            v = 37
+        else:
+            v = 30
+        rho = 1.25
+        q_p_0 = 0.5 * rho * v**2
+        q_p = self.master.vindkasthastighetstrykk.get()
+        q_p = q_p if q_p >= q_p_0 else q_p_0
+        c_f = 1.1
+        q = 1.2 * q_p * c_f * A_ref
+
+        B1, B2 = -B1, -B2
+        c1 = 2*e - B1 - B2
+        c2 = 2*e + B1 + B2
+        c3 = B1 - B2
+
+        A = math.sqrt((2*s_kl / (q + s_kl/radius)) * (c2 + math.sqrt((c2**2 - c3**2))))
+        if q - s_kl/radius > 0:
+            B = math.sqrt((2*s_kl / (q - s_kl/radius)) * (c1 + math.sqrt((c1**2 - c3**2))))
+        else:
+            B = A
+
+        masteavstand_max = min(A, B, 75.0)
+        masteavstand_max_avrundet = math.floor(masteavstand_max * 10) / 10
 
         self.a1_spinbox.config(state="normal")
         self.a2_spinbox.config(state="normal")
-        self.a1_spinbox.config(from_=masteavstand_max/2, to=masteavstand_max)
-        self.a2_spinbox.config(from_=masteavstand_max/2, to=masteavstand_max)
+        self.a1_spinbox.config(from_=0.0, to=masteavstand_max_avrundet)
+        self.a2_spinbox.config(from_=0.0, to=masteavstand_max_avrundet)
         self.a1_spinbox.config(state="readonly")
         self.a2_spinbox.config(state="readonly")
 
-        masteavstand_max_avrundet = math.floor(masteavstand_max*10)/10
         self.masteavstand_max_label.config(text="(Max. masteavstand = {:.1f} m)".format(masteavstand_max_avrundet))
 
     def _masteavstand_a1(self):
@@ -1314,7 +1360,7 @@ class Avansert(tk.Frame):
 
         # strømavtaker
         tk.Label(alternativer, text="Strømavtakerbredde:", font=plain).grid(row=3, column=0, sticky="W")
-        system_menu = tk.OptionMenu(alternativer, self.M.master.stromavtaker_type, *lister.stromavtaker_list)
+        system_menu = tk.OptionMenu(alternativer, self.M.stromavtakerbredde, *lister.stromavtaker_list)
         system_menu.config(font=plain, width=7)
         system_menu.grid(row=3, column=1, sticky="E")
         tk.Label(alternativer, text="[mm]", font=plain).grid(row=3, column=2, sticky="W")
@@ -1639,7 +1685,8 @@ class Resultater(tk.Frame):
 
         # tracer
         self.mast_resultater_tracer = self.M.mast_resultater.trace("w", lambda *args:
-                                                                        (self._skriv_krefter(*args),
+                                                                        (self._sett_mastetype(*args),
+                                                                         self._skriv_krefter(*args),
                                                                          self._skriv_dimensjonerende_faktorer(*args)))
 
 
@@ -1657,12 +1704,14 @@ class Resultater(tk.Frame):
 
         tk.Label(hovedvindu, text="Velg mastetype:",
                  font=plain).grid(row=5, column=0)
-        tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
-                       variable=self.M.gittermast, value=True,
-                       command=self._skriv_master).grid(row=5, column=1)
-        tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
-                       variable=self.M.gittermast, value=False,
-                       command=self._skriv_master).grid(row=5, column=2)
+        self.mastetype_btn_1 = tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
+                                              variable=self.M.gittermast, value=True,
+                                              command=self._skriv_master)
+        self.mastetype_btn_1.grid(row=5, column=1)
+        self.mastetype_btn_2 = tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
+                                              variable=self.M.gittermast, value=False,
+                                              command=self._skriv_master)
+        self.mastetype_btn_2.grid(row=5, column=2)
 
         tk.Label(hovedvindu, text="D = [mm]    phi = [grader]",
                  font=italic).grid(row=6, column=0)
@@ -1670,6 +1719,7 @@ class Resultater(tk.Frame):
         self.masteboks = tk.Text(hovedvindu, width=96, height=16)
         self.masteboks.grid(row=7, column=0, columnspan=3)
 
+        self._sett_mastetype()
         self._skriv_krefter()
         self._skriv_dimensjonerende_faktorer()
         self._skriv_master()
@@ -1693,6 +1743,23 @@ class Resultater(tk.Frame):
 
         self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
         self.master.destroy()
+
+    def _sett_mastetype(self, *args):
+        """Kobler valg av mast opp mot utskrift av mastetype."""
+
+        mast = None
+        for m in self.M.alle_master:
+            if m.navn==self.M.mast_resultater.get():
+                mast = m
+                break
+
+        if mast.type == "bjelke":
+            self.M.gittermast.set(False)
+        else:
+            self.M.gittermast.set(True)
+
+        self._skriv_master()
+
 
     def _skriv_krefter(self, *args):
         """Formaterer og printer resultater for valgt mast."""
@@ -1799,7 +1866,7 @@ class Resultater(tk.Frame):
                 mast = m
                 break
 
-        if mast.type == "bjelke":
+        if mast.tilstand_My_max.dimensjonerende_faktorer:
 
             faktorer = sorted([key for key in mast.tilstand_My_max.dimensjonerende_faktorer])
 
@@ -1819,7 +1886,7 @@ class Resultater(tk.Frame):
                 s += str(round(val, 2)).rjust(kolonnebredde)
                 s += "\n"
         else:
-            s = "\nKun aktiv for bjelkemaster.\n"
+            s = "\nIngen data tilgjengelig.\n"
 
         self.faktorboks.insert("end", s)
 
