@@ -377,7 +377,8 @@ class Hovedvindu(tk.Frame):
 
         # mate-/fjernledninger
         self.matefjern_button = tk.Checkbutton(fastavspente, text="Mate-/fjernledninger", font=plain,
-                                               variable=self.master.matefjern_ledn, onvalue=True, offvalue=False)
+                                               variable=self.master.matefjern_ledn, onvalue=True, offvalue=False,
+                                               command=self._sjekk_ledningskombinasjon)
         self.matefjern_button.grid(row=0, column=0, sticky="W")
         self.matefjern_label = tk.Label(fastavspente, text="Antall:", font=plain)
         self.matefjern_label.grid(row=0, column=1, sticky="E")
@@ -388,7 +389,8 @@ class Hovedvindu(tk.Frame):
 
         # at-ledninger
         self.at_button = tk.Checkbutton(fastavspente, text="AT-ledninger (2 stk.)", font=plain,
-                                        variable=self.master.at_ledn, onvalue=True, offvalue=False)
+                                        variable=self.master.at_ledn, onvalue=True, offvalue=False,
+                                        command=self._sjekk_ledningskombinasjon)
         self.at_button.grid(row=1, column=0, sticky="W")
         self.at_label = tk.Label(fastavspente, text="Type:", font=plain)
         self.at_label.grid(row=1, column=1, sticky="E")
@@ -398,7 +400,8 @@ class Hovedvindu(tk.Frame):
 
         # forbigangsledning
         self.forbigang_button = tk.Checkbutton(fastavspente, text="Forbigangsledning (1 stk.)", font=plain,
-                                               variable=self.master.forbigang_ledn, onvalue=True, offvalue=False)
+                                               variable=self.master.forbigang_ledn, onvalue=True, offvalue=False,
+                                               command=self._sjekk_ledningskombinasjon)
         self.forbigang_button.grid(row=2, column=0, sticky="W")
 
         # jordledning
@@ -413,12 +416,14 @@ class Hovedvindu(tk.Frame):
 
         # returledninger
         self.retur_button = tk.Checkbutton(fastavspente, text="Returledninger (2 stk.)", font=plain,
-                                           variable=self.master.retur_ledn, onvalue=True, offvalue=False)
+                                           variable=self.master.retur_ledn, onvalue=True, offvalue=False,
+                                           command=self._sjekk_ledningskombinasjon)
         self.retur_button.grid(row=4, column=0, sticky="W")
 
         # fiberoptisk ledning
         self.fiberoptisk_button = tk.Checkbutton(fastavspente, text="Fiberoptisk ledning (1 stk.)", font=plain,
-                                                 variable=self.master.fiberoptisk_ledn, onvalue=True, offvalue=False)
+                                                 variable=self.master.fiberoptisk_ledn, onvalue=True, offvalue=False,
+                                                 command=self._sjekk_ledningskombinasjon)
         self.fiberoptisk_button.grid(row=5, column=0, sticky="W")
 
 
@@ -667,20 +672,17 @@ class Hovedvindu(tk.Frame):
         self.avspenningsbardun_tracer = self.master.avspenningsbardun.trace("w", self._krev_ny_beregning)
         self.matefjern_tracer = self.master.matefjern_ledn.trace("w", lambda *args:
                                                                       (self._krev_ny_beregning(*args),
-                                                                       self._sjekk_ledningskombinasjon(*args),
                                                                        self._beregn_hoyder(*args),
                                                                        self._tillat_matefjern_antall(*args)))
         self.matefjern_antall_tracer = self.master.matefjern_antall.trace("w", self._krev_ny_beregning)
         self.at_tracer = self.master.at_ledn.trace("w", lambda *args:
                                                         (self._krev_ny_beregning(*args),
-                                                         self._sjekk_ledningskombinasjon(*args),
                                                          self._beregn_hoyder(*args),
                                                          self._tillat_at_jord(*args),
                                                          self._sjekk_avstand_kl(*args)))
         self.at_type_tracer = self.master.at_type.trace("w", self._krev_ny_beregning)
         self.forbigang_tracer = self.master.forbigang_ledn.trace("w", lambda *args:
                                                                       (self._krev_ny_beregning(*args),
-                                                                       self._sjekk_ledningskombinasjon(*args),
                                                                        self._beregn_hoyder(*args)))
         self.jord_tracer = self.master.jord_ledn.trace("w", lambda *args: (self._krev_ny_beregning(*args),
                                                                            self._beregn_hoyder(*args),
@@ -688,10 +690,8 @@ class Hovedvindu(tk.Frame):
         self.jord_type_tracer = self.master.jord_type.trace("w", self._krev_ny_beregning)
         self.fiberoptisk_tracer = self.master.fiberoptisk_ledn.trace("w", lambda *args:
                                                                           (self._krev_ny_beregning(*args),
-                                                                           self._sjekk_ledningskombinasjon(*args),
                                                                            self._beregn_hoyder(*args)))
         self.retur_tracer = self.master.retur_ledn.trace("w", lambda *args: (self._krev_ny_beregning(*args),
-                                                                             self._sjekk_ledningskombinasjon(*args),
                                                                              self._beregn_hoyder(*args)))
         self.auto_differansestrekk_tracer = self.master.auto_differansestrekk.trace("w", self._krev_ny_beregning)
         self.differansestrekk_tracer = self.master.differansestrekk.trace("w", self._krev_ny_beregning)
@@ -749,13 +749,12 @@ class Hovedvindu(tk.Frame):
             self.resultater_btn.grid_remove()
             self.resultater_label.grid()
 
-    def _sjekk_ledningskombinasjon(self, *args):
+    def _sjekk_ledningskombinasjon(self):
         """Sjekker hvilke ledningsknapper som til enhver til er aktive."""
 
         matefjern_ledn = self.master.matefjern_ledn.get()
         at_ledn = self.master.at_ledn.get()
         forbigang_ledn = self.master.forbigang_ledn.get()
-        jord_ledn = self.master.jord_ledn.get()
         fiberoptisk_ledn = self.master.fiberoptisk_ledn.get()
         retur_ledn = self.master.retur_ledn.get()
 
@@ -772,6 +771,8 @@ class Hovedvindu(tk.Frame):
             self.matefjern_button.config(state="disabled")
             self.forbigang_button.config(state="disabled")
             self.retur_button.config(state="disabled")
+        if forbigang_ledn:
+            self.fiberoptisk_button.config(state="disabled")
         if fiberoptisk_ledn:
             self.forbigang_button.config(state="disabled")
 
