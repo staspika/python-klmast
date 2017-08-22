@@ -104,6 +104,10 @@ class KL_mast(tk.Tk):
         self.a_vind = tk.DoubleVar()
         self.a_vind_par = tk.DoubleVar()
 
+        # Hjelpevariabler
+        self.referansevindhastighet = tk.IntVar()
+        self.kastvindhastighet = tk.DoubleVar()
+
 
     def skriv_ini(self):
         """Skriver varibelverdier fra hovedprogram til .ini-fil."""
@@ -154,6 +158,8 @@ class KL_mast(tk.Tk):
                                                   ("e_y", self.e_y.get()), ("e_z", self.e_z.get()),
                                                   ("a_vind", self.a_vind.get()),
                                                   ("a_vind_par", self.a_vind_par.get())])
+        cfg["Hjelpevariabler"] = OrderedDict([("referansevindhastighet", self.referansevindhastighet.get()),
+                                              ("kastvindhastighet", self.kastvindhastighet.get())])
 
         with open("input.ini", "w+") as ini:
             cfg.write(ini)
@@ -205,6 +211,8 @@ class Hovedvindu(tk.Frame):
         self.master.ec3.set(True)
         self.master.isklasse.set(lister.isklasse_list[2])
         self.master.brukerdefinert_last.set(False)
+        self.master.referansevindhastighet.set(22)
+        self.master.kastvindhastighet.set(33.7)
 
         # Hjelpevariabler, hovedvindu
         self._mastefelt = tk.IntVar()
@@ -214,7 +222,6 @@ class Hovedvindu(tk.Frame):
         self._samme_avstand_a = tk.BooleanVar()
 
         # Hjelpevariabler, vind
-        self.referansevindhastighet = tk.IntVar()
         self.c_dir = tk.DoubleVar()
         self.c_season = tk.DoubleVar()
         self.c_alt = tk.DoubleVar()
@@ -239,7 +246,6 @@ class Hovedvindu(tk.Frame):
         self._alternativ_funksjon.set(0)
         self._hoyfjellsgrense.set(False)
         self._samme_avstand_a.set(True)
-        self.referansevindhastighet.set(22)
         self.c_dir.set(1.0)
         self.c_season.set(1.0)
         self.c_alt.set(1.0)
@@ -1065,6 +1071,12 @@ class Hovedvindu(tk.Frame):
         bidrag_root = tk.Toplevel(self)
         bidrag_vindu = Bidrag(bidrag_root)
 
+    def _tabell(self):
+        """Oppretter vindu for tabell."""
+
+        tabell_root = tk.Toplevel(self)
+        tabell_vindu = Tabell(tabell_root)
+
     def _beregn(self):
         """Setter manglende inputparametre og kaller skriving av .ini-fil."""
 
@@ -1106,7 +1118,6 @@ class Hovedvindu(tk.Frame):
         self.master.skriv_ini()
 
         self.alle_master, self.gittermaster, self.bjelkemaster = [], [], []
-        self.i = None
         with open("input.ini", "r") as ini:
             g, b, i = main.beregn_master(ini)
             self.alle_master.extend(g)
@@ -1137,9 +1148,9 @@ class Klima(tk.Frame):
         tk.Label(refvind_frame, text="v_b,0:", font=plain).grid(row=0, column=0, sticky="W")
         self.refvind_spinbox = tk.Spinbox(refvind_frame, from_=20, to=30, width=10)
         self.refvind_spinbox.delete(0, "end")
-        self.refvind_spinbox.insert(0, int(self.M.referansevindhastighet.get()))
-        self.refvind_spinbox.config(font=plain, state="readonly",
-                                    command=lambda: self.M.referansevindhastighet.set(self.refvind_spinbox.get()))
+        self.refvind_spinbox.insert(0, int(self.M.master.referansevindhastighet.get()))
+        self.refvind_spinbox.config(font=plain, state="readonly", command=lambda:
+                                    self.M.master.referansevindhastighet.set(self.refvind_spinbox.get()))
         self.refvind_spinbox.grid(row=0, column=1, sticky="W")
         tk.Label(refvind_frame, text="[m/s]", font=plain).grid(row=0, column=2, sticky="W")
 
@@ -1289,7 +1300,7 @@ class Klima(tk.Frame):
         self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
         # tracers
-        self.referansevindhastighet_tracer = self.M.referansevindhastighet.trace("w", self._beregn_klimaverdier)
+        self.referansevindhastighet_tracer = self.M.master.referansevindhastighet.trace("w", self._beregn_klimaverdier)
         self.c_dir_tracer = self.M.c_dir.trace("w", self._beregn_klimaverdier)
         self.c_season_tracer = self.M.c_season.trace("w", self._beregn_klimaverdier)
         self.region_tracer = self.M.region.trace("w", self._sett_H)
@@ -1313,7 +1324,7 @@ class Klima(tk.Frame):
     def _beregn_c_alt(self, *args):
         """Beregner og lagrer høydefaktor c_alt"""
 
-        v_b_0 = self.M.referansevindhastighet.get()
+        v_b_0 = self.M.master.referansevindhastighet.get()
         region = self.M.region.get()
         H = self.M.H.get()
 
@@ -1328,7 +1339,7 @@ class Klima(tk.Frame):
     def _beregn_klimaverdier(self, *args):
         """Beregner øvrige klimaverdier."""
 
-        v_b_0 = self.M.referansevindhastighet.get()
+        v_b_0 = self.M.master.referansevindhastighet.get()
         c_dir = self.M.c_dir.get()
         c_season = self.M.c_season.get()
         c_alt = self.M.c_alt.get()
@@ -1359,11 +1370,12 @@ class Klima(tk.Frame):
         self.q_p_label.config(text=tekst)
 
         self.M.master.vindkasthastighetstrykk.set(q_p)
+        self.M.master.kastvindhastighet.set(v_p)
 
     def _lukk_vindu(self):
         """Sletter variabel-tracere og lukker vindu."""
 
-        self.M.referansevindhastighet.trace_vdelete("w", self.referansevindhastighet_tracer)
+        self.M.master.referansevindhastighet.trace_vdelete("w", self.referansevindhastighet_tracer)
         self.M.c_dir.trace_vdelete("w", self.c_dir_tracer)
         self.M.c_season.trace_vdelete("w", self.c_season_tracer)
         self.M.region.trace_vdelete("w", self.region_tracer)
@@ -1400,7 +1412,7 @@ class Avansert(tk.Frame):
         # materialkoeffisient
         tk.Label(alternativer, text="Materialkoeffisient:",
                  font=plain).grid(row=1, column=0, sticky="W")
-        self.materialkoeff_spinbox = tk.Spinbox(alternativer, from_=1.0, to=1.15, increment=0.05, width=10,
+        self.materialkoeff_spinbox = tk.Spinbox(alternativer, from_=1.0, to=1.30, increment=0.05, width=10,
                                                 command=lambda: self.M.master.materialkoeff.set(
                                                     self.materialkoeff_spinbox.get()))
         self.materialkoeff_spinbox.delete(0, "end")
@@ -1747,14 +1759,6 @@ class Resultater(tk.Frame):
         system_menu.config(font=plain, width=7)
         system_menu.grid(row=1, column=2, sticky="W")
 
-
-        # tracer
-        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", lambda *args:
-                                                                        (self._sett_mastetype(*args),
-                                                                         self._skriv_krefter(*args),
-                                                                         self._skriv_dimensjonerende_faktorer(*args)))
-
-
         self.kraftboks = tk.Text(hovedvindu, width=96, height=15)
         self.kraftboks.grid(row=2, column=0, columnspan=3)
 
@@ -1763,20 +1767,21 @@ class Resultater(tk.Frame):
         tk.Label(hovedvindu, text="M_cr = [kNm]    N_cr = [kN]",
                  font=italic).grid(row=1, column=4)
 
-        self.faktorboks = tk.Text(hovedvindu, width=28, height=35)
+        scrollbar = tk.Scrollbar(hovedvindu)
+        scrollbar.grid(row=2, column=5, rowspan=6, sticky="NS")
+        self.faktorboks = tk.Text(hovedvindu, width=28, height=35, yscrollcommand=scrollbar.set)
         self.faktorboks.grid(row=2, column=4, rowspan=6, sticky="N")
+        scrollbar.config(command=self.faktorboks.yview)
 
 
-        tk.Label(hovedvindu, text="Velg mastetype:",
+        tk.Label(hovedvindu, text="Utnyttelsesgrad og forskyvninger",
                  font=plain).grid(row=5, column=0)
         self.mastetype_btn_1 = tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
-                                              variable=self.M.gittermast, value=True,
-                                              command=self._skriv_master)
-        self.mastetype_btn_1.grid(row=5, column=1)
+                                              variable=self.M.gittermast, value=True)
+        self.mastetype_btn_1.grid(row=6, column=1)
         self.mastetype_btn_2 = tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
-                                              variable=self.M.gittermast, value=False,
-                                              command=self._skriv_master)
-        self.mastetype_btn_2.grid(row=5, column=2)
+                                              variable=self.M.gittermast, value=False)
+        self.mastetype_btn_2.grid(row=6, column=2)
 
         tk.Label(hovedvindu, text="D = [mm]    phi = [grader]",
                  font=italic).grid(row=6, column=0)
@@ -1784,10 +1789,20 @@ class Resultater(tk.Frame):
         self.masteboks = tk.Text(hovedvindu, width=96, height=16)
         self.masteboks.grid(row=7, column=0, columnspan=3)
 
+
         self._sett_mastetype()
         self._skriv_krefter()
         self._skriv_dimensjonerende_faktorer()
         self._skriv_master()
+
+
+        # tracers
+        self.mast_resultater_tracer = self.M.mast_resultater.trace("w", lambda *args:
+                                                                        (self._sett_mastetype(*args),
+                                                                         self._skriv_krefter(*args),
+                                                                         self._skriv_dimensjonerende_faktorer(*args)))
+        self.gittermast_tracer = self.M.gittermast.trace("w", self._skriv_master)
+
 
 
         # -------------------------------Knapper-------------------------------
@@ -1795,19 +1810,23 @@ class Resultater(tk.Frame):
         knapper_frame.pack()
         bidrag_btn = tk.Button(knapper_frame, text="Vis kraftbidrag", font=bold,
                                command=self.M._bidrag)
-        bidrag_btn.pack(padx=20, pady=5, side="left")
+        bidrag_btn.pack(padx=15, pady=5, side="left")
+        tabell_btn = tk.Button(knapper_frame, text="Skriv tabell", font=bold,
+                               command=self.M._tabell)
+        tabell_btn.pack(padx=15, pady=5, side="left")
         self.eksporter_btn = tk.Button(knapper_frame, text="Eksporter til Fundamast",
                                   font=bold, command=self._eksporter_fundamast)
-        self.eksporter_btn.pack(padx=20, pady=5, side="left")
+        self.eksporter_btn.pack(padx=15, pady=5, side="left")
         lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
                              font=bold, command=self._lukk_vindu)
-        lukk_btn.pack(padx=20, pady=5, side="left")
+        lukk_btn.pack(padx=15, pady=5, side="left")
         self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
     def _lukk_vindu(self):
         """Sletter variabel-tracere og lukker vindu."""
 
         self.M.mast_resultater.trace_vdelete("w", self.mast_resultater_tracer)
+        self.M.gittermast.trace_vdelete("w", self.gittermast_tracer)
         self.master.destroy()
 
     def _sett_mastetype(self, *args):
@@ -1823,8 +1842,6 @@ class Resultater(tk.Frame):
             self.M.gittermast.set(False)
         else:
             self.M.gittermast.set(True)
-
-        self._skriv_master()
 
 
     def _skriv_krefter(self, *args):
@@ -1957,7 +1974,7 @@ class Resultater(tk.Frame):
         self.faktorboks.insert("end", s)
 
 
-    def _skriv_master(self):
+    def _skriv_master(self, *args):
         """Formaterer og printer resultater for samtlige master av valgt type."""
 
         self.masteboks.delete(1.0, "end")
@@ -2069,7 +2086,7 @@ class Resultater(tk.Frame):
         with open("FUNDAMAST.DAT", "w+") as fil:
             fil.write(s)
 
-        self.eksporter_btn.config(text="Eksport av {} fullført".format(mast.navn), font=plain)
+        self.eksporter_btn.config(text="Eksport av {}-mast fullført".format(mast.navn), font=plain)
 
 
 
@@ -2225,7 +2242,193 @@ class Bidrag(tk.Frame):
 
         return R
 
+class Tabell(tk.Frame):
+    """Vindu for tabellutskrift."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialiserer vindu."""
+        tk.Frame.__init__(self, *args, **kwargs)
+        self.pack(fill="both")
+
+        self.M = self.master.master
+
+        hovedvindu = tk.LabelFrame(self, text="Tabell", font=bold)
+        hovedvindu.pack()
+
+        tk.Label(hovedvindu, text="Tabulerte data fra siste gjennomførte beregning",
+                 font=plain).grid(row=0, column=0)
+
+        self.mastetype_btn_1 = tk.Radiobutton(hovedvindu, text="Gittermast", font=plain,
+                                              variable=self.M.gittermast, value=True)
+        self.mastetype_btn_1.grid(row=0, column=1)
+        self.mastetype_btn_2 = tk.Radiobutton(hovedvindu, text="Bjelkemast", font=plain,
+                                              variable=self.M.gittermast, value=False)
+        self.mastetype_btn_2.grid(row=0, column=2)
+
+        scrollbar = tk.Scrollbar(hovedvindu)
+        scrollbar.grid(row=1, column=3, sticky="NS")
+        self.tabellboks = tk.Text(hovedvindu, width=70, height=47, yscrollcommand=scrollbar.set)
+        self.tabellboks.grid(row=1, column=0, columnspan=3)
+        scrollbar.config(command=self.tabellboks.yview)
+
+
+        self._skriv_tabell()
+
+        # tracer
+        self.gittermast_tracer = self.M.gittermast.trace("w", self._skriv_tabell)
+
+
+        # -------------------------------Knapper-------------------------------
+        knapper_frame = tk.Frame(self)
+        knapper_frame.pack()
+        self.skriv_btn = tk.Button(knapper_frame, text="Skriv til dokument",
+                                  font=bold, command=self._skriv_dokument)
+        self.skriv_btn.pack(padx=15, pady=5, side="left")
+        lukk_btn = tk.Button(knapper_frame, text="Lukk vindu",
+                             font=bold, command=self._lukk_vindu)
+        lukk_btn.pack(padx=15, pady=5, side="left")
+        self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
+
+    def _skriv_tabell(self, *args):
+        """Skriver tabell for anbefalt mast fra siste beregning."""
+
+        self.tabellboks.delete(1.0, "end")
+        masteliste = self.M.gittermaster if self.M.gittermast.get() else self.M.bjelkemaster
+
+        mast = None
+        for m in masteliste:
+            if m.h_max >= self.M.master.h.get() and m.tilstand_UR_max.utnyttelsesgrad <= 1.0:
+                mast = m
+                break
+
+        kolonnebredde = 52
+
+        s = "\n"
+        s += "Prosjektnummer {}\n".format(self.M.i.prosjektnr)
+        s += "Banestrekning\n{}\n".format(self.M.i.banestrekning)
+        s += "\n"
+
+        s += "Mastenummer".ljust(kolonnebredde) + "{}\n".format(self.M.i.mastenr)
+        s += "Km".ljust(kolonnebredde) + "{}\n".format(self.M.i.km)
+        systemnavn = self.M.i.systemnavn.split()[1] if self.M.i.systemnavn.startswith("System") else self.M.i.systemnavn
+        s += "System".ljust(kolonnebredde) + "S{}\n".format(systemnavn)
+        s += "Mastetype / Utnyttelsesgrad".ljust(kolonnebredde)
+        s += "{}-mast / {:.2f}\n".format(mast.navn, mast.tilstand_My_max.utnyttelsesgrad)
+        staalkvalitet = "S235" if self.M.i.s235 else "S355"
+        s += "Stålkvalitet i mast".ljust(kolonnebredde) + "{}\n".format(staalkvalitet)
+        s += "\n"
+
+        s += "Vindkasthastighetstrykk [kN/m^2]".ljust(kolonnebredde)
+        s += "{:.2f}\n".format(self.M.i.vindkasthastighetstrykk / 1000)
+        s += "Referanse- / kastvindhastighet [m/s]".ljust(kolonnebredde)
+        s += "{} / {:.1f}\n".format(self.M.i.referansevindhastighet, self.M.i.kastvindhastighet)
+        s += "\n"
+
+        s += "Geometri\n"
+        s += "Høyde fjernledning eller AT-ledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hfj)
+        s += "Høyde forbigangs- eller fiberoptisk ledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hf)
+        s += "Høyde jordledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hj)
+        s += "Høyde returledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hr)
+        s += "Høyde kontakttråd [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.fh)
+        s += "Systemhøyde [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.sh)
+        s += "SMS (senter mast - senter spor) [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.sms)
+        s += "e (SOK - topp fundament) [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.e)
+        s += "Mastehøyde [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.h)
+        s += "Masteavstand (forrige mast) [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.a1)
+        s += "Masteavstand (neste mast) [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.a2)
+        s += "Kurveradius [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.radius)
+        s += "\n"
+
+        s += "Mastefunksjoner\n"
+        s += "Linjemast m/ enkel utligger".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.linjemast_utliggere==1 else "")
+        s += "Linjemast m/ dobbel utligger".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.linjemast_utliggere==2 else "")
+        s += "Siste seksjonsmast før avspenning".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.siste_for_avspenning else "")
+        s += "Fixpunktmast".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.fixpunktmast else "")
+        s += "Fixavspenningsmast".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.fixavspenningsmast else "")
+        s += "Avspenningsmast".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.avspenningsmast else "")
+        s += "Strekkutligger".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.strekkutligger else "")
+        s += "Trykkutligger".ljust(kolonnebredde)
+        s += "{}\n".format("x" if not self.M.i.strekkutligger else "")
+        s += "Master bytter side".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.master_bytter_side else "")
+        s += "1 stk. mate-/fjernledning".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.matefjern_type if self.M.i.matefjern_ledn and self.M.i.mastefjern_antall==1 else "")
+        s += "2 stk. mate-/fjernledninger".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.matefjern_type if self.M.i.matefjern_ledn and self.M.i.mastefjern_antall==2 else "")
+        s += "AT-ledninger (2 stk.)".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.at_type if self.M.i.at_ledn else "")
+        s += "Forbigangsledning (1 stk.)".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.forbigang_ledn else "")
+        s += "Jordledning (1 stk.)".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.jord_type if self.M.i.jord_ledn else "")
+        s += "Returledninger (2 stk.)".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.retur_ledn else "")
+        s += "Fiberoptisk ledning (1 stk.)".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.fiberoptisk_ledn else "")
+        s += "\n"
+
+        s += "Krefter i bruddgrense\n"
+        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_My_max.K[4] / 1000)
+        s += "Vy / Vz [kN]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_My_max.K[1] / 1000, mast.tilstand_My_max.K[3] / 1000)
+        s += "My / Mz [kNm]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_My_max.K[0] / 1000, mast.tilstand_My_max.K[2] / 1000)
+        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_My_max.K[5] / 1000)
+        s += "\n"
+
+        s += "Krefter i bruksgrense (forskyvning KL)\n"
+        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K[4] / 1000)
+        s += "Vy / Vz [kN]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_kl_max.K[1] / 1000, mast.tilstand_Dz_kl_max.K[3] / 1000)
+        s += "My / Mz [kNm]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_kl_max.K[0] / 1000, mast.tilstand_Dz_kl_max.K[2] / 1000)
+        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K[5] / 1000)
+        s += "\n"
+
+        s += "Krefter i bruksgrense (forskyvning totalt)\n"
+        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K[4] / 1000)
+        s += "Vy / Vz [kN]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_tot_max.K[1] / 1000, mast.tilstand_Dz_tot_max.K[3] / 1000)
+        s += "My / Mz [kNm]".ljust(kolonnebredde)
+        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_tot_max.K[0] / 1000, mast.tilstand_Dz_tot_max.K[2] / 1000)
+        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K[5] / 1000)
+        s += "\n"
+
+        s += "Forskyvning av kontakttråd (forskyvning KL)\n"
+        s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K_D[1])
+        s += "Forskyvning av kontakttråd (forskyvning totalt)\n"
+        s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K_D[1])
+        s += "\n"
+
+        s += "Torsjonsvinkel i KL-høyde (forskyvning KL)\n"
+        s += "phi [grader]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K_D[2])
+        s += "Torsjonsvinkel i KL-høyde (forskyvning totalt)\n"
+        s += "phi [grader]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K_D[2])
+
+        self.tabellboks.insert("end", s)
+
+    def _skriv_dokument(self):
+        """Eksporterer tabelldata til .txt-dokument."""
+
+        tabelldata = self.tabellboks.get(1.0, "end")
+
+        with open("TABELL.TXT", "w+") as fil:
+            fil.write(tabelldata)
+
+        self.skriv_btn.config(text="Eksport av tabell fullført", font=plain)
+
+    def _lukk_vindu(self):
+        """Sletter variabel-tracere og lukker vindu."""
+
+        self.M.gittermast.trace_vdelete("w", self.gittermast_tracer)
+        self.master.destroy()
 
 
 class ToolTip(object):

@@ -85,4 +85,8 @@ class Inndata(object):
         self.a_vind = cfg.getfloat("Brukerdefinert last", "a_vind")
         self.a_vind_par = cfg.getfloat("Brukerdefinert last", "a_vind_par")
 
+        # Hjelpevariabler
+        self.referansevindhastighet = cfg.getint("Hjelpevariabler", "referansevindhastighet")
+        self.kastvindhastighet = cfg.getfloat("Hjelpevariabler", "kastvindhastighet")
+
 

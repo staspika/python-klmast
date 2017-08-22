@@ -588,6 +588,9 @@ class Mast(object):
 
             if Dz > Dz_max:
                 self.tilstand_Dz_tot_max = tilstand
+            elif Dz == Dz_max:
+                if phi > phi_max:
+                    self.tilstand_Dz_tot_max = tilstand
 
             if phi > phi_max:
                 self.tilstand_phi_tot_max = tilstand
@@ -604,6 +607,9 @@ class Mast(object):
 
             if Dz > Dz_max:
                 self.tilstand_Dz_kl_max = tilstand
+            elif Dz == Dz_max:
+                if phi > phi_max:
+                    self.tilstand_Dz_kl_max = tilstand
 
             if phi > phi_max:
                 self.tilstand_phi_kl_max = tilstand
