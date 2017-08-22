@@ -233,6 +233,7 @@ def hent_lastkombinasjoner(ec3):
     :return: ``lastsituasjoner`` (kombinasjonsfaktorer), ``lastfaktorer``
     :rtype: :class:`dict`, :class:`dict`
     """
+
     if ec3:
         # Lastsituasjoner og faktorer ihht. EC3
         lastsituasjoner = {"Temperatur dominerende": {"psi_T": 1.0, "psi_S": 0.7, "psi_V": 0.6, "T": -40},

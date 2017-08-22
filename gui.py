@@ -670,8 +670,8 @@ class Hovedvindu(tk.Frame):
         self._mastefelt_tracer = self._mastefelt.trace("w", self._krev_ny_beregning)
         self.avstand_fixpunkt_tracer = self.master.avstand_fixpunkt.trace("w", self._krev_ny_beregning)
         self._alternative_mastefunksjoner_tracer =\
-            self._alternative_mastefunksjoner.trace("w", lambda args: (self._krev_ny_beregning(*args),
-                                                                       self._tillat_alternative_mastefunksjoner(*args)))
+            self._alternative_mastefunksjoner.trace("w", lambda *args: (self._krev_ny_beregning(*args),
+                                                                        self._tillat_alternative_mastefunksjoner(*args)))
         self._alternativ_funksjon_tracer = self._alternativ_funksjon.trace("w", self._krev_ny_beregning)
         self.strekkutligger_tracer = self.master.strekkutligger.trace("w", self._krev_ny_beregning)
         self.master_bytter_side_tracer = self.master.master_bytter_side.trace("w", self._krev_ny_beregning)
@@ -2408,9 +2408,9 @@ class Tabell(tk.Frame):
         s += "\n"
 
         s += "Torsjonsvinkel i KL-høyde (forskyvning KL)\n"
-        s += "phi [grader]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K_D[2])
+        s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(mast.tilstand_phi_kl_max.K_D[2])
         s += "Torsjonsvinkel i KL-høyde (forskyvning totalt)\n"
-        s += "phi [grader]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K_D[2])
+        s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(mast.tilstand_phi_tot_max.K_D[2])
 
         self.tabellboks.insert("end", s)
 

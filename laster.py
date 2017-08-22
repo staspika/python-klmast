@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from kraft import Kraft
 from system import Ledning, Loddavspent, Fix, Fastavspent
+import math
 
 
 def laster_mast(i, mast):
@@ -160,11 +161,11 @@ def laster_ledninger(i, sys, mastehoyde):
         if not i.strekkutligger and r < 1200:
             f_z_fix = s_fix * (-0.5 * (a_mid/r) + (z/a_mid))
         F.append(Kraft(navn="Strekk: Fixline", type=(2, 1),
-                       f=(0, s_fix, f_z_fix), e=(-(fh + sh), 0, 0)))
+                       f=(0, s_fix, f_z_fix), e=(-(fh + sh), 0.1, 0)))
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=(s_fix, - s_fix, -f_z_fix), e=(-(fh + sh), 0, 0)))
+                           f=(s_fix/math.tan(math.radians(40)), -s_fix, -f_z_fix), e=(-(fh + sh), -0.1, 0)))
 
     # Bidrag dersom avspenningsmast
     if i.avspenningsmast:
@@ -173,11 +174,11 @@ def laster_ledninger(i, sys, mastehoyde):
         if not i.strekkutligger and r < 1200:
             f_z_kl_avsp = s_kl * (-0.5 * (a_mid/r) + (z/a_mid))
         F.append(Kraft(navn="Strekk: Avspenning KL", type=(3, 1),
-                       f=(0, s_kl, f_z_kl_avsp), e=(-(fh + sh), 0, 0)))
+                       f=(0, s_kl, f_z_kl_avsp), e=(-(fh + sh), 0.1, 0)))
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=(s_kl, -s_kl, -f_z_kl_avsp), e=(-(fh + sh), 0, 0)))
+                           f=(s_kl/math.tan(math.radians(40)), -s_kl, -f_z_kl_avsp), e=(-(fh + sh), -0.1, 0)))
         # Avspenningslodd
         utvekslingsforhold = 3
         if sys.navn == "35":
@@ -241,10 +242,16 @@ def laster_ledninger(i, sys, mastehoyde):
 
             # Egenvekt snø på ledning
             if T <= 0 and not ledning.type=="Hengetråd":
-                if i.ec3:
-                    G_sno = 2 + 0.5 * 1000 * ledning.d
-                else:
-                    G_sno = sys.G_sno_tung if T == 0 else sys.G_sno_lett
+                if T == 0:
+                    if i.ec3:
+                        G_sno = 2 + 0.5 * 1000 * ledning.d
+                    else:
+                        G_sno = sys.G_sno_tung
+                elif T == -25:
+                    if i.ec3:
+                        G_sno = 4 + 1000 * ledning.d
+                    else:
+                        G_sno = sys.G_sno_lett
                 f_x_sno = n * G_sno * L
                 snolast = Kraft(navn="Snølast: {}".format(ledning.type),
                                 type=(rad, 3), f=(f_x_sno, 0, 0),
