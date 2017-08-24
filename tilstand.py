@@ -121,22 +121,17 @@ class Tilstand(object):
         u = self.N_kap + self.My_kap + self.Mz_kap
 
         A, B = self._beregn_momentfordeling()
-        L_e = mast.h * 1000  # [mm]
-        L_cr = 2 * L_e
-        if i.avspenningsmast or i.fixavspenningsmast:
-            L_cr = L_e
 
         self.dimensjonerende_faktorer["A"] = A
         self.dimensjonerende_faktorer["B"] = B
-        self.dimensjonerende_faktorer["L_cr"] = L_cr / 1000  # [m]
 
         # Konverterer [Nm] til [Nmm]
         My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
         Vy_Ed, Vz_Ed, N_Ed = abs(K[1]), abs(K[3]), abs(K[4])
 
-        X_y, lam_y = self._reduksjonsfaktor_knekking(mast, L_cr, 0)
-        X_z, lam_z = self._reduksjonsfaktor_knekking(mast, L_cr, 1)
-        X_LT = self._reduksjonsfaktor_vipping(mast, L_e, A, B, My_Ed)
+        X_y, lam_y = self._reduksjonsfaktor_knekking(mast, "y")
+        X_z, lam_z = self._reduksjonsfaktor_knekking(mast, "z")
+        X_LT = self._reduksjonsfaktor_vipping(mast, A, B, My_Ed)
 
         self.dimensjonerende_faktorer["X_y"] = X_y
         self.dimensjonerende_faktorer["lam_y"] = lam_y
@@ -243,40 +238,43 @@ class Tilstand(object):
 
         return A, B
 
-    def _reduksjonsfaktor_knekking(self, mast, L_cr, akse):
+    def _reduksjonsfaktor_knekking(self, mast, akse):
         """Beregner faktorer for aksialkraftkapasitet etter EC3, 6.3.1.2.
 
         ``akse`` styrer beregning om hhv. sterk og svak akse:
 
-        - 0: Beregner knekkfaktorer om y-aksen
-        - 1: Beregner knekkfaktorer om z-aksen
+        - y: Beregner knekkfaktorer om mastas globale y-akse
+        - z: Beregner knekkfaktorer om mastas globale z-akse
 
         :param Mast mast: Aktuell mast
-        :param float L_cr: Effektiv mastelengde :math:`[mm]`
-        :param int akse: Aktuell akse
+        :param str akse: Aktuell akse
         :return: Reduksjonsfaktor ``X`` for knekking, slankhet ``lam``
         :rtype: :class:`float`, :class:`float`
         """
 
-        if akse == 0:
-            N_cr = (math.pi ** 2 * mast.E * mast.Iy(mast.h)) / (L_cr ** 2)
-            lam = math.sqrt((mast.A * mast.fy) / N_cr)
+        if akse == "y":
+            lam = max(mast.lam_y_global, mast.lam_y_lokal)
             alpha = 0.34 if not mast.type == "B" else 0.49
             phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
             X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
 
-            self.dimensjonerende_faktorer["N_cr_y"] = N_cr / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_y_global"] = mast.N_cr_y_global / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_y_lokal"] = mast.N_cr_y_lokal / 1000  # [kN]
+            self.dimensjonerende_faktorer["lam_y_global"] = mast.lam_y_global
+            self.dimensjonerende_faktorer["lam_y_lokal"] = mast.lam_y_lokal
             self.dimensjonerende_faktorer["alpha_y"] = alpha
             self.dimensjonerende_faktorer["phi_y"] = phi
 
-        else:
-            N_cr = (math.pi ** 2 * mast.E * mast.Iz(mast.h)) / (L_cr ** 2)
-            lam = math.sqrt((mast.A * mast.fy) / N_cr)
+        else:  # z-akse
+            lam = max(mast.lam_z_global, mast.lam_z_lokal)
             alpha = 0.49 if not mast.type == "H" else 0.34
             phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
             X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
 
-            self.dimensjonerende_faktorer["N_cr_z"] = N_cr / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_z_global"] = mast.N_cr_z_global / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_z_lokal"] = mast.N_cr_z_lokal / 1000  # [kN]
+            self.dimensjonerende_faktorer["lam_z_global"] = mast.lam_z_global
+            self.dimensjonerende_faktorer["lam_z_lokal"] = mast.lam_z_lokal
             self.dimensjonerende_faktorer["alpha_z"] = alpha
             self.dimensjonerende_faktorer["phi_z"] = phi
 
@@ -284,11 +282,10 @@ class Tilstand(object):
 
         return X, lam
 
-    def _reduksjonsfaktor_vipping(self, mast, L_e, A, B, My_Ed):
+    def _reduksjonsfaktor_vipping(self, mast, A, B, My_Ed):
         """Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3.
 
         :param Mast mast: Aktuell mast
-        :param float L_e: Effektiv mastelengde :math:`[mm]`
         :param float A: Momentandel fra vindlast
         :param float B: Momentandel fra punktlaster
         :return: Reduksjonsfaktor for vipping
@@ -298,6 +295,7 @@ class Tilstand(object):
         X_LT = 1.0
 
         if not mast.type == "H":
+            L_e = mast.h * 1000  # [mm]
             # H-masten har ingen parameter It.
             my_vind, my_punkt = 2.05, 1.28
             gaffel_v = math.sqrt(1 + (mast.E * mast.Cw / (mast.G * mast.It)) * (math.pi / L_e) ** 2)

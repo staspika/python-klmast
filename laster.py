@@ -242,16 +242,10 @@ def laster_ledninger(i, sys, mastehoyde):
 
             # Egenvekt snø på ledning
             if T <= 0 and not ledning.type=="Hengetråd":
-                if T == 0:
-                    if i.ec3:
-                        G_sno = 2 + 0.5 * 1000 * ledning.d
-                    else:
-                        G_sno = sys.G_sno_tung
-                elif T == -25:
-                    if i.ec3:
-                        G_sno = 4 + 1000 * ledning.d
-                    else:
-                        G_sno = sys.G_sno_lett
+                if i.ec3:
+                    G_sno = 2 + 0.5 * 1000 * ledning.d
+                else:
+                    G_sno = sys.G_sno_tung if T == 0 else sys.G_sno_lett
                 f_x_sno = n * G_sno * L
                 snolast = Kraft(navn="Snølast: {}".format(ledning.type),
                                 type=(rad, 3), f=(f_x_sno, 0, 0),

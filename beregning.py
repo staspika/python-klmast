@@ -89,7 +89,7 @@ def beregn(i):
     import mast
 
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(i.h, i.s235, i.materialkoeff)
+    master = mast.hent_master(i.h, i.s235, i.materialkoeff, i.avspenningsmast, i.fixavspenningsmast)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
 

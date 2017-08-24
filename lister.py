@@ -244,10 +244,10 @@ def hent_lastkombinasjoner(ec3):
     else:
         # Lastsituasjoner og faktorer ihht. NEK (bransjestandard)
         lastsituasjoner = {"Maksimal temperaturlast": {"psi_T": 1.0, "psi_S": 0, "psi_V": 0, "T": -40},
-                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0, "T": 5},
                            "Maksimal snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0, "T": 0},
+                           "Maksimal vindlast": {"psi_T": 0, "psi_S": 0, "psi_V": 1.0, "T": 5},
                            "Kombinert vind- og snølast": {"psi_T": 0, "psi_S": 1.0, "psi_V": 0.5, "T": -25}}
-        lastfaktorer = {"G": (1.3, 1.0), "L": (1.3, 0), "T": (1.3, 0),
+        lastfaktorer = {"G": (1.3, 1.0), "L": (1.3, 1.0), "T": (1.3, 0),
                         "S": (1.3, 0), "V": (1.3, 0)}
 
     return lastsituasjoner, lastfaktorer

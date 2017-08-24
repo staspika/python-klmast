@@ -920,13 +920,13 @@ class Hovedvindu(tk.Frame):
 
         # h
         if matefjern_ledn or at_ledn or jord_ledn:
-            H = fh + sh + e + 2.5
+            H = fh + sh + e + 1.0
         elif forbigang_ledn and retur_ledn:
-            H = fh + sh + e + 2.0
+            H = fh + sh + e + 1.0
         else:
             H = fh + sh + e + 0.7
         h_min = H - 1.5 + (0.5 - (H - 1.5) % 0.5)
-        h_max = H + 5.0 + (0.5 - (H + 5.0) % 0.5)
+        h_max = H + 6.0 + (0.5 - (H + 5.0) % 0.5)
 
         # hfj
         hfj_min = h - e
@@ -1808,10 +1808,10 @@ class Resultater(tk.Frame):
         # -------------------------------Knapper-------------------------------
         knapper_frame = tk.Frame(self)
         knapper_frame.pack()
-        bidrag_btn = tk.Button(knapper_frame, text="Vis kraftbidrag", font=bold,
+        bidrag_btn = tk.Button(knapper_frame, text="Bidragsliste", font=bold,
                                command=self.M._bidrag)
         bidrag_btn.pack(padx=15, pady=5, side="left")
-        tabell_btn = tk.Button(knapper_frame, text="Skriv tabell", font=bold,
+        tabell_btn = tk.Button(knapper_frame, text="Tabell", font=bold,
                                command=self.M._tabell)
         tabell_btn.pack(padx=15, pady=5, side="left")
         self.eksporter_btn = tk.Button(knapper_frame, text="Eksporter til Fundamast",
@@ -2103,7 +2103,7 @@ class Bidrag(tk.Frame):
         hovedvindu = tk.LabelFrame(self, text="Bidragsliste", font=bold)
         hovedvindu.pack()
 
-        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle krefter",
+        tk.Label(hovedvindu, text="Reaksjonskraftbidrag ved masteinnspenning fra individuelle laster",
                  font=plain).grid(row=0, column=0)
         tk.Label(hovedvindu, text="M, T = [kNm]    V, N = [kN]",
                  font=italic).grid(row=1, column=0)
@@ -2267,7 +2267,7 @@ class Tabell(tk.Frame):
 
         scrollbar = tk.Scrollbar(hovedvindu)
         scrollbar.grid(row=1, column=3, sticky="NS")
-        self.tabellboks = tk.Text(hovedvindu, width=70, height=47, yscrollcommand=scrollbar.set)
+        self.tabellboks = tk.Text(hovedvindu, width=72, height=47, yscrollcommand=scrollbar.set)
         self.tabellboks.grid(row=1, column=0, columnspan=3)
         scrollbar.config(command=self.tabellboks.yview)
 

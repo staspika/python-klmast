@@ -1,13 +1,13 @@
 # -*- coding: utf8 -*-
 from __future__ import unicode_literals
 import math
-import numpy
 
 class Mast(object):
     """Klasse for å representere alle typer master."""
 
-    E = 210000  # N/mm^2
-    G = 80000  # N/mm^2
+    E = 210000  # [N/mm^2]
+    G = 80000  # [N/mm^2]
+    L_cr = 0  # [mm]
 
     def __init__(self, navn, type, egenvekt=0, A_profil=0, Iy_profil=0,
                  Iz_profil=0, Wyp=0, Wzp=0, It_profil=0, Cw_profil=0, noytralakse=0,
@@ -154,7 +154,29 @@ class Mast(object):
             self.My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
             self.Mz_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
 
-        # Lister for å holde last/forskvningstilstander
+        # Knekkfaktorer
+        self.N_cr_y_global = (math.pi ** 2 * self.E * self.Iy(self.h)) / (self.L_cr ** 2)
+        self.lam_y_global = math.sqrt((self.A * self.fy) / self.N_cr_y_global)
+        self.N_cr_z_global = (math.pi ** 2 * self.E * self.Iz(self.h)) / (self.L_cr ** 2)
+        self.lam_z_global = math.sqrt((self.A * self.fy) / self.N_cr_z_global)
+        if self.type == "B":
+            self.N_cr_y_lokal = (math.pi ** 2 * self.E * self.Iz_profil) / (1000 ** 2)
+            self.lam_y_lokal = math.sqrt((self.A_profil * self.fy) / self.N_cr_y_lokal)
+            self.N_cr_z_lokal = self.N_cr_z_global
+            self.lam_z_lokal = self.lam_z_global
+        elif self.type == "H":
+            self.N_cr_y_lokal = (math.pi ** 2 * self.E * self.Iy_profil) / (1000 ** 2)
+            self.lam_y_lokal = math.sqrt((self.A_profil * self.fy) / self.N_cr_y_lokal)
+            self.N_cr_z_lokal = self.N_cr_y_lokal
+            self.lam_z_lokal = self.lam_y_lokal
+        else:  # bjelkemast
+            self.N_cr_y_lokal = self.N_cr_y_global
+            self.lam_y_lokal = self.lam_y_global
+            self.N_cr_z_lokal = self.N_cr_z_global
+            self.lam_z_lokal = self.lam_z_global
+
+
+            # Lister for å holde last/forskvningstilstander
         self.bruddgrense = []
         self.forskyvning_tot = []
         self.forskyvning_kl = []
@@ -660,7 +682,7 @@ class Mast(object):
             self.ulykke.append(tilstand)
 
 
-def hent_master(hoyde, s235, materialkoeff):
+def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast):
     """Henter liste med master til beregning.
 
     :param float hoyde: Valgt mastehøyde :math:`[m]`
@@ -669,6 +691,11 @@ def hent_master(hoyde, s235, materialkoeff):
     :return: Liste inneholdende samtlige av programmets master
     :rtype: :class:`list`
     """
+
+    if avspenningsmast or fixavspenningsmast:
+        Mast.L_cr = hoyde * 1000  # [mm]
+    else:
+        Mast.L_cr = 2 * hoyde * 1000  # [mm]
 
     # B-master
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3,
