@@ -1300,7 +1300,7 @@ class Klima(tk.Frame):
         self.master.protocol("WM_DELETE_WINDOW", self._lukk_vindu)
 
         # tracers
-        self.referansevindhastighet_tracer = self.M.master.referansevindhastighet.trace("w", self._beregn_klimaverdier)
+        self.referansevindhastighet_tracer = self.M.master.referansevindhastighet.trace("w", self._beregn_c_alt)
         self.c_dir_tracer = self.M.c_dir.trace("w", self._beregn_klimaverdier)
         self.c_season_tracer = self.M.c_season.trace("w", self._beregn_klimaverdier)
         self.region_tracer = self.M.region.trace("w", self._sett_H)
@@ -1992,7 +1992,7 @@ class Resultater(tk.Frame):
             UR = round(anbefalt_mast.tilstand_UR_max.utnyttelsesgrad * 100, 1)
             s += "({:.1f}% utnyttelsesgrad, slankhetskrav OK)\n\n".format(UR)
         else:
-            s += "Ingen master oppfyller kravene til utnyttelsesgrad og høyde.\n\n"
+            s += "Ingen master oppfyller kravene til utnyttelsesgrad og slankhet.\n\n"
 
         max_bredde_navn = len("Navn")
         for mast in masteliste:
@@ -2295,10 +2295,10 @@ class Tabell(tk.Frame):
         self.tabellboks.delete(1.0, "end")
         masteliste = self.M.gittermaster if self.M.gittermast.get() else self.M.bjelkemaster
 
-        mast = None
+        anbefalt_mast = None
         for m in masteliste:
             if m.h_max >= self.M.master.h.get() and m.tilstand_UR_max.utnyttelsesgrad <= 1.0:
-                mast = m
+                anbefalt_mast = m
                 break
 
         kolonnebredde = 52
@@ -2313,7 +2313,10 @@ class Tabell(tk.Frame):
         systemnavn = self.M.i.systemnavn.split()[1] if self.M.i.systemnavn.startswith("System") else self.M.i.systemnavn
         s += "System".ljust(kolonnebredde) + "S{}\n".format(systemnavn)
         s += "Mastetype / Utnyttelsesgrad".ljust(kolonnebredde)
-        s += "{}-mast / {:.2f}\n".format(mast.navn, mast.tilstand_My_max.utnyttelsesgrad)
+        if anbefalt_mast:
+            s += "{}-mast / {:.2f}\n".format(anbefalt_mast.navn, anbefalt_mast.tilstand_My_max.utnyttelsesgrad)
+        else:
+            s += "Ingen master oppfyller kravene til utnyttelsesgrad og slankhet."
         staalkvalitet = "S235" if self.M.i.s235 else "S355"
         s += "Stålkvalitet i mast".ljust(kolonnebredde) + "{}\n".format(staalkvalitet)
         s += "\n"
@@ -2374,43 +2377,52 @@ class Tabell(tk.Frame):
         s += "{}\n".format("x" if self.M.i.fiberoptisk_ledn else "")
         s += "\n"
 
-        s += "Krefter i bruddgrense\n"
-        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_My_max.K[4] / 1000)
-        s += "Vy / Vz [kN]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_My_max.K[1] / 1000, mast.tilstand_My_max.K[3] / 1000)
-        s += "My / Mz [kNm]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_My_max.K[0] / 1000, mast.tilstand_My_max.K[2] / 1000)
-        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_My_max.K[5] / 1000)
-        s += "\n"
+        if anbefalt_mast:
+            s += "Krefter i bruddgrense\n"
+            s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_My_max.K[4] / 1000)
+            s += "Vy / Vz [kN]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_My_max.K[1] / 1000,
+                                            anbefalt_mast.tilstand_My_max.K[3] / 1000)
+            s += "My / Mz [kNm]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_My_max.K[0] / 1000,
+                                            anbefalt_mast.tilstand_My_max.K[2] / 1000)
+            s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_My_max.K[5] / 1000)
+            s += "\n"
 
-        s += "Krefter i bruksgrense (forskyvning KL)\n"
-        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K[4] / 1000)
-        s += "Vy / Vz [kN]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_kl_max.K[1] / 1000, mast.tilstand_Dz_kl_max.K[3] / 1000)
-        s += "My / Mz [kNm]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_kl_max.K[0] / 1000, mast.tilstand_Dz_kl_max.K[2] / 1000)
-        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K[5] / 1000)
-        s += "\n"
+            s += "Krefter i bruksgrense (forskyvning KL)\n"
+            s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_kl_max.K[4] / 1000)
+            s += "Vy / Vz [kN]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_Dz_kl_max.K[1] / 1000,
+                                            anbefalt_mast.tilstand_Dz_kl_max.K[3] / 1000)
+            s += "My / Mz [kNm]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_Dz_kl_max.K[0] / 1000,
+                                            anbefalt_mast.tilstand_Dz_kl_max.K[2] / 1000)
+            s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_kl_max.K[5] / 1000)
+            s += "\n"
 
-        s += "Krefter i bruksgrense (forskyvning totalt)\n"
-        s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K[4] / 1000)
-        s += "Vy / Vz [kN]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_tot_max.K[1] / 1000, mast.tilstand_Dz_tot_max.K[3] / 1000)
-        s += "My / Mz [kNm]".ljust(kolonnebredde)
-        s += "{:.1f} / {:.1f}\n".format(mast.tilstand_Dz_tot_max.K[0] / 1000, mast.tilstand_Dz_tot_max.K[2] / 1000)
-        s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K[5] / 1000)
-        s += "\n"
+            s += "Krefter i bruksgrense (forskyvning totalt)\n"
+            s += "N [kN]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_tot_max.K[4] / 1000)
+            s += "Vy / Vz [kN]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_Dz_tot_max.K[1] / 1000,
+                                            anbefalt_mast.tilstand_Dz_tot_max.K[3] / 1000)
+            s += "My / Mz [kNm]".ljust(kolonnebredde)
+            s += "{:.1f} / {:.1f}\n".format(anbefalt_mast.tilstand_Dz_tot_max.K[0] / 1000,
+                                            anbefalt_mast.tilstand_Dz_tot_max.K[2] / 1000)
+            s += "T [kNm]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_tot_max.K[5] / 1000)
+            s += "\n"
 
-        s += "Forskyvning av kontakttråd (forskyvning KL)\n"
-        s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_kl_max.K_D[1])
-        s += "Forskyvning av kontakttråd (forskyvning totalt)\n"
-        s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(mast.tilstand_Dz_tot_max.K_D[1])
-        s += "\n"
+            s += "Forskyvning av kontakttråd (forskyvning KL)\n"
+            s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_kl_max.K_D[1])
+            s += "Forskyvning av kontakttråd (forskyvning totalt)\n"
+            s += "Dz [mm]".ljust(kolonnebredde) + "{:.1f}\n".format(anbefalt_mast.tilstand_Dz_tot_max.K_D[1])
+            s += "\n"
 
-        s += "Torsjonsvinkel i KL-høyde (forskyvning KL)\n"
-        s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(mast.tilstand_phi_kl_max.K_D[2])
-        s += "Torsjonsvinkel i KL-høyde (forskyvning totalt)\n"
-        s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(mast.tilstand_phi_tot_max.K_D[2])
+            s += "Torsjonsvinkel i KL-høyde (forskyvning KL)\n"
+            s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(anbefalt_mast.tilstand_phi_kl_max.K_D[2])
+            s += "Torsjonsvinkel i KL-høyde (forskyvning totalt)\n"
+            s += "phi [grader]".ljust(kolonnebredde) + "{:.2f}\n".format(anbefalt_mast.tilstand_phi_tot_max.K_D[2])
+        else:
+            s += "Kreftene og/eller mastehøyden er for stor, ny beregning er påkrevd.\n"
 
         self.tabellboks.insert("end", s)
 

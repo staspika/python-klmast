@@ -124,6 +124,7 @@ class Tilstand(object):
 
         self.dimensjonerende_faktorer["A"] = A
         self.dimensjonerende_faktorer["B"] = B
+        self.dimensjonerende_faktorer["bredde_fot [mm]"] = mast.bredde(mast.h)
 
         # Konverterer [Nm] til [Nmm]
         My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
@@ -158,49 +159,13 @@ class Tilstand(object):
                k_zy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
                k_zz * (1.05 * Mz_Ed / Mz_Rk)
 
+        UR_d, UR_g = self._stavknekking(mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed)
+
+        self.dimensjonerende_faktorer["UR_diag"] = UR_d
+        self.dimensjonerende_faktorer["UR_gurt"] = UR_g
         self.dimensjonerende_faktorer["UR_y"] = UR_y
         self.dimensjonerende_faktorer["UR_z"] = UR_z
-        self.dimensjonerende_faktorer["UR"] = max(u, UR_y, UR_z)
-
-        UR_d, UR_g = 0, 0
-        if mast.type == "H":
-            # Diagonalstav:
-            N_Ed_d = max(math.sqrt(2)/2 * Vy_Ed, math.sqrt(2)/2 * Vz_Ed)
-            L_d = mast.k_d * mast.d_L
-            d_I = mast.d_I
-            alpha_d = 0.49
-            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
-            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
-            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
-            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
-            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
-
-            self.dimensjonerende_faktorer["N_Ed_diag"] = N_Ed_d / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_diag"] = N_cr_d / 1000  # [kN]
-            self.dimensjonerende_faktorer["alpha_diag"] = alpha_d
-            self.dimensjonerende_faktorer["lam_diag"] = lam_d
-            self.dimensjonerende_faktorer["phi_diag"] = phi_d
-            self.dimensjonerende_faktorer["X_diag"] = X_d
-            self.dimensjonerende_faktorer["UR_diag"] = UR_d
-
-            # Gurt (vinkelprofil)
-            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
-            L_g = mast.k_g * 1000
-            I_g = mast.Iy_profil
-            alpha_g = 0.34
-            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
-            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
-            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
-            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
-            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
-
-            self.dimensjonerende_faktorer["N_Ed_gurt"] = N_Ed_g / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_gurt"] = N_cr_g / 1000  # [kN]
-            self.dimensjonerende_faktorer["alpha_gurt"] = alpha_g
-            self.dimensjonerende_faktorer["lam_gurt"] = lam_g
-            self.dimensjonerende_faktorer["phi_gurt"] = phi_g
-            self.dimensjonerende_faktorer["X_gurt"] = X_g
-            self.dimensjonerende_faktorer["UR_gurt"] = UR_g
+        self.dimensjonerende_faktorer["UR"] = max(u, UR_y, UR_z, UR_d, UR_g)
 
         return max(u, UR_y, UR_z, UR_d, UR_g)
 
@@ -234,7 +199,7 @@ class Tilstand(object):
             M_vind *= self.faktorer["V"] * self.faktorer["psi_V"]
 
         A = abs(M_vind/M_total)
-        B = 1 -A
+        B = 1 - A
 
         return A, B
 
@@ -243,8 +208,8 @@ class Tilstand(object):
 
         ``akse`` styrer beregning om hhv. sterk og svak akse:
 
-        - y: Beregner knekkfaktorer om mastas globale y-akse
-        - z: Beregner knekkfaktorer om mastas globale z-akse
+        - y: Beregner knekkfaktorer om mastas sterke akse
+        - z: Beregner knekkfaktorer om mastas svake akse
 
         :param Mast mast: Aktuell mast
         :param str akse: Aktuell akse
@@ -263,7 +228,6 @@ class Tilstand(object):
             self.dimensjonerende_faktorer["lam_y_global"] = mast.lam_y_global
             self.dimensjonerende_faktorer["lam_y_lokal"] = mast.lam_y_lokal
             self.dimensjonerende_faktorer["alpha_y"] = alpha
-            self.dimensjonerende_faktorer["phi_y"] = phi
 
         else:  # z-akse
             lam = max(mast.lam_z_global, mast.lam_z_lokal)
@@ -276,7 +240,6 @@ class Tilstand(object):
             self.dimensjonerende_faktorer["lam_z_global"] = mast.lam_z_global
             self.dimensjonerende_faktorer["lam_z_lokal"] = mast.lam_z_lokal
             self.dimensjonerende_faktorer["alpha_z"] = alpha
-            self.dimensjonerende_faktorer["phi_z"] = phi
 
         X = X if X <= 1.0 else 1.0
 
@@ -284,6 +247,9 @@ class Tilstand(object):
 
     def _reduksjonsfaktor_vipping(self, mast, A, B, My_Ed):
         """Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3.
+
+        Det antas at alle laster angriper midt i tverrsnittet,
+        dvs. :math:`\frac{z}{a} = 0`.
 
         :param Mast mast: Aktuell mast
         :param float A: Momentandel fra vindlast
@@ -296,18 +262,17 @@ class Tilstand(object):
 
         if not mast.type == "H":
             L_e = mast.h * 1000  # [mm]
-            # H-masten har ingen parameter It.
-            my_vind, my_punkt = 2.05, 1.28
-            gaffel_v = math.sqrt(1 + (mast.E * mast.Cw / (mast.G * mast.It)) * (math.pi / L_e) ** 2)
+            psi_vind, psi_punkt = 2.05, 1.28
+            psi_v = math.sqrt(1 + (mast.E * mast.Cw / (mast.G * mast.It)) * (math.pi / L_e) ** 2)
+            M_cr_0 = (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * psi_v
+            M_cr = (A * psi_vind + B * psi_punkt) * M_cr_0
 
-            # Antar at lasten angriper i skjærsenteret, z_a == 0.
-            M_cr_vind = my_vind * (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * gaffel_v
-            M_cr_punkt = my_punkt * (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * gaffel_v
-
-            M_cr = A * M_cr_vind + B * M_cr_punkt
-
-            self.dimensjonerende_faktorer["M_cr_vind"] = M_cr_vind / 10**6  # [kNm]
-            self.dimensjonerende_faktorer["M_cr_punkt"] = M_cr_punkt / 10**6  # [kNm]
+            self.dimensjonerende_faktorer["C_W [10^-7 m^6]"] = mast.Cw / 1000**6 * 10**7
+            self.dimensjonerende_faktorer["I_T [10^-7 m^4]"] = mast.It / 1000**4 * 10**7
+            self.dimensjonerende_faktorer["I_z [10^-7 m^4]"] = mast.Iz(mast.h) / 10**7
+            self.dimensjonerende_faktorer["I_y [10^-7 m^4]"] = mast.Iy(mast.h) / 10**7
+            self.dimensjonerende_faktorer["psi_v"] = psi_v
+            self.dimensjonerende_faktorer["M_cr_0"] = M_cr_0 / 10**6  # [kNm]
             self.dimensjonerende_faktorer["M_cr"] = M_cr / 10**6  # [kNm]
 
             lam_LT = math.sqrt(mast.My_Rk / M_cr)
@@ -373,5 +338,59 @@ class Tilstand(object):
         k_yz = 0.6 * k_zz
 
         return k_yy, k_yz, k_zy, k_zz
+
+    def _stavknekking(self, mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed):
+        """Beregner utnyttelsesgrad for stavknekking etter EC3, 6.3.1.2.
+
+        :param Mast mast: Aktuell mast
+        :param float My_Ed: Dimensjonerende moment om mastas y-akse :math:`[Nmm]`
+        :param float Mz_Ed: Dimensjonerende moment om mastas z-akse :math:`[Nmm]`
+        :param float Vy_Ed: Dimensjonerende skjærkraft parallelt mastas y-akse :math:`[N]`
+        :param float Vz_Ed: Dimensjonerende skjærkraft parallelt mastas z-akse :math:`[N]`
+        :param float N_Ed: Dimensjonerende normaltkraft i masta :math:`[N]`
+        :return: Utnyttelsesgrader for diagonal/gurt, ``UR_d``/``UR_g``
+        :rtype: :class:`float`, :class:`float`
+        """
+
+        UR_d, UR_g = 0, 0
+        if mast.type == "H":
+            # Diagonalstav:
+            N_Ed_d = max(Vy_Ed, Vz_Ed) / math.sqrt(2)
+            L_d = mast.k_d * 1000
+            d_I = mast.d_I
+            alpha_d = 0.49
+            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
+            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
+            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
+            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
+            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
+
+            self.dimensjonerende_faktorer["N_Ed_diag"] = N_Ed_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_diag"] = N_cr_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_diag"] = alpha_d
+            self.dimensjonerende_faktorer["lam_diag"] = lam_d
+            self.dimensjonerende_faktorer["phi_diag"] = phi_d
+            self.dimensjonerende_faktorer["X_diag"] = X_d
+
+            # Gurt (vinkelprofil)
+            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
+            L_g = mast.k_g * 1000
+            I_g = mast.Ieta_profil
+            alpha_g = 0.34
+            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
+            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
+            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
+            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
+            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
+
+            self.dimensjonerende_faktorer["N_Ed_gurt"] = N_Ed_g / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_gurt"] = N_cr_g / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_gurt"] = alpha_g
+            self.dimensjonerende_faktorer["lam_gurt"] = lam_g
+            self.dimensjonerende_faktorer["phi_gurt"] = phi_g
+            self.dimensjonerende_faktorer["X_gurt"] = X_g
+
+        return UR_d, UR_g
+
 
 
