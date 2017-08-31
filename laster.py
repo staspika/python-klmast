@@ -189,11 +189,12 @@ def laster_ledninger(i, sys, mastehoyde):
         if not i.strekkutligger and r < 1200:
             f_z_kl_avsp = s_kl * (-0.5 * (a_mid/r) + (z/a_mid))
         F.append(Kraft(navn="Strekk: Avspenning KL", type=(3, 1),
-                       f=(0, s_kl, f_z_kl_avsp), e=(-(fh + sh), 0.1, 0)))
+                       f=(0, s_kl, f_z_kl_avsp), e=(-(fh + sh), 0.15, 0)))
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=(s_kl/math.tan(math.radians(40)), -s_kl, -f_z_kl_avsp), e=(-(fh + sh), -0.1, 0)))
+                           f=(s_kl/math.tan(math.radians(40)), -s_kl, -f_z_kl_avsp),
+                           e=(-(fh + sh), -0.15, 0)))
         # Avspenningslodd
         utvekslingsforhold = 3
         if sys.navn == "35":
@@ -267,7 +268,7 @@ def laster_ledninger(i, sys, mastehoyde):
                                 e=ledning.e, T=T)
                 F.append(snolast)
 
-            elif isinstance(ledning, Fastavspent):
+            if isinstance(ledning, Fastavspent):
                 # Strekklast tagges som temperaturlast dersom ekstremtemperatur
                 etasje = 1 if T > -40 else 2
 

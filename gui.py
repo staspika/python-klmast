@@ -2328,10 +2328,12 @@ class Tabell(tk.Frame):
         s += "\n"
 
         s += "Geometri\n"
-        s += "Høyde fjernledning eller AT-ledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hfj)
-        s += "Høyde forbigangs- eller fiberoptisk ledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hf)
-        s += "Høyde jordledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hj)
-        s += "Høyde returledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hr)
+        s += "Høyde fjernledning eller AT-ledning [m]".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.hfj if self.M.i.matefjern_ledn or self.M.i.at_ledn else "")
+        s += "Høyde forbigangs- eller fiberoptisk ledning [m]".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.hf if self.M.i.forbigang_ledn or self.M.i.fiberoptisk_ledn else "")
+        s += "Høyde jordledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hj if self.M.i.jord_ledn else "")
+        s += "Høyde returledning [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.hr if self.M.i.retur_ledn else "")
         s += "Høyde kontakttråd [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.fh)
         s += "Systemhøyde [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.sh)
         s += "SMS (senter mast - senter spor) [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.sms)
@@ -2376,6 +2378,33 @@ class Tabell(tk.Frame):
         s += "Fiberoptisk ledning (1 stk.)".ljust(kolonnebredde)
         s += "{}\n".format("x" if self.M.i.fiberoptisk_ledn else "")
         s += "\n"
+
+        s += "Avanserte innstillinger\n"
+        s += "Beregningsmetode".ljust(kolonnebredde) + "Eurokode\n" if self.M.i.ec3 else "NEK\n"
+        s += "Materialkoeffisient".ljust(kolonnebredde) + "{}\n".format(self.M.i.materialkoeff)
+        s += "Traverslengde hver side [m]".ljust(kolonnebredde)
+        s += "{}\n".format(self.M.i.traverslengde if self.M.i.siste_for_avspenning
+                                                     or self.M.i.linjemast_utliggere > 1 else "")
+        s += "Avspenningsbardun".ljust(kolonnebredde)
+        s += "{}\n".format("x" if self.M.i.avspenningsbardun and
+                                  (self.M.i.fixavspenningsmast or self.M.i.avspenningsmast) else "")
+        s += "Differansestrekk [kN]".ljust(kolonnebredde)
+        s += "{}\n".format("Automatisk" if self.M.i.auto_differansestrekk else self.M.i.differansestrekk)
+        s += "Høydediff. forrige mast [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.delta_h1)
+        s += "Høydediff. neste mast [m]".ljust(kolonnebredde) + "{}\n".format(self.M.i.delta_h2)
+        s += "\n"
+
+        if self.M.i.brukerdefinert_last:
+            s += "Brukerdefinert last og vindfang"
+            s += "f_x [kN]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.f_x / 1000)
+            s += "f_y [kN]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.f_y / 1000)
+            s += "f_z [kN]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.f_z / 1000)
+            s += "e_x [m]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.e_x)
+            s += "e_y [m]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.e_y)
+            s += "e_z [m]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.e_z)
+            s += "A_xy [m^2]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.a_vind)
+            s += "A_xz [m^2]".ljust(kolonnebredde) + "{:.2f}\n".format(self.M.i.a_vind_par)
+            s += "\n"
 
         if anbefalt_mast:
             s += "Krefter i bruddgrense\n"

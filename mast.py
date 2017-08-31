@@ -12,7 +12,8 @@ class Mast(object):
     s235 = False
     materialkoeff = 1.05
     L_e = 0  # [mm]
-    L_cr = 0  # [mm]
+    L_cr_y = 0  # [mm]
+    L_cr_z = 0  # [mm]
 
     def __init__(self, navn, type, egenvekt=0, A_profil=0, Iy_profil=0,
                  Iz_profil=0, Ieta_profil=0, Wyp=0, Wzp=0, It_profil=0,
@@ -162,9 +163,9 @@ class Mast(object):
             self.Mz_Rk = self.Wzp * self.fy
 
         # Knekkparametre (global knekking)
-        self.N_cr_y = (math.pi ** 2 * self.E * self.Iy(self.h)) / (self.L_cr ** 2)
+        self.N_cr_y = (math.pi ** 2 * self.E * self.Iy(self.h)) / (self.L_cr_y**2)
         self.lam_y = math.sqrt(self.N_Rk / self.N_cr_y)
-        self.N_cr_z = (math.pi ** 2 * self.E * self.Iz(self.h)) / (self.L_cr ** 2)
+        self.N_cr_z = (math.pi ** 2 * self.E * self.Iz(self.h)) / (self.L_cr_z**2)
         self.lam_z = math.sqrt(self.N_Rk / self.N_cr_z)
 
         if self.type == "B":
@@ -760,12 +761,15 @@ class Mast(object):
             self.ulykke.append(tilstand)
 
 
-def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast):
+def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast, avspenningsbardun):
     """Henter liste med master til beregning.
 
     :param float hoyde: Valgt mastehøyde :math:`[m]`
-    :param Boolean s235: Angir valg av flytespenning :math:`[\\frac{N}{mm^2}]`
+    :param Boolean s235: Angir valg av flytespenning
     :param float materialkoeff: Materialkoeffisient for dimensjonering
+    :param Boolean avspenningsmast: Angir om avspenningsmast er valgt
+    :param Boolean fixavspenningsmast: Angir om fixavspenningsmast er valgt
+    :param Boolean avspenningsbardun: Angir om avspenningsbardun er valgt
     :return: Liste inneholdende samtlige av programmets master
     :rtype: :class:`list`
     """
@@ -775,10 +779,11 @@ def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast)
     Mast.materialkoeff = materialkoeff
 
     Mast.L_e = hoyde * 1000  # [mm]
-    if avspenningsmast or fixavspenningsmast:
-        Mast.L_cr = Mast.L_e
+    Mast.L_cr_y = Mast.L_e * 2
+    if (avspenningsmast or fixavspenningsmast) and avspenningsbardun:
+        Mast.L_cr_z = Mast.L_e
     else:
-        Mast.L_cr = 2 * Mast.L_e
+        Mast.L_cr_z = Mast.L_e * 2
 
     # B-master
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,
