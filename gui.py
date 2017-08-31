@@ -1764,7 +1764,7 @@ class Resultater(tk.Frame):
 
         tk.Label(hovedvindu, text="Faktorer for utregning av UR",
                  font=plain).grid(row=0, column=4)
-        tk.Label(hovedvindu, text="M_cr = [kNm]    N_cr = [kN]",
+        tk.Label(hovedvindu, text="M = [kNm]    N = [kN]",
                  font=italic).grid(row=1, column=4)
 
         scrollbar = tk.Scrollbar(hovedvindu)

@@ -7,10 +7,11 @@ from system import Ledning, Loddavspent, Fix, Fastavspent
 import math
 
 
-def laster_mast(i, mast):
-    """Beregner last grunnet mastens egenvekt og vindfang.
+def laster_mast(i, sys, mast):
+    """Beregner last grunnet mastens egenvekt og vindfang, samt differansestrekk.
 
     :param Inndata i: Input fra bruker
+    :param System sys: Data for ledninger og utligger
     :param Mast mast: Aktuell mast
     :return: Liste med :class:`Kraft`-objekt for mastens egenvekt
     :rtype: :class:`list`
@@ -22,6 +23,20 @@ def laster_mast(i, mast):
     F.append(Kraft(navn="Egenvekt: Mast", type=(0, 0),
                    f=(mast.egenvekt * mast.h, 0, 0),
                    e=(0, 0, 0)))
+
+    # Vandringskraft (kun dersom masten har én utligger)
+    if not (i.linjemast_utliggere > 1 or i.siste_for_avspenning or i.fixpunktmast):
+        e_x_kl = -(i.fh + i.sh / 2)
+        e_z_kl_vandre = mast.bredde(i.fh) / 2000  # [m]
+        for temperatur in ["5C", "0C", "-25C", "-40C"]:
+            T = int(temperatur[0:-1])
+            delta_T = T - 5
+            delta_l = abs(delta_T * sys.alpha_kl * i.avstand_fixpunkt)
+            f_y_kl_vandre = sys.f_z_kl * (delta_l / sys.arm)
+            F.append(Kraft(navn="Vandringskraft: KL", type=(1, 2),
+                           f=(0, f_y_kl_vandre, 0),
+                           e=(e_x_kl, 0, e_z_kl_vandre),
+                           T=T))
 
     # Vindlast
     q_p = i.vindkasthastighetstrykk
@@ -83,6 +98,9 @@ def laster_ledninger(i, sys, mastehoyde):
     Videre beregnes klimaavhengige laster fra snø og is samt
     strekk i fastavspente ledninger ved forskjellige temperaturer.
 
+    Merk at vandringskraft beregnes i funksjon for øvrige laster fra mast
+    da torsjonsarmen er avhengig av mastens bredde.
+
     Dersom fastavspent ledning foretas en sjekk av ledningens monteringshøyde
     i forhold til mastetopp for å avgjøre om ledningen er
     sidemontert (``rad`` = 5) eller toppmontert (``rad`` = 6).
@@ -108,11 +126,8 @@ def laster_ledninger(i, sys, mastehoyde):
     e_x_kl = -(fh + sh/2)
     e_y_kl = 0
 
-    # Sidekrefter KL pga. ledningsføring
     s_kl = sys.strekk_kl
-    f_z_kl = s_kl * (a_mid/r + 0.5 * ((B2 - B1)/a1 + (B2 - B1)/a2))
-    if not i.strekkutligger:
-        f_z_kl = -f_z_kl
+    f_z_kl = sys.f_z_kl
 
     # Bidrag dersom siste før avspenning
     if i.siste_for_avspenning:
@@ -251,21 +266,6 @@ def laster_ledninger(i, sys, mastehoyde):
                                 type=(rad, 3), f=(f_x_sno, 0, 0),
                                 e=ledning.e, T=T)
                 F.append(snolast)
-
-
-            if ledning.type=="Kontakttråd":
-                # Vandringskraft
-                # Regnes kun dersom masten har én utligger
-                # Det antas en forenklet verdi for momentarm lik 0.2m
-                if not (i.linjemast_utliggere>1 or i.siste_for_avspenning or i.fixpunktmast):
-                    delta_T = T - 5
-                    delta_l = delta_T * sys.alpha_kl * i.avstand_fixpunkt
-                    f_y_kl_vandre = f_z_kl * (delta_l/arm)
-                    F.append(Kraft(navn="Vandringskraft: KL", type=(1, 2),
-                                   f=(0, f_y_kl_vandre, 0),
-                                   e=(e_x_kl, 0, 0.2),
-                                   T=T))
-
 
             elif isinstance(ledning, Fastavspent):
                 # Strekklast tagges som temperaturlast dersom ekstremtemperatur

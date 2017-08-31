@@ -12,7 +12,8 @@ class System(object):
 
     def __init__(self, navn, ledninger, utligger,
                  B1, B2, arm, arm_sum,
-                 G_sno_tung, G_sno_lett):
+                 G_sno_tung, G_sno_lett,
+                 radius, a1, a2, a_mid, strekkutligger):
         """Initialiserer :class:`System`-objekt.
 
         :param str navn: Systemets navn (20A, 20B, 25, 35)
@@ -24,6 +25,11 @@ class System(object):
         :param float arm_sum: Sum momentarm aktuell + neste mast :math:`[m]`
         :param float G_sno_tung: Linjelast tung snø :math:`[\frac{N}{m}]`
         :param float G_sno_lett: Linjelast lett snø :math:`[\frac{N}{m}]`
+        :param float radius: Sporkurvaturens radius :math:`[m]`
+        :param float a1: Avstand forrige mast :math:`[m]`
+        :param float a2: Avstand neste mast :math:`[m]`
+        :param float a_mid: Midlere masteavstand :math:`[m]`
+        :param Boolean strekkutligger: Angir hvorvidt utliggeren tar strekk/trykk
         """
 
         self.navn = navn
@@ -38,6 +44,10 @@ class System(object):
 
         self.strekk_kl = sum([l.s for l in self.ledninger
                               if (l.type=="Bæreline" or l.type=="Kontakttråd")])
+        # Sidekrefter KL pga. ledningsføring
+        self.f_z_kl = self.strekk_kl * (a_mid / radius + 0.5 * ((B2 - B1) / a1 + (B2 - B1) / a2))
+        if not strekkutligger:
+            self.f_z_kl = -self.f_z_kl
         self.alpha_kl = 1.7 * 10**(-5)
         self.strekk_fix = sum([l.s for l in self.ledninger if isinstance(l, Fix)])
 
@@ -522,7 +532,9 @@ def hent_system(i):
     if i.retur_ledn:
         ledninger.append(Al_240_61_iso)
 
-    return System(systemnavn, ledninger, utligger, B1, B2, arm, arm_sum, Ledning.G_sno_tung, Ledning.G_sno_lett)
+    return System(systemnavn, ledninger, utligger, B1, B2, arm, arm_sum,
+                  Ledning.G_sno_tung, Ledning.G_sno_lett,
+                  i.radius, i.a1, i.a2, a_mid, i.strekkutligger)
 
 
 def _beregn_arm(systemnavn, radius, sms, fh, strekkutligger, B1):

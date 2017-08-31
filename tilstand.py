@@ -122,13 +122,19 @@ class Tilstand(object):
 
         A, B = self._beregn_momentfordeling()
 
-        self.dimensjonerende_faktorer["A"] = A
-        self.dimensjonerende_faktorer["B"] = B
+        self.dimensjonerende_faktorer["A (M_vind)"] = A
+        self.dimensjonerende_faktorer["B (M_punkt)"] = B
         self.dimensjonerende_faktorer["bredde_fot [mm]"] = mast.bredde(mast.h)
 
         # Konverterer [Nm] til [Nmm]
         My_Ed, Mz_Ed = 1000 * abs(K[0]), 1000 * abs(K[2])
         Vy_Ed, Vz_Ed, N_Ed = abs(K[1]), abs(K[3]), abs(K[4])
+
+        My_Rk, Mz_Rk, N_Rk = mast.My_Rk, mast.Mz_Rk, mast.N_Rk
+
+        self.dimensjonerende_faktorer["My_Rk"] = My_Rk / 10**6  # [kNm]
+        self.dimensjonerende_faktorer["Mz_Rk"] = Mz_Rk / 10**6  # [kNm]
+        self.dimensjonerende_faktorer["N_Rk"] = N_Rk / 1000  # [kN]
 
         X_y, lam_y = self._reduksjonsfaktor_knekking(mast, "y")
         X_z, lam_z = self._reduksjonsfaktor_knekking(mast, "z")
@@ -140,8 +146,6 @@ class Tilstand(object):
         self.dimensjonerende_faktorer["lam_z"] = lam_z
         self.dimensjonerende_faktorer["X_LT"] = X_LT
 
-        My_Rk, Mz_Rk, N_Rk = mast.My_Rk, mast.Mz_Rk, mast.A * mast.fy
-
         k_yy, k_yz, k_zy, k_zz = self._interaksjonsfaktorer(mast, lam_y, N_Ed, X_y, X_z, lam_z)
 
         self.dimensjonerende_faktorer["k_yy"] = k_yy
@@ -150,16 +154,12 @@ class Tilstand(object):
         self.dimensjonerende_faktorer["k_zz"] = k_zz
 
         # EC3, 6.3.3(4) ligning (6.61)
-        UR_y = (1.05 * N_Ed / (X_y * mast.A * mast.fy)) + \
-               k_yy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
-               k_yz * (1.05 * Mz_Ed / Mz_Rk)
+        UR_y = mast.materialkoeff*(N_Ed/(X_y*N_Rk) + k_yy*My_Ed/(X_LT*My_Rk) + k_yz*Mz_Ed/Mz_Rk)
 
         # EC3, 6.3.3(4) ligning (6.62)
-        UR_z = (1.05 * N_Ed / (X_z * mast.A * mast.fy)) + \
-               k_zy * (1.05 * My_Ed / (X_LT * My_Rk)) + \
-               k_zz * (1.05 * Mz_Ed / Mz_Rk)
+        UR_z = mast.materialkoeff*(N_Ed/(X_z*N_Rk) + k_zy*My_Ed/(X_LT*My_Rk) + k_zz*Mz_Ed/Mz_Rk)
 
-        UR_d, UR_g = self._stavknekking(mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed)
+        UR_d, UR_g = self._knekking_lokal(mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed)
 
         self.dimensjonerende_faktorer["UR_diag"] = UR_d
         self.dimensjonerende_faktorer["UR_gurt"] = UR_g
@@ -218,27 +218,23 @@ class Tilstand(object):
         """
 
         if akse == "y":
-            lam = max(mast.lam_y_global, mast.lam_y_lokal)
+            lam = mast.lam_y
             alpha = 0.34 if not mast.type == "B" else 0.49
             phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
             X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
 
-            self.dimensjonerende_faktorer["N_cr_y_global"] = mast.N_cr_y_global / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_y_lokal"] = mast.N_cr_y_lokal / 1000  # [kN]
-            self.dimensjonerende_faktorer["lam_y_global"] = mast.lam_y_global
-            self.dimensjonerende_faktorer["lam_y_lokal"] = mast.lam_y_lokal
+            self.dimensjonerende_faktorer["N_cr_y"] = mast.N_cr_y / 1000  # [kN]
+            self.dimensjonerende_faktorer["lam_y"] = lam
             self.dimensjonerende_faktorer["alpha_y"] = alpha
 
         else:  # z-akse
-            lam = max(mast.lam_z_global, mast.lam_z_lokal)
+            lam = mast.lam_z
             alpha = 0.49 if not mast.type == "H" else 0.34
             phi = 0.5 * (1 + alpha * (lam - 0.2) + lam ** 2)
             X = 1 / (phi + math.sqrt(phi ** 2 - lam ** 2))
 
-            self.dimensjonerende_faktorer["N_cr_z_global"] = mast.N_cr_z_global / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_z_lokal"] = mast.N_cr_z_lokal / 1000  # [kN]
-            self.dimensjonerende_faktorer["lam_z_global"] = mast.lam_z_global
-            self.dimensjonerende_faktorer["lam_z_lokal"] = mast.lam_z_lokal
+            self.dimensjonerende_faktorer["N_cr_z"] = mast.N_cr_z / 1000  # [kN]
+            self.dimensjonerende_faktorer["lam_z"] = lam
             self.dimensjonerende_faktorer["alpha_z"] = alpha
 
         X = X if X <= 1.0 else 1.0
@@ -261,42 +257,36 @@ class Tilstand(object):
         X_LT = 1.0
 
         if not mast.type == "H":
-            L_e = mast.h * 1000  # [mm]
             psi_vind, psi_punkt = 2.05, 1.28
-            psi_v = math.sqrt(1 + (mast.E * mast.Cw / (mast.G * mast.It)) * (math.pi / L_e) ** 2)
-            M_cr_0 = (math.pi / L_e) * math.sqrt(mast.G * mast.It * mast.E * mast.Iz(mast.h)) * psi_v
-            M_cr = (A * psi_vind + B * psi_punkt) * M_cr_0
+            M_cr = (A * psi_vind + B * psi_punkt) * mast.M_cr_0
+            lam_LT = math.sqrt(mast.My_Rk / M_cr)
 
+            if mast.type == "B":
+                alpha_LT = 0.76
+                phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT**2)
+                X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
+                X_LT = X_LT if X_LT <= 1.0 else 1.0
+            else:  # bjelke
+                alpha_LT = 0.34
+                lam_LT_0, beta_LT = 0.4, 0.75
+                phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_LT_0) + beta_LT * lam_LT**2)
+                X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - beta_LT * lam_LT**2))
+                if X_LT > min(1.0, (1 / lam_LT**2)):
+                    X_LT = min(1.0, (1 / lam_LT**2))
+
+                self.dimensjonerende_faktorer["lam_LT_0"] = lam_LT_0
+                self.dimensjonerende_faktorer["beta_LT"] = beta_LT
+
+            self.dimensjonerende_faktorer["alpha_LT"] = alpha_LT
+            self.dimensjonerende_faktorer["phi_LT"] = phi_LT
             self.dimensjonerende_faktorer["C_W [10^-7 m^6]"] = mast.Cw / 1000**6 * 10**7
             self.dimensjonerende_faktorer["I_T [10^-7 m^4]"] = mast.It / 1000**4 * 10**7
             self.dimensjonerende_faktorer["I_z [10^-7 m^4]"] = mast.Iz(mast.h) / 10**7
             self.dimensjonerende_faktorer["I_y [10^-7 m^4]"] = mast.Iy(mast.h) / 10**7
-            self.dimensjonerende_faktorer["psi_v"] = psi_v
-            self.dimensjonerende_faktorer["M_cr_0"] = M_cr_0 / 10**6  # [kNm]
+            self.dimensjonerende_faktorer["psi_v"] = mast.psi_v
+            self.dimensjonerende_faktorer["M_cr_0"] = mast.M_cr_0 / 10**6  # [kNm]
             self.dimensjonerende_faktorer["M_cr"] = M_cr / 10**6  # [kNm]
-
-            lam_LT = math.sqrt(mast.My_Rk / M_cr)
-            lam_0, beta = 0.4, 0.75
-            if lam_LT > lam_0 and (My_Ed / M_cr) > lam_0 ** 2:
-                if mast.type == "B":
-                    alpha_LT = 0.76
-                    phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - 0.2) + lam_LT ** 2)
-                    X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - lam_LT**2))
-                    X_LT = X_LT if X_LT <= 1.0 else 1.0
-
-                else:  # bjelke
-                    alpha_LT = 0.34
-                    phi_LT = 0.5 * (1 + alpha_LT * (lam_LT - lam_0) + beta * lam_LT**2)
-                    X_LT = 1 / (phi_LT + math.sqrt(phi_LT**2 - beta * lam_LT**2))
-                    if X_LT > min(1.0, (1 / lam_0 ** 2)):
-                        X_LT = min(1.0, (1 / lam_0 ** 2))
-
-                self.dimensjonerende_faktorer["alpha_LT"] = alpha_LT
-                self.dimensjonerende_faktorer["phi_LT"] = phi_LT
-
             self.dimensjonerende_faktorer["lam_LT"] = lam_LT
-            self.dimensjonerende_faktorer["lam_0"] = lam_0
-            self.dimensjonerende_faktorer["beta"] = beta
 
         return X_LT
 
@@ -315,23 +305,26 @@ class Tilstand(object):
         :rtype: :class:`float`, :class:`float`, :class:`float`, :class:`float`
         """
 
-        k_yy = 0.6 * (1 + (lam_y - 0.2) * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
-        k_yy_max = 0.6 * (1 + 0.8 * (1.05 * N_Ed / (X_y * mast.A * mast.fy)))
+        N_Rk = mast.N_Rk
+        matkoeff = mast.materialkoeff
+
+        k_yy = 0.6 * (1 + (lam_y - 0.2) * (matkoeff * N_Ed / (X_y*N_Rk)))
+        k_yy_max = 0.6 * (1 + 0.8 * (matkoeff * N_Ed / (X_y*N_Rk)))
         if k_yy > k_yy_max:
             k_yy = k_yy_max
 
         if lam_z < 0.4:
             k_zy = 0.6 + lam_z
-            k_zy_max = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
+            k_zy_max = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (matkoeff * N_Ed / (X_z*N_Rk))
             if k_zy > k_zy_max:
                 k_zy = k_zy_max
         else:
-            k_zy_1 = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
-            k_zy_2 = 1 - (0.1 / (0.6 - 0.25)) * (1.05 * N_Ed / (X_z * mast.A * mast.fy))
+            k_zy_1 = 1 - (0.1 * lam_z / (0.6 - 0.25)) * (matkoeff * N_Ed / (X_z*N_Rk))
+            k_zy_2 = 1 - (0.1 / (0.6 - 0.25)) * (matkoeff * N_Ed / (X_z*N_Rk))
             k_zy = max(k_zy_1, k_zy_2)
 
-        k_zz = 0.6 * (1 + (2 * lam_z - 0.6) * (1.05 * N_Ed / (X_z * mast.A * mast.fy)))
-        k_zz_max = 0.6 * (1 + 1.4 * (1.05 * N_Ed / (X_z * mast.A * mast.fy)))
+        k_zz = 0.6 * (1 + (2 * lam_z - 0.6) * (matkoeff * N_Ed / (X_z*N_Rk)))
+        k_zz_max = 0.6 * (1 + 1.4 * (matkoeff * N_Ed / (X_z*N_Rk)))
         if k_zz > k_zz_max:
             k_zz = k_zz_max
 
@@ -339,8 +332,8 @@ class Tilstand(object):
 
         return k_yy, k_yz, k_zy, k_zz
 
-    def _stavknekking(self, mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed):
-        """Beregner utnyttelsesgrad for stavknekking etter EC3, 6.3.1.2.
+    def _knekking_lokal(self, mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed):
+        """Beregner utnyttelsesgrad for lokal stavknekking etter EC3, 6.3.1.2.
 
         :param Mast mast: Aktuell mast
         :param float My_Ed: Dimensjonerende moment om mastas y-akse :math:`[Nmm]`
@@ -352,43 +345,42 @@ class Tilstand(object):
         :rtype: :class:`float`, :class:`float`
         """
 
+        matkoeff = mast.materialkoeff
         UR_d, UR_g = 0, 0
-        if mast.type == "H":
-            # Diagonalstav:
-            N_Ed_d = max(Vy_Ed, Vz_Ed) / math.sqrt(2)
-            L_d = mast.k_d * 1000
-            d_I = mast.d_I
-            alpha_d = 0.49
-            N_cr_d = (math.pi**2 * mast.E * d_I) / (L_d**2)
-            lam_d = math.sqrt(mast.d_A * mast.fy / N_cr_d)
-            phi_d = 0.5 * (1 + alpha_d * (lam_d - 0.2) + lam_d ** 2)
-            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - lam_d**2))
-            UR_d = (1.05 * N_Ed_d / (X_d * mast.d_A * mast.fy))
 
-            self.dimensjonerende_faktorer["N_Ed_diag"] = N_Ed_d / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_diag"] = N_cr_d / 1000  # [kN]
-            self.dimensjonerende_faktorer["alpha_diag"] = alpha_d
-            self.dimensjonerende_faktorer["lam_diag"] = lam_d
-            self.dimensjonerende_faktorer["phi_diag"] = phi_d
-            self.dimensjonerende_faktorer["X_diag"] = X_d
+        if not mast.type == "bjelke":
+            if mast.type == "H":
+                # Gurt (L-profil)
+                N_Ed_g = 0.5*(My_Ed/mast.bredde(mast.h-1) + Mz_Ed/mast.bredde(mast.h-1)) + N_Ed/4
+                # Diagonalstav
+                N_Ed_d = max(Vy_Ed, Vz_Ed) / math.sqrt(2)
+            else:  # B-mast
+                # Gurt (U-profil)
+                N_Ed_g = My_Ed/mast.bredde(mast.h - 1) + Mz_Ed/mast.bredde(mast.h - 1) + N_Ed/2
+                # Diagonalstav
+                N_Ed_d = Vz_Ed * math.sqrt(2)
 
-            # Gurt (vinkelprofil)
-            N_Ed_g = 0.5*((My_Ed/mast.bredde(mast.h-1)) + (Mz_Ed/mast.bredde(mast.h-1)) + Vy_Ed + Vz_Ed) + N_Ed/4
-            L_g = mast.k_g * 1000
-            I_g = mast.Ieta_profil
-            alpha_g = 0.34
-            N_cr_g = (math.pi**2 * mast.E * I_g) / (L_g**2)
-            lam_g = math.sqrt(mast.A_profil * mast.fy / N_cr_g)
-            phi_g = 0.5 * (1 + alpha_g * (lam_g - 0.2) + lam_g ** 2)
-            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - lam_g**2))
-            UR_g = (1.05 * N_Ed_g / (X_g * mast.A_profil * mast.fy))
+            phi_g = 0.5 * (1 + mast.alpha_g * (mast.lam_g - 0.2) + mast.lam_g**2)
+            X_g = 1 / (phi_g + math.sqrt(phi_g**2 - mast.lam_g**2))
+            UR_g = matkoeff*N_Ed_g / (X_g*mast.A_profil*mast.fy)
+
+            phi_d = 0.5 * (1 + mast.alpha_d * (mast.lam_d - 0.2) + mast.lam_d**2)
+            X_d = 1 / (phi_d + math.sqrt(phi_d**2 - mast.lam_d**2))
+            UR_d = matkoeff*N_Ed_d / (X_d*mast.d_A*mast.fy)
 
             self.dimensjonerende_faktorer["N_Ed_gurt"] = N_Ed_g / 1000  # [kN]
-            self.dimensjonerende_faktorer["N_cr_gurt"] = N_cr_g / 1000  # [kN]
-            self.dimensjonerende_faktorer["alpha_gurt"] = alpha_g
-            self.dimensjonerende_faktorer["lam_gurt"] = lam_g
+            self.dimensjonerende_faktorer["N_cr_gurt"] = mast.N_cr_g / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_gurt"] = mast.alpha_g
+            self.dimensjonerende_faktorer["lam_gurt"] = mast.lam_g
             self.dimensjonerende_faktorer["phi_gurt"] = phi_g
             self.dimensjonerende_faktorer["X_gurt"] = X_g
+
+            self.dimensjonerende_faktorer["N_Ed_diag"] = N_Ed_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["N_cr_diag"] = mast.N_cr_d / 1000  # [kN]
+            self.dimensjonerende_faktorer["alpha_diag"] = mast.alpha_d
+            self.dimensjonerende_faktorer["lam_diag"] = mast.lam_d
+            self.dimensjonerende_faktorer["phi_diag"] = phi_d
+            self.dimensjonerende_faktorer["X_diag"] = X_d
 
         return UR_d, UR_g
 

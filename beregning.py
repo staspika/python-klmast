@@ -101,7 +101,7 @@ def beregn(i):
     iterasjon = 0
     for mast in master:
 
-        F_statisk_mast, F_dynamisk_mast = laster.laster_mast(i, mast)
+        F_statisk_mast, F_dynamisk_mast = laster.laster_mast(i, sys, mast)
 
         F_statisk = F_statisk_ledn + F_statisk_mast
         F_dynamisk = F_dynamisk_ledn + F_dynamisk_mast

@@ -11,6 +11,7 @@ class Mast(object):
     h = 0  # [m]
     s235 = False
     materialkoeff = 1.05
+    L_e = 0  # [mm]
     L_cr = 0  # [mm]
 
     def __init__(self, navn, type, egenvekt=0, A_profil=0, Iy_profil=0,
@@ -66,7 +67,7 @@ class Mast(object):
         self.k_d = k_d
         self.b_f = b_f
 
-        # Beregner totalt tverrsnittsareal A [mm^2]
+        # Totalt tverrsnittsareal A [mm^2]
         if type == "B":
             self.A = 2 * A_profil
         elif type == "H":
@@ -76,7 +77,7 @@ class Mast(object):
 
         self.h_max= h_max
 
-        # Setter høydeavhengige attributter
+        # Tverrsnittsbredde/dybde
         if not self.type == "bjelke":
             self.b = self.bredde(self.h)
             if self.type == "H":
@@ -88,7 +89,7 @@ class Mast(object):
                     self.d = 140
                 elif self.navn == "B4":
                     self.d = 160
-                elif self.navn == "B6":
+                else:  # B6
                     self.d = 200
         else:
             if self.navn == "HE200B":
@@ -106,11 +107,11 @@ class Mast(object):
             elif self.navn == "HE280B":
                 self.b = 280
                 self.d = self.b
-            elif self.navn == "HE260M":
+            else:  # HE260M
                 self.b = 290
                 self.d = 268
 
-        # Setter vindareal
+        # Vindareal og dragkoeffisienter
         self.A_ref = A_ref
         if self.type == "bjelke":
             if A_ref_par == 0:
@@ -121,62 +122,84 @@ class Mast(object):
             self.A_ref_par = self.vindareal_midlere(self.h)
             if self.type == "H":
                 self.A_ref = self.A_ref_par
-        # Dragkoeffisienter
         self.c_f, self.c_f_par = self.dragkoeffisienter(self.h, True)
 
-        # Setter stålkvalitet
-        self.fy = 355
+        # Stålkvalitet
         if self.s235:
             self.fy = 235
+        else:
+            self.fy = 355
 
+        # Elastisk momentkapasitet
         self.Wy_el = self.Iy(self.h) / (self.bredde(self.h) / 2)
         self.Wz_el = self.Iz(self.h) / (self.d / 2)
 
-        # Areal og treghetsmoment oppgis framfor diagonaldimensjoner for H6
+        # Tverrsnittsparametre for diagonaler
         if navn == "H6":
+            # Diagonaler av L-profiler
             self.d_A = 691
             self.d_I = 9.43 * 10 ** 4
         else:
+            # Diagonaler av flattstål
             self.d_A = d_h * d_b
-            self.d_I = d_h * d_b ** 3 / 12  # Svak akse [mm^4]
+            self.d_I = min(d_h*d_b**3, d_b*d_h**3) / 12
 
+        # Øvrige tverrsnittsparametre
         self.Ieta_profil = Ieta_profil
         self.It_profil, self.Cw_profil = It_profil, Cw_profil
         self.It, self.Cw = self.torsjonsparametre(self.h)  # St. Venants torsjonskonstant [mm^4]
 
-        if self.type == "bjelke":
-            self.My_Rk = self.Wyp * self.fy
-            self.Mz_Rk = self.Wzp * self.fy
-        elif self.type == "B":
+        # Bruddkapasitet
+        self.N_Rk = self.A * self.fy
+        if self.type == "B":
             self.My_Rk = self.A_profil * 0.9 * self.bredde(self.h) * self.fy
             self.Mz_Rk = 2 * self.Wyp * self.fy
         elif self.type == "H":
             self.My_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
             self.Mz_Rk = 2 * self.A_profil * 0.9 * self.bredde(self.h) * self.fy
-
-        # Knekkfaktorer
-        self.N_cr_y_global = (math.pi ** 2 * self.E * self.Iy(self.h)) / (self.L_cr ** 2)
-        self.lam_y_global = math.sqrt((self.A * self.fy) / self.N_cr_y_global)
-        self.N_cr_z_global = (math.pi ** 2 * self.E * self.Iz(self.h)) / (self.L_cr ** 2)
-        self.lam_z_global = math.sqrt((self.A * self.fy) / self.N_cr_z_global)
-        if self.type == "B":
-            self.N_cr_y_lokal = (math.pi ** 2 * self.E * self.Iz_profil) / (1000 ** 2)
-            self.lam_y_lokal = math.sqrt((self.A_profil * self.fy) / self.N_cr_y_lokal)
-            self.N_cr_z_lokal = self.N_cr_z_global
-            self.lam_z_lokal = self.lam_z_global
-        elif self.type == "H":
-            self.N_cr_y_lokal = (math.pi ** 2 * self.E * self.Iy_profil) / (1000 ** 2)
-            self.lam_y_lokal = math.sqrt((self.A_profil * self.fy) / self.N_cr_y_lokal)
-            self.N_cr_z_lokal = self.N_cr_y_lokal
-            self.lam_z_lokal = self.lam_y_lokal
         else:  # bjelkemast
-            self.N_cr_y_lokal = self.N_cr_y_global
-            self.lam_y_lokal = self.lam_y_global
-            self.N_cr_z_lokal = self.N_cr_z_global
-            self.lam_z_lokal = self.lam_z_global
+            self.My_Rk = self.Wyp * self.fy
+            self.Mz_Rk = self.Wzp * self.fy
 
+        # Knekkparametre (global knekking)
+        self.N_cr_y = (math.pi ** 2 * self.E * self.Iy(self.h)) / (self.L_cr ** 2)
+        self.lam_y = math.sqrt(self.N_Rk / self.N_cr_y)
+        self.N_cr_z = (math.pi ** 2 * self.E * self.Iz(self.h)) / (self.L_cr ** 2)
+        self.lam_z = math.sqrt(self.N_Rk / self.N_cr_z)
 
-            # Lister for å holde last/forskvningstilstander
+        if self.type == "B":
+            # Knekkparametre diagonalstav
+            L_d = 0.5 * self.diagonallengde()
+            self.alpha_d = 0.49
+            self.N_cr_d = (math.pi**2 * self.E * self.d_I) / (L_d**2)
+            self.lam_d = math.sqrt(self.d_A * self.fy / self.N_cr_d)
+            # Knekkparametre gurt (U-profil)
+            L_g = self.beta() * 1000
+            self.alpha_g = 0.49
+            self.N_cr_g = (math.pi**2 * self.E * self.Iz_profil) / (L_g**2)
+            self.lam_g = math.sqrt(self.A_profil * self.fy / self.N_cr_g)
+
+        elif self.type=="H":
+            # Knekkparametre diagonalstav
+            L_d = self.k_d * 1000
+            if self.navn == "H6":
+                self.alpha_d = 0.34
+            else:
+                self.alpha_d = 0.49
+            self.N_cr_d = (math.pi**2 * self.E * self.d_I) / (L_d**2)
+            self.lam_d = math.sqrt(self.d_A * self.fy / self.N_cr_d)
+            # Knekkparametre gurt (L-profil)
+            L_g = self.k_g * 1000
+            self.alpha_g = 0.34
+            self.N_cr_g = (math.pi**2 * self.E * self.Ieta_profil) / (L_g**2)
+            self.lam_g = math.sqrt(self.A_profil * self.fy / self.N_cr_g)
+
+        if not self.type == "H":
+            # Vippeparametre
+            self.psi_v = math.sqrt(1 + (self.E * self.Cw / (self.G * self.It)) * (math.pi / self.L_e) ** 2)
+            self.M_cr_0 = (math.pi / self.L_e) * math.sqrt(self.G * self.It * self.E * self.Iz(self.h)) * self.psi_v
+
+        # Lister for å holde last/forskvningstilstander
         self.bruddgrense = []
         self.forskyvning_tot = []
         self.forskyvning_kl = []
@@ -220,7 +243,7 @@ class Mast(object):
         rep += "\n"
         return rep
 
-    def bredde(self, x):
+    def bredde(self, x=None):
         """Beregner total bredde av tverrsnitt.
 
         :param float x: Avstand fra mastens toppunkt :math:`[m]`
@@ -228,20 +251,22 @@ class Mast(object):
         :rtype: :class:`float`
         """
 
+        if not x:
+            x = self.h
+
         if not self.type == "bjelke":
-            bredde = self.toppmaal + 2 * self.stigning * x * 1000
             return self.toppmaal + 2 * self.stigning * x * 1000
         return self.b
 
-    def Iy(self, x, delta_topp=0, breddefaktor=1.0,):
+    def Iy(self, x, delta_topp=0, breddefaktor=1.0):
         """Beregner annet arealmoment om mastens sterk akse.
 
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
 
-        :param x: Avstand fra mastens toppunkt :math:`[m]`
-        :param delta_topp: Konstant tillegg til ``x``, til hjelp ved integrasjon :math:`[m]`
-        :param breddefaktor: Faktor for å kontrollere effektiv bredde
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float delta_topp: Konstant tillegg til ``x``, til hjelp ved integrasjon :math:`[m]`
+        :param float breddefaktor: Faktor for å kontrollere effektiv bredde
         :return: Annet arealmoment om y-akse i angitt høyde :math:`[mm^4]`
         :rtype: :class:`float`
         """
@@ -249,28 +274,31 @@ class Mast(object):
         if self.type == "B":
             z = breddefaktor*self.bredde(x+delta_topp)/2 - self.noytralakse
             Iy = 2 * (self.Iz_profil + self.A_profil * z**2)
-        if self.type == "H":
+        elif self.type == "H":
             z = breddefaktor*self.bredde(x+delta_topp)/2 - self.noytralakse
             Iy = 4 * (self.Iy_profil + self.A_profil * z**2)
-        elif self.type == "bjelke":
+        else:  # bjelkemast
             Iy = self.Iy_profil
         return Iy
 
-    def Iz(self, x, delta_topp=0):
+    def Iz(self, x, delta_topp=0, breddefaktor=1.0):
         """Beregner annet arealmoment om mastens svake akse.
 
-        :param x: Avstand fra mastens toppunkt :math:`[m]`
-        :param delta_topp: Konstant tillegg til ``x``, til hjelp ved integrasjon :math:`[m]`
+        Breddefaktor kan oppgis for å ta hensyn til
+        redusert effektiv bredde grunnet helning på mast.
+
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float delta_topp: Konstant tillegg til ``x``, til hjelp ved integrasjon :math:`[m]`
         :return: Annet arealmoment om z-akse i angitt høyde :math:`[mm^4]`
         :rtype: :class:`float`
         """
 
         if self.type == "B":
             Iz = 2 * self.Iy_profil
-        if self.type == "H":
-            y = self.bredde(x+delta_topp)/2 - self.noytralakse
+        elif self.type == "H":
+            y = breddefaktor*self.bredde(x+delta_topp)/2 - self.noytralakse
             Iz = 4 * (self.Iz_profil + self.A_profil * y**2)
-        elif self.type == "bjelke":
+        else:  # bjelkemast
             Iz = self.Iz_profil
         return Iz
 
@@ -350,7 +378,7 @@ class Mast(object):
         beregnet etter Per Kristian Larsens \textit{Dimensjonering av stålkonstruksjoner}
         Tabell 5.1.
 
-        :param x: float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float x:
         :return: ``It``, ``Cw``
         :rtype: :class:`float`, :class:`float`
         """
@@ -364,7 +392,59 @@ class Mast(object):
 
         return It, Cw
 
-    def diagonallengde(self, x):
+    def beta(self, x=None):
+        """Beregner knekklengdefaktor for lokal knekking av gurt i B-mast.
+
+        Knekklengdefaktoren :math:`\beta` beregnes ut fra metode gitt i
+        "Stålkonstruksjoner - Profiler og formler" (Institutt for
+        konstruksjonsteknikk, NTNU) Tabell 4.1, med stavsystem IV.
+
+        Utledningen gir følgende formler for :math:`\gamma` med
+        innsatte verdier for fjærstivhet :math:`k_{\phi}`:
+
+        Knekking av gurt: Avstivning fra 1 stk. gurt + 2 stk. diagonaler i hver ende.
+         :math:`\gamma = 8(0.5 + \frac{L_g}{L_d}\frac{I_d}{I_g})`
+
+        Subskript :math:`g` angir verdier for gurt,
+        mens :math:`d` refererer til diagonalene.
+
+        :math:`\beta` tilnærmes deretter ut fra lineærinterpolering av
+        verdier fra Tabell 4.4 basert på :math:`\gamma`-verdier
+        for mastehøyder mellom :math:`7` og :math:`13m`.
+
+        Det antas lengde av gurt lik :math:`1000mm`.
+
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :return: Knekklengdefaktor
+        :rtype: :class:`float`
+        """
+
+        beta = 1.0
+
+        if self.type=="B":
+            if not x:
+                x = self.h
+
+            gamma = 8 * (0.5 + (1000 / self.diagonallengde(x - 1) * (self.d_I / self.Iz_profil)))
+
+            if self.navn=="B2":
+                gamma_0, gamma_1 = 7.30, 6.80
+                beta_0, beta_1 = 0.62, 0.63
+            elif self.navn=="B3":
+                gamma_0, gamma_1 = 5.86, 5.42
+                beta_0, beta_1 = 0.65, 0.66
+            elif self.navn=="B4":
+                gamma_0, gamma_1 = 6.35, 5.80
+                beta_0, beta_1 = 0.64, 0.65
+            else:  # B6
+                gamma_0, gamma_1 = 11.57, 9.80
+                beta_0, beta_1 = 0.58, 0.60
+
+            beta = beta_0 + (beta_1-beta_0)/(gamma_1-gamma_0) * (gamma-gamma_0)
+
+        return beta
+
+    def diagonallengde(self, x=None):
         """Beregner lengde av diagonal i høyde x.
 
         Ved tilfelle B-mast er det påvist at forskjellige tilnærmelser
@@ -380,15 +460,18 @@ class Mast(object):
         Dersom masta ikke har diagonaler (bjelkemast) returneres 0.
 
         :param: float x: Avstand fra mastens toppunkt :math:`[m]`
-        :return: Diagonallengde
+        :return: Diagonallengde :math:`[mm]`
         :rtype: :class:`float`
         """
+
+        if not x:
+            x = self.h
 
         if self.type == "bjelke":
             return 0
 
         elif self.type == "B":
-            if self.navn == "B3":
+            if self.navn == "B2" or self.navn == "B3":
                 s = 7.0
             elif self.navn == "B4":
                 s = 7.5
@@ -691,10 +774,11 @@ def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast)
     Mast.s235 = s235
     Mast.materialkoeff = materialkoeff
 
+    Mast.L_e = hoyde * 1000  # [mm]
     if avspenningsmast or fixavspenningsmast:
-        Mast.L_cr = hoyde * 1000  # [mm]
+        Mast.L_cr = Mast.L_e
     else:
-        Mast.L_cr = 2 * hoyde * 1000  # [mm]
+        Mast.L_cr = 2 * Mast.L_e
 
     # B-master
     B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,

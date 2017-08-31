@@ -51,30 +51,12 @@ if __name__ == "__main__":
         i = inndata.Inndata(ini)
         masteliste = beregning.beregn(i)
 
-
     for mast in masteliste:
         mast.sorter_grenseverdier()
     master_sortert = sorted(masteliste, key=lambda mast: mast.tilstand_UR_max.utnyttelsesgrad, reverse=True)
     for mast in master_sortert:
         print("Navn: {}     UR = {:.3g} %".format(mast.navn, 100*mast.bruddgrense[0].utnyttelsesgrad))
     print()
-
-    mast = None
-    for m in master_sortert:
-        if m.navn == "B3":
-            mast = m
-            break
-
-    print(mast.navn)
-    print(mast.tilstand_My_max)
-    print("psi_v = {}".format(mast.tilstand_My_max.dimensjonerende_faktorer["psi_v"]))
-    print("M_cr_vind = {} kNm".format(2.05 * mast.tilstand_My_max.dimensjonerende_faktorer["M_cr_0"]))
-    print("M_cr_punkt = {} kNm".format(1.28 * mast.tilstand_My_max.dimensjonerende_faktorer["M_cr_0"]))
-    print("A = {}    B = {}".format(mast.tilstand_My_max.dimensjonerende_faktorer["A"],
-                                    mast.tilstand_My_max.dimensjonerende_faktorer["B"]))
-    print("M_cr = {} kNm\n".format(mast.tilstand_My_max.dimensjonerende_faktorer["M_cr"]))
-    print("My_Rk = {}".format(mast.My_Rk/10**6))
-    print("Mz_Rk = {}".format(mast.Mz_Rk/10**6))
 
 
     ###################################################################
