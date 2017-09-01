@@ -272,12 +272,6 @@ def _beregn_deformasjoner(i, mast, F):
 def _bjelkeformel_M(mast, j, fh):
     """Beregner deformasjoner i kontakttrådhøyde grunnet et rent moment.
 
-    .. warning::
-        Denne funksjonen er for øyeblikket *ikke* aktiv ved
-        deformasjonsberegninger (se :func:`beregning._beregn_deformasjoner`)
-        da den ikke tar hensyn til forskjellige innspenningsbetingelser
-        for eksentrisk plasserte vertikale laster.
-
     Funksjonen beregner horisontale forskyvninger basert på følgende bjelkeformel:
     :math:`\\delta = \\frac{M*fh^2}{2EI}`
 
