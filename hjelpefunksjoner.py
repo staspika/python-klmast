@@ -6,7 +6,9 @@ import math
 import lister
 
 def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, C_0, terrengkategori, z):
-    """Beregner dimensjonerende vindkasthastighetstrykk mhp. Eurokode 0.
+    """Beregner dimensjonerende vindkasthastighetstrykk.
+
+    Basert på NS-EN 1991-1-4 seksjon 4, inkl. nasjonalt tillegg.
 
     :param float v_b_0 Referansevindhastighet for aktuell kommune :math:`[\frac{m}{s}]`
     :param c_dir: Retningsfaktor
@@ -69,6 +71,8 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, C_0, terrengk
 
 def c_alt(v_b_0, region, H):
     """ Beregner faktor for vindøkning med høyden over havet.
+
+    Basert på NS-EN 1991-1-4 nasjonalt tillegg NA.4.2(2)P (901.1).
 
     :param v_b_0:
     :param region:

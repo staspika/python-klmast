@@ -176,11 +176,11 @@ def laster_ledninger(i, sys, mastehoyde):
         if not i.strekkutligger and r < 1200:
             f_z_fix = s_fix * (-0.5 * (a_mid/r) + (z/a_mid))
         F.append(Kraft(navn="Strekk: Fixline", type=(2, 1),
-                       f=(0, s_fix, f_z_fix), e=(-(fh + sh), 0.1, 0)))
+                       f=(0, s_fix, f_z_fix), e=(-(fh + sh), 0.15, 0)))
         # Avspenningsbardun
         if i.avspenningsbardun:
             F.append(Kraft(navn="Strekk: Avspenningsbardun", type=(4, 1),
-                           f=(s_fix/math.tan(math.radians(40)), -s_fix, -f_z_fix), e=(-(fh + sh), -0.1, 0)))
+                           f=(s_fix/math.tan(math.radians(40)), -s_fix, -f_z_fix), e=(-(fh + sh), -0.15, 0)))
 
     # Bidrag dersom avspenningsmast
     if i.avspenningsmast:

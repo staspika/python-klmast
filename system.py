@@ -276,6 +276,9 @@ class Fastavspent(Ledning):
         :math:`H_x^2 [H_x - H_0 + \\frac{EA(G_0 L)^2}{24H_0^2} + EA\\alpha \\Delta_T]
         = \\frac{EA(G_x L)^2}{24}`
 
+        Ligningen for kabellikevekten er hentet fra «KL-bibelen» («Contact Lines for
+         Electric Railways» av Kiessling, Puschmann etc.) ligning (5.57) side 282.
+
         Løsningen finnes ved å finne den reelle, positive egenverdien
         tilhørende "companion matrix" for residualfunksjonens koeffisienter.
 

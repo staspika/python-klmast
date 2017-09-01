@@ -15,7 +15,7 @@ class Mast(object):
     L_cr_y = 0  # [mm]
     L_cr_z = 0  # [mm]
 
-    def __init__(self, navn, type, egenvekt=0, A_profil=0, Iy_profil=0,
+    def __init__(self, navn, type, egenvekt=0, A_profil=0, b=0, d=0, Iy_profil=0,
                  Iz_profil=0, Ieta_profil=0, Wyp=0, Wzp=0, It_profil=0,
                  Cw_profil=0, noytralakse=0, toppmaal=0, stigning=0,
                  d_h=0, d_b=0, k_g=0, k_d=0, b_f=0,
@@ -26,6 +26,8 @@ class Mast(object):
         :param str type: Mastens type (B, H eller bjelke)
         :param int egenvekt: Mastens egenvekt :math:`[\\frac{N}{m}]`
         :param float A_profil: Arealet av et stegprofil :math:`[mm^2]`
+        :param float b: Tverrsnittsbredde (z-retning) :math:`[mm]`
+        :param float d: Tverrsnittsdybde (y-retning) :math:`[mm]`
         :param float Iy_profil: Stegprofilets annet arealmoment om lokal y-akse :math:`[mm^4]`
         :param float Iz_profil: Stegprofilets annet arealmoment om lokal z-akse :math:`[mm^4]`
         :param float Ieta_profil: Stegprofilets annet arealmoment om dets svakeste akse :math:`[mm^4]`
@@ -76,41 +78,21 @@ class Mast(object):
         else:
             self.A = A_profil
 
-        self.h_max= h_max
+        self.h_max = h_max
 
         # Tverrsnittsbredde/dybde
-        if not self.type == "bjelke":
+        if self.type == "H":
             self.b = self.bredde(self.h)
-            if self.type == "H":
+            self.d = self.b
+        elif self.type == "B":
+            self.b = self.bredde(self.h)
+            self.d = d
+        else:  # bjelkemast
+            self.b = b
+            if self.navn =="HE260M":
+                self.d = d
+            else:
                 self.d = self.b
-            elif self.type == "B":
-                if self.navn == "B2":
-                    self.d = 120
-                elif self.navn == "B3":
-                    self.d = 140
-                elif self.navn == "B4":
-                    self.d = 160
-                else:  # B6
-                    self.d = 200
-        else:
-            if self.navn == "HE200B":
-                self.b = 200
-                self.d = self.b
-            elif self.navn == "HE220B":
-                self.b = 220
-                self.d = self.b
-            elif self.navn == "HE240B":
-                self.b = 240
-                self.d = self.b
-            elif self.navn == "HE260B":
-                self.b = 260
-                self.d = self.b
-            elif self.navn == "HE280B":
-                self.b = 280
-                self.d = self.b
-            else:  # HE260M
-                self.b = 290
-                self.d = 268
 
         # Vindareal og dragkoeffisienter
         self.A_ref = A_ref
@@ -262,6 +244,9 @@ class Mast(object):
     def Iy(self, x, delta_topp=0, breddefaktor=1.0):
         """Beregner annet arealmoment om mastens sterk akse.
 
+        Steinerbidraget beregnes for B- og H-master
+        med hensyn til profilenes arealsenter.
+
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
 
@@ -285,6 +270,9 @@ class Mast(object):
     def Iz(self, x, delta_topp=0, breddefaktor=1.0):
         """Beregner annet arealmoment om mastens svake akse.
 
+        Steinerbidraget beregnes for B- og H-master
+        med hensyn til profilenes arealsenter.
+
         Breddefaktor kan oppgis for å ta hensyn til
         redusert effektiv bredde grunnet helning på mast.
 
@@ -306,6 +294,11 @@ class Mast(object):
     def Iy_int_M(self, x, delta_topp=0):
         """Evaluerer integranden for Iy ved påsatt moment.
 
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
+
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
         :return: Integranden evaluert ved angitt høyde
@@ -316,6 +309,11 @@ class Mast(object):
 
     def Iy_int_P(self, x, delta_topp=0):
         """Evaluerer integranden for Iy ved punktlast.
+
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
 
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
@@ -328,6 +326,11 @@ class Mast(object):
     def Iy_int_q(self, x, delta_topp=0):
         """Evaluerer integranden for Iy ved jevnt fordelt last.
 
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
+
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
         :return: Integranden evaluert ved angitt høyde
@@ -338,6 +341,11 @@ class Mast(object):
 
     def Iz_int_P(self, x, delta_topp=0):
         """Evaluerer integranden for Iz ved punktlast.
+
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
 
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
@@ -350,6 +358,11 @@ class Mast(object):
     def Iz_int_q(self, x, delta_topp=0):
         """Evaluerer integranden for Iz ved jevnt fordelt last.
 
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
+
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
         :return: Integranden evaluert ved angitt høyde
@@ -360,6 +373,11 @@ class Mast(object):
 
     def Iz_int_M(self, x, delta_topp=0):
         """Evaluerer integranden for Iz ved påsatt moment.
+
+        Integralet er utledet fra en energibetraktning basert på
+        likevekt mellom indre og ytre arbeid.
+        Formlene er hentet fra bjelkens differensialligning
+        samt enhetslastmetoden påført en enkel utkragerbjelke.
 
         :param float x: Høydevariabel for integrasjon :math:`[mm]`
         :param float delta_topp: Avstand til mastetopp det skal integreres fra :math:`[m]`
@@ -452,8 +470,10 @@ class Mast(object):
         gir varierende grad av nøyaktighet for forskjellige mastehøyder.
         Dersom :math:`x >= 6.0m` gjelder konstant innfestingsavstand
         :math:`500mm` for diagonalene, og Pytagoras' læresetning gir
-        dermed et bedre anslag av diagonallengde enn antakelsen om
-        :math:`[45^{\\circ}]` diagonalvinkel.
+        et godt anslag av diagonallengde. For seksjoner nærmere mastas
+        toppunkt vil antakelsen om :math:`[45^{\\circ}]` vinkel mellom
+        diagonalen og mastens lengdeakse gi en bedre tilnærmelse, da
+        avstanden mellom diagonalenes innfestingspunkt ikke er kjent.
 
         ``s`` angir avstand fra ytterkant tverrsnitt til innfestingspunkt
         for diagonal (stegtykkelse U-profil, sidelengde L-profil).
@@ -562,6 +582,14 @@ class Mast(object):
 
     def _massivitetsforhold(self, x):
         """Beregner tverrsnittets massivitetsforhold ved gitt høyde.
+
+        Massivitetsforholdet er gitt som følger:
+
+        :math:`\varphi = \frac{A}{A_c}`
+
+        hvor :math:`A` er horisontalprojeksjonen av mastens areal
+        mens :math:`A_c` er arealet av trapeset definert av
+        denne projeksjonens omriss.
 
         Massivitetsforholdet regnes for et representativt høydesnitt
         lik 0.5m inneholdende én stk diagonal av lengde ``l``.
@@ -786,19 +814,19 @@ def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast,
         Mast.L_cr_z = Mast.L_e * 2
 
     # B-master
-    B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, A_ref=0.12,
+    B2 = Mast(navn="B2", type="B", egenvekt=360, A_profil=1.70 * 10 ** 3, d=120, A_ref=0.12,
               Iy_profil=3.64 * 10 ** 6, Iz_profil=4.32 * 10 ** 5, Wyp=7.26 * 10 ** 4,
               It_profil=41.5 * 10 ** 3, Cw_profil=0.9 * 10 ** 9, noytralakse=16.0,
               toppmaal=150, stigning=14 / 1000, d_h=10, d_b=50, b_f=55, h_max=8.0)
-    B3 = Mast(navn="B3", type="B", egenvekt=510, A_profil=2.04 * 10 ** 3, A_ref=0.14,
+    B3 = Mast(navn="B3", type="B", egenvekt=510, A_profil=2.04 * 10 ** 3, d=140, A_ref=0.14,
               Iy_profil=6.05 * 10 ** 6, Iz_profil=6.27 * 10 ** 5, Wyp=1.03 * 10 ** 5,
               It_profil=56.8 * 10 ** 3, Cw_profil=1.8 * 10 ** 9, noytralakse=17.5,
               toppmaal=255, stigning=23 / 1000, d_h=10, d_b=50, b_f=60, h_max=9.5)
-    B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3, A_ref=0.16,
+    B4 = Mast(navn="B4", type="B", egenvekt=560, A_profil=2.40 * 10 ** 3, d=160, A_ref=0.16,
               Iy_profil=9.25 * 10 ** 6, Iz_profil=8.53 * 10 ** 5, Wyp=1.38 * 10 ** 5,
               It_profil=73.9 * 10 ** 3, Cw_profil=3.26 * 10 ** 9, noytralakse=18.4,
               toppmaal=255, stigning=23 / 1000, d_h=10, d_b=60, b_f=65, h_max=11.0)
-    B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3, A_ref=0.20,
+    B6 = Mast(navn="B6", type="B", egenvekt=700, A_profil=3.22 * 10 ** 3, d=200, A_ref=0.20,
               Iy_profil=1.91 * 10 ** 7, Iz_profil=1.48 * 10 ** 6, Wyp=2.28 * 10 ** 5,
               It_profil=119 * 10 ** 3, Cw_profil=9.07 * 10 ** 9, noytralakse=20.1,
               toppmaal=255, stigning=23 / 1000, d_h=12, d_b=100, b_f=75, h_max=13.0)
@@ -818,22 +846,22 @@ def hent_master(hoyde, s235, materialkoeff, avspenningsmast, fixavspenningsmast,
               k_g=0.85, k_d=0.55, b_f=75, h_max=13.0)
 
     # Bjelkemaster
-    HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81 * 10 ** 3,
+    HE200B = Mast(navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81 * 10 ** 3, b=200,
                   A_ref=0.20, Iy_profil=5.70 * 10 ** 7, Iz_profil=2.00 * 10 ** 7, Wyp=6.42 * 10 ** 5,
                   Wzp=3.00*10**5, It_profil=595 * 10 ** 3, Cw_profil=171 * 10 ** 9, h_max=9.5)
-    HE220B = Mast(navn="HE220B", type="bjelke", egenvekt=715, A_profil=9.10 * 10 ** 3,
+    HE220B = Mast(navn="HE220B", type="bjelke", egenvekt=715, A_profil=9.10 * 10 ** 3, b=220,
                   A_ref=0.22, Iy_profil=8.09 * 10 ** 7, Iz_profil=2.84 * 10 ** 7, Wyp=8.28 * 10 ** 5,
                   Wzp=3.87*10**5, It_profil=768 * 10 ** 3, Cw_profil=295 * 10 ** 9, h_max=11.0)
-    HE240B = Mast(navn="HE240B", type="bjelke", egenvekt=832, A_profil=1.06 * 10 ** 4,
+    HE240B = Mast(navn="HE240B", type="bjelke", egenvekt=832, A_profil=1.06 * 10 ** 4, b=240,
                   A_ref=0.24, Iy_profil=1.13 * 10 ** 8, Iz_profil=3.92 * 10 ** 7, Wyp=1.05 * 10 ** 6,
                   Wzp=4.90*10**5, It_profil=1030 * 10 ** 3, Cw_profil=487 * 10 ** 9, h_max=12.0)
-    HE260B = Mast(navn="HE260B", type="bjelke", egenvekt=930, A_profil=1.18 * 10 ** 4,
+    HE260B = Mast(navn="HE260B", type="bjelke", egenvekt=930, A_profil=1.18 * 10 ** 4, b=260,
                   A_ref=0.26, Iy_profil=1.49 * 10 ** 8, Iz_profil=5.13 * 10 ** 7, Wyp=1.28 * 10 ** 6,
                   Wzp=5.92*10**5, It_profil=1240 * 10 ** 3, Cw_profil=754 * 10 ** 9, h_max=13.0)
-    HE280B = Mast(navn="HE280B", type="bjelke", egenvekt=1030, A_profil=1.31 * 10 ** 4,
+    HE280B = Mast(navn="HE280B", type="bjelke", egenvekt=1030, A_profil=1.31 * 10 ** 4, b=280,
                   A_ref=0.28, Iy_profil=1.93 * 10 ** 8, Iz_profil=6.59 * 10 ** 7, Wyp=1.53 * 10 ** 6,
                   Wzp=7.06*10**5, It_profil=1440 * 10 ** 3, Cw_profil=1130 * 10 ** 9, h_max=13.0)
-    HE260M = Mast(navn="HE260M", type="bjelke", egenvekt=1720, A_profil=2.20 * 10 ** 4,
+    HE260M = Mast(navn="HE260M", type="bjelke", egenvekt=1720, A_profil=2.20 * 10 ** 4, b=290, d=268,
                   A_ref=0.268, Iy_profil=3.13 * 10 ** 8, Iz_profil=2.00 * 10 ** 8, Wyp=2.52 * 10 ** 6,
                   Wzp=1.17*10**6, It_profil=7220 * 10 ** 3, Cw_profil=1730 * 10 ** 9, A_ref_par=0.29, h_max=13.0)
 

@@ -75,7 +75,7 @@ class Tilstand(object):
             self.K_D = numpy.sum(numpy.sum(D, axis=0), axis=0)
 
     def __repr__(self):
-        K = self.K / 1000  # Konverterer M til [kNm] og F til [kN]
+        K = self.K / 1000  # Konverterer M til [kNm] og V/N til [kN]
         rep = ""
         if self.grensetilstand == 0 or self.grensetilstand == 3:
             rep += "Beregningsmetode: {}\n".format(self.metode)
@@ -174,7 +174,7 @@ class Tilstand(object):
 
         Beregner momentandeler til kritisk moment. A gir
         vindlastens, mens B angir punktlastenes
-        andel av bidrag til kritisk moment.
+        andel av bidrag til totalmomentet.
 
         :return: omentandeler ``A`` og ``B``
         :rtype: :class:`float`, :class:`float`
@@ -204,7 +204,7 @@ class Tilstand(object):
         return A, B
 
     def _reduksjonsfaktor_knekking(self, mast, akse):
-        """Beregner faktorer for aksialkraftkapasitet etter EC3, 6.3.1.2.
+        """Beregner faktorer for aksialkraftkapasitet etter NS-EN 1993-1-1 seksjon 6.3.1.2.
 
         ``akse`` styrer beregning om hhv. sterk og svak akse:
 
@@ -242,7 +242,7 @@ class Tilstand(object):
         return X, lam
 
     def _reduksjonsfaktor_vipping(self, mast, A, B, My_Ed):
-        """Bestemmer reduksjonsfaktoren for vipping etter EC3, 6.3.2.2 og 6.3.2.3.
+        """Bestemmer reduksjonsfaktoren for vipping etter NS-EN 1993-1-1 seksjon 6.3.2.2 og 6.3.2.3.
 
         Det antas at alle laster angriper midt i tverrsnittet,
         dvs. :math:`\frac{z}{a} = 0`.
@@ -291,7 +291,7 @@ class Tilstand(object):
         return X_LT
 
     def _interaksjonsfaktorer(self, mast, lam_y, N_Ed, X_y, X_z, lam_z):
-        """Beregner interaksjonsfaktorer etter EC3, Tabell B.2.
+        """Beregner interaksjonsfaktorer etter NS-EN 1993-1-1 tabell B.2.
 
         Det antas at alle master tilhører tverrsnittsklasse #1.
 
@@ -333,7 +333,7 @@ class Tilstand(object):
         return k_yy, k_yz, k_zy, k_zz
 
     def _knekking_lokal(self, mast, My_Ed, Mz_Ed, Vy_Ed, Vz_Ed, N_Ed):
-        """Beregner utnyttelsesgrad for lokal stavknekking etter EC3, 6.3.1.2.
+        """Beregner utnyttelsesgrad for lokal stavknekking etter NS-EN 1993-1-1 seksjon 6.3.1.2.
 
         :param Mast mast: Aktuell mast
         :param float My_Ed: Dimensjonerende moment om mastas y-akse :math:`[Nmm]`
