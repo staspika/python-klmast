@@ -391,13 +391,13 @@ class Mast(object):
         """Beregner mastas torsjonsparametre ved gitt høyde.
 
         Torsjonsparametrene som beregnes er treghetsmoment for St. Venants
-        torsjon :math:`\frac{I}{T}` og hvelvingskonstanten :math:`\frac{C}{W}`
+        torsjon :math:`I_T` og hvelvingskonstanten :math:`C_W`.
 
         Verdien ``te`` angir ekvivalent platetykkelse av diagonalstavene
-        beregnet etter Per Kristian Larsens \textit{Dimensjonering av stålkonstruksjoner}
+        beregnet etter Per Kristian Larsens \\textit{Dimensjonering av stålkonstruksjoner}
         Tabell 5.1.
 
-        :param float x:
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
         :return: ``It``, ``Cw``
         :rtype: :class:`float`, :class:`float`
         """
@@ -414,24 +414,25 @@ class Mast(object):
     def beta(self, x=None):
         """Beregner knekklengdefaktor for lokal knekking av gurt i B-mast.
 
-        Knekklengdefaktoren :math:`\beta` beregnes ut fra metode gitt i
+        Knekklengdefaktoren :math:`\\beta` beregnes ut fra metode gitt i
         "Stålkonstruksjoner - Profiler og formler" (Institutt for
         konstruksjonsteknikk, NTNU) Tabell 4.1, med stavsystem IV.
 
-        Utledningen gir følgende formler for :math:`\gamma` med
-        innsatte verdier for fjærstivhet :math:`k_{\phi}`:
+        Utledningen gir følgende formel for :math:`\\gamma` med
+        innsatte verdier for fjærstivhet :math:`k_{\\phi}`
 
-        Knekking av gurt: Avstivning fra 1 stk. gurt + 2 stk. diagonaler i hver ende.
-         :math:`\gamma = 8(0.5 + \frac{L_g}{L_d}\frac{I_d}{I_g})`
+        :math:`\\gamma = 8(0.5 + \\frac{L_g}{L_d}\\frac{I_d}{I_g})`
 
         Subskript :math:`g` angir verdier for gurt,
         mens :math:`d` refererer til diagonalene.
 
-        :math:`\beta` tilnærmes deretter ut fra lineærinterpolering av
+        :math:`\\beta` tilnærmes deretter ut fra lineærinterpolering av
         verdier fra Tabell 4.4 basert på :math:`\gamma`-verdier
         for mastehøyder mellom :math:`7` og :math:`13m`.
 
-        Det antas lengde av gurt lik :math:`1000mm`.
+        Det regnes med avstivning fra 1 stk. gurt
+        + 2 stk. diagonaler i hver ende.
+        Gurtlengde antas lik :math:`1000mm`.
 
         :param float x: Avstand fra mastens toppunkt :math:`[m]`
         :return: Knekklengdefaktor
@@ -480,7 +481,7 @@ class Mast(object):
 
         Dersom masta ikke har diagonaler (bjelkemast) returneres 0.
 
-        :param: float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
         :return: Diagonallengde :math:`[mm]`
         :rtype: :class:`float`
         """
@@ -515,23 +516,23 @@ class Mast(object):
 
           :math:`c_{f}` beregnes ut fra NS-EN 1991-1-4
           seksjon 7.7 med anbefalt verdi :math:`c_{f0} = 2.0`
-          og :math:`\psi_{\lambda}` avlest fra figur 7.36
-          under seksjon 7.13 med slankhet :math:`\lambda = 70`.
+          og :math:`\\psi_{\\lambda}` avlest fra figur 7.36
+          under seksjon 7.13 med slankhet :math:`\\lambda = 70`.
 
         - B-master med vind parallelt spor, H-master:
 
           :math:`c_{f0}` beregnes basert på en 2.-grads
           kurvetilpasning av verdier for firkantet romlig fagverk
           med vind parallelt flatenormal, ref. NS-EN 1991-1-4
-          seksjon 7.11, figur 7.34. Videre tilnærmes :math:`\psi_{\lambda}`
-          ut fra figur 7.36 med slankhet :math:`\lambda = 70`.
+          seksjon 7.11, figur 7.34. Videre tilnærmes :math:`\psi_{\\lambda}`
+          ut fra figur 7.36 med slankhet :math:`\\lambda = 70`.
 
           Dersom ``EN1991`` har verdien False beregnes c_f istedenfor
-          etter NS-EN 1993-3-1 seksjon B.2.2. Faktoren :math:`K_{\theta}`
-          settes lik :math:`1.0` da vinkelen :math:`\theta` grunnet
+          etter NS-EN 1993-3-1 seksjon B.2.2. Faktoren :math:`K_{\\theta}`
+          settes lik :math:`1.0` da vinkelen :math:`\\theta` grunnet
           mastens helning i denne sammenhengen er neglisjerbar.
 
-        :param: float x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
         :param Boolean EN1991: Styrer valg av beregningsmetode for dragkoeffisient
         :return: Dragkoeffisienter ``c_f``, ``c_f_par`` (normalt spor, parallelt spor)
         :rtype: :class:`float`, :class:`float`
@@ -563,10 +564,10 @@ class Mast(object):
         """Beregner midlere massivitetsforhold over lengden x.
 
         Verdien beregnes som et gjennomsnitt av verdiene for samtlige
-        0.5m høydesnitt innenfor oppgitt lengde ``x``.
+        :math:`0.5m` høydesnitt innenfor oppgitt lengde ``x``.
 
-        :param: float x: Avstand fra mastens toppunkt :math:`[m]`
-        :return: Gjennomsnittlig massivitetsforhold for vindlast
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :return: Gjennomsnittlig massivitetsforhold for vindfang
         :rtype: :class:`float`
         """
 
@@ -585,21 +586,21 @@ class Mast(object):
 
         Massivitetsforholdet er gitt som følger:
 
-        :math:`\varphi = \frac{A}{A_c}`
+        :math:`\\varphi = \\frac{A}{A_c}`
 
         hvor :math:`A` er horisontalprojeksjonen av mastens areal
         mens :math:`A_c` er arealet av trapeset definert av
         denne projeksjonens omriss.
 
         Massivitetsforholdet regnes for et representativt høydesnitt
-        lik 0.5m inneholdende én stk diagonal av lengde ``l``.
+        lik :math:`0.5m` inneholdende én stk diagonal av lengde ``l``.
 
         Funksjonen tar forbehold om at det regnes på en gitterstruktur
         med flatenormal parallelt vindretningen (B-mast ved vindlast
         parallelt sporettningen eller H-mast ved vilkårlig vindretning).
 
         :param float x: Avstand fra mastens toppunkt :math:`[m]`
-        :return: Massivitetsforhold for vindlast
+        :return: Massivitetsforhold for vindfang
         :rtype: :class:`float`
         """
 
@@ -616,11 +617,11 @@ class Mast(object):
     def vindareal_midlere(self, x):
         """Beregner midlere vindareal ved gitt mastelengde for gitterstruktur.
 
-        Vindarealet tilnærmes ved å summere 0.5m masteutsnitt
+        Vindarealet tilnærmes ved å summere :math:`0.5m` masteutsnitt
         med én stk. diagonal per. utsnitt.
 
-        :param x: Avstand fra mastens toppunkt :math:`[m]`
-        :return: Vindareal :math:`[\frac{m^2}{}m]`
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :return: Vindareal :math:`[\\frac{m^2}{m}]`
         :rtype: :class:`float`
         """
 
@@ -638,13 +639,13 @@ class Mast(object):
         """Beregner effektivt vindareal ved gitt høyde for gitterstruktur.
 
         Vindarealet regnes for et representativt høydesnitt
-        lik 0.5m inneholdende én stk diagonal av lengde ``l``.
+        lik :math:`0.5m` inneholdende én stk diagonal av lengde ``l``.
 
         For H-master regnes også et tilleggsareal fra
         kryssforsterkning ved gitte høyder.
 
-        :param x: Avstand fra mastens toppunkt :math:`[m]`
-        :return: Vindareal :math:`[\frac{m^2}{}m]`
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
+        :return: Vindareal :math:`[\\frac{m^2}{m}]`
         :rtype: :class:`float`
         """
 
@@ -662,9 +663,9 @@ class Mast(object):
 
 
     def _b_mid(self, x):
-        """Beregner mastens midlere bredde for et 0.5m utsnitt.
+        """Beregner mastens midlere bredde for et :math:`0.5m` utsnitt.
 
-        :param x: Avstand fra mastens toppunkt :math:`[m]`
+        :param float x: Avstand fra mastens toppunkt :math:`[m]`
         :return:
         :rtype: :class:`float`
         """

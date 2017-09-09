@@ -70,9 +70,9 @@ class System(object):
 class Ledning(object):
     """Klasse med felles attributter for alle ledninger.
 
-    ``sporhoyde_e`` trekkes fra ``e[0]`` for å konvertere
-        ledningens høydekoordinat med nullpunkt i skinneoverkant
-        til mastenes lokale aksesystem med origo i mastefot.
+    ``sporhoyde_e`` trekkes fra x-koordinat ``e[0]`` for å konvertere
+    ledningens høydekoordinat med nullpunkt i skinneoverkant
+    til mastenes lokale aksesystem med origo i mastefot.
     """
 
     a1 = 0.0
@@ -144,8 +144,8 @@ class Ledning(object):
     def _diameter(self, G_sno, rho_sno):
         """Beregner ekvivalent linediameter for isbelagt line.
 
-        :param G_sno: Snølast per lengdeenhet :math:`[\frac{N}{m}]`
-        :param rho_sno: Snøens densitet :math:`[\frac{kg}{m^3}]`
+        :param G_sno: Snølast per lengdeenhet :math:`[\\frac{N}{m}]`
+        :param rho_sno: Snøens densitet :math:`[\\frac{kg}{m^3}]`
         :return: Ekvivalent linediameter :math:`[m]`
         :rtype: :class:`float`
         """
@@ -231,7 +231,7 @@ class Fastavspent(Ledning):
         """Beregner initiell strekkraft mhp. masteavstand.
 
         Kraften beregnes ut fra lineærinterpolering mellom
-        tabulerte verdier for strekkrefter `` s30`` og ``s70``
+        tabulerte verdier for strekkrefter ``s30`` og ``s70``
         ved temperatur :math:`T=5^{\\circ}C`.
 
         :param float s30: Strekk ved 30m masteavstand :math:`[kN]`
@@ -277,7 +277,7 @@ class Fastavspent(Ledning):
         = \\frac{EA(G_x L)^2}{24}`
 
         Ligningen for kabellikevekten er hentet fra «KL-bibelen» («Contact Lines for
-         Electric Railways» av Kiessling, Puschmann etc.) ligning (5.57) side 282.
+        Electric Railways» av Kiessling, Puschmann etc.) ligning (5.57) side 282.
 
         Løsningen finnes ved å finne den reelle, positive egenverdien
         tilhørende "companion matrix" for residualfunksjonens koeffisienter.
@@ -325,7 +325,7 @@ def hent_system(i):
 
     Ledningenes strekkraft ved snøfri line og :math:`T = -40^{\\circ}C`
     samt strekk ved snøbelastet line og :math:`T = -25^{\\circ}C` beregnes
-    ved hjelp av Newton-Raphson-iterasjon ut fra tabulerte verdier for
+    via en kabellikevekt ut fra tabulerte verdier for
     kabelstrekk ved :math:`T = 5^{\\circ}C`.
 
     :param Inndata i: Input fra bruker
@@ -543,7 +543,7 @@ def hent_system(i):
 def _beregn_arm(systemnavn, radius, sms, fh, strekkutligger, B1):
     """Beregner momentarm for utligger.
 
-    ``arm`` angir KLs faktiske momentarm i forhold til nullpunkt
+    ``arm`` angir kontaktledningens faktiske momentarm i forhold til nullpunkt
     i mastens koordinatsystem, mens ``arm_sum`` angir summen av
     denne og arm for neste mast dersom master bytter side av sporet.
     Det antas i dette tilfellet at én mast har trykkutligger, mens

@@ -12,7 +12,8 @@ def beregn_master(ini):
     Mastene deles opp i gittermaster og bjelkemaster før de
     sorteres mhp. utnyttelsesgrad og returneres i to separate lister.
 
-    :return: Lister med ferdige beregnede master ``gittermaster_sortert`` og ``bjelkemaster_sortert``, ``i``
+    :return: Lister med ferdige beregnede master ``gittermaster_sortert``
+     og ``bjelkemaster_sortert``, kopi av input for aktuell beregning ``i``
     :rtype: :class:`list`, :class:`list`, :class:`Inndata`
     """
 

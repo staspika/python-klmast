@@ -10,13 +10,13 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, C_0, terrengk
 
     Basert på NS-EN 1991-1-4 seksjon 4, inkl. nasjonalt tillegg.
 
-    :param float v_b_0 Referansevindhastighet for aktuell kommune :math:`[\frac{m}{s}]`
-    :param c_dir: Retningsfaktor
-    :param c_season: Årstidsfaktor
-    :param c_alt: Nivåfaktor
-    :param c_prob: Faktor dersom returperioden er mer enn 50 år
-    :param C_0: Terrengformfaktor
-    :param terrengkategori: Terrengkategori
+    :param float v_b_0: Referansevindhastighet for aktuell kommune :math:`[\\frac{m}{s}]`
+    :param float c_dir: Retningsfaktor
+    :param float c_season: Årstidsfaktor
+    :param float c_alt: Nivåfaktor
+    :param float c_prob: Faktor dersom returperioden er mer enn 50 år
+    :param float C_0: Terrengformfaktor
+    :param int terrengkategori: Terrengkategori
     :param float z: Høyde over bakken :math:`[m]`
     :return: Vindkasthastighetstrykk :math:`q_p [\\frac{N}{m^2}]`,
      basisvindhastighet :math:`v_b[\\frac{m}{s}]`,
@@ -70,14 +70,15 @@ def vindkasthastighetstrykk(v_b_0, c_dir, c_season, c_alt, c_prob, C_0, terrengk
 
 
 def c_alt(v_b_0, region, H):
-    """ Beregner faktor for vindøkning med høyden over havet.
+    """Beregner faktor for vindøkning med høyden over havet.
 
     Basert på NS-EN 1991-1-4 nasjonalt tillegg NA.4.2(2)P (901.1).
 
-    :param v_b_0:
-    :param region:
-    :param H:
-    :return:
+    :param float v_b_0: Referansevindhastighet for aktuell kommune :math:`[\\frac{m}{s}]`
+    :param str region: Aktuell region
+    :param int H: Høyde over havet for aktuelt byggested :math:`[m]`
+    :return: Høydefaktor
+    :rtype: :class:`float`
     """
 
     v_0 = 30
@@ -128,7 +129,7 @@ def vindutblasning(systemnavn, radius, fh, stromavtakerbredde, v_egendefinert=No
     :param int radius: Sporkurvaturens radius :math:`[m]`
     :param int fh: Kontakttrådhøyde :math:`[m]`
     :param str stromavtakerbredde: Bredde av valgt strømavtaker
-    :param int v_egendefinert: Overstyrer automatisk kjørehastighet :math:`[\frac{m}{s}]`
+    :param int v_egendefinert: Overstyrer automatisk kjørehastighet :math:`[\\frac{m}{s}]`
     :return: Maksimal tillatt vindutblåsning :math:`[m]`
     :rtype: :class:`float`
     """

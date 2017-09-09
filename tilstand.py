@@ -170,13 +170,14 @@ class Tilstand(object):
         return max(u, UR_y, UR_z, UR_d, UR_g)
 
     def _beregn_momentfordeling(self):
-        """Beregner mastens momentfordeling.
+        """Beregner momentandeler til kritisk moment.
 
-        Beregner momentandeler til kritisk moment. A gir
-        vindlastens, mens B angir punktlastenes
-        andel av bidrag til totalmomentet.
+        ``A`` angir andel av bidrag til totalmomentet fra
+        fordelte laster (vindlast på mast), mens ``B``
+        angir andel av bidrag til totalmomentet fra
+        punktlaster (øvrige laster).
 
-        :return: omentandeler ``A`` og ``B``
+        :return: Momentandeler ``A`` og ``B``
         :rtype: :class:`float`, :class:`float`
         """
 
@@ -204,7 +205,7 @@ class Tilstand(object):
         return A, B
 
     def _reduksjonsfaktor_knekking(self, mast, akse):
-        """Beregner faktorer for aksialkraftkapasitet etter NS-EN 1993-1-1 seksjon 6.3.1.2.
+        """Beregner reduksjonsfaktor for stavknekking etter NS-EN 1993-1-1 seksjon 6.3.1.2.
 
         ``akse`` styrer beregning om hhv. sterk og svak akse:
 
@@ -213,7 +214,7 @@ class Tilstand(object):
 
         :param Mast mast: Aktuell mast
         :param str akse: Aktuell akse
-        :return: Reduksjonsfaktor ``X`` for knekking, slankhet ``lam``
+        :return: Reduksjonsfaktor for stavknekking ``X`` for knekking, slankhet ``lam``
         :rtype: :class:`float`, :class:`float`
         """
 
@@ -245,7 +246,7 @@ class Tilstand(object):
         """Bestemmer reduksjonsfaktoren for vipping etter NS-EN 1993-1-1 seksjon 6.3.2.2 og 6.3.2.3.
 
         Det antas at alle laster angriper midt i tverrsnittet,
-        dvs. :math:`\frac{z}{a} = 0`.
+        dvs. :math:`z_a = 0`.
 
         :param Mast mast: Aktuell mast
         :param float A: Momentandel fra vindlast
@@ -341,7 +342,7 @@ class Tilstand(object):
         :param float Vy_Ed: Dimensjonerende skjærkraft parallelt mastas y-akse :math:`[N]`
         :param float Vz_Ed: Dimensjonerende skjærkraft parallelt mastas z-akse :math:`[N]`
         :param float N_Ed: Dimensjonerende normaltkraft i masta :math:`[N]`
-        :return: Utnyttelsesgrader for diagonal/gurt, ``UR_d``/``UR_g``
+        :return: Utnyttelsesgrader for diagonal og gurt, ``UR_d`` og ``UR_g``
         :rtype: :class:`float`, :class:`float`
         """
 

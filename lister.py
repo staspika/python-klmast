@@ -229,8 +229,11 @@ ulykkeslaster_KL = ["Egenvekt: Bæreline", "Egenvekt: Hengetråd", "Egenvekt: Ko
 def hent_lastkombinasjoner(ec3):
     """Henter last- og kombinasjonsfaktorer til utregning av dimensjonerene laster.
 
+    Lastsituasjoner simuleres ved hjelp av en temperatur og
+    lastkombinasjonsfaktorer for variable laster.
+
     :param Boolean ec3: Brukerens valg av beregningsmetode
-    :return: ``lastsituasjoner`` (kombinasjonsfaktorer), ``lastfaktorer``
+    :return: ``lastsituasjoner``, ``lastfaktorer``
     :rtype: :class:`dict`, :class:`dict`
     """
 
