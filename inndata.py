@@ -1,56 +1,118 @@
 from __future__ import unicode_literals
 import configparser
 
+class OclSystem:
+    def __init__(self, systemnavn="", radius=0, a1=0.0, a2=0.0, delta_h1=0.0, delta_h2=0.0, vindkasthastighetstrykk=0.0):
+        """Class for OCL system"""
+        self.systemnavn = systemnavn
+        self.radius = radius
+        self.a1 = a1
+        self.a2 = a2
+        self.delta_h1 = delta_h1
+        self.delta_h2 = delta_h2
+        self.vindkasthastighetstrykk = vindkasthastighetstrykk
+
+class OclGeometry:
+    def __init__(
+            self, h=0.0, hfj=0.0, hf=0.0, hj=0.0, hr=0.0, fh=0.0,
+            sh=0.0, e=0.0, sms=0.0):
+        """Initialiserer :class:`OclGeometry`-objekt.
+
+        :param h: Mastehøyde
+        :param hfj: Høyde toppmonterte ledninger
+        :param hf: Høyde forbigangsledning
+        :param hj: Høyde jordledning
+        :param hr: Høyde returledning
+        :param fh: Kontakttrådhøyde
+        :param sh: Utliggerens systemhøyde
+        :param e: Avstand fra skinneoverkant til toppen av mastefundament
+        :param sms: Avstand senter mast – senter spor
+        """
+        self.h = h
+        self.hfj = hfj
+        self.hf = hf
+        self.hj = hj
+        self.hr = hr
+        self.fh = fh
+        self.sh = sh
+        self.e = e
+        self.sms = sms
+
+class OclLoad:
+    def __init__(
+            self, f_x=0.0, f_y=0.0, f_z=0.0, e_x=0.0, e_y=0.0, e_z=0.0,
+            a_vind=0.0, a_vind_par=0.0):
+        self.f_x = f_x
+        self.f_y = f_y
+        self.f_z = f_z
+        self.e_x = e_x
+        self.e_y = e_y
+        self.e_z = e_z
+        self.a_vind = a_vind
+        self.a_vind_par = a_vind_par
+
+class OclInfo:
+    def __init__(
+            self, banestrekning="", km=0.0, prosjektnr=0,
+            mastenr = 0, signatur = "", dato = ""):
+        self.banestrekning = banestrekning
+        self.km = km
+        self.prosjektnr = prosjektnr
+        self.mastenr = mastenr
+        self.signatur = signatur
+        self.dato = dato
+
+class OclMastAlt:
+    def __init__(
+            self, siste_for_avspenning=False, linjemast_utliggere=0,
+            avstand_fixpunkt=0, fixpunktmast=False,
+            fixavspenningsmast=False, avspenningsmast=False,
+            strekkutligger=False, master_bytter_side=False,
+            avspenningsbardun=False):
+        # Mastealternativer
+        self.siste_for_avspenning = siste_for_avspenning
+        self.linjemast_utliggere = linjemast_utliggere
+        self.avstand_fixpunkt = avstand_fixpunkt
+        self.fixpunktmast = fixpunktmast
+        self.fixavspenningsmast = fixavspenningsmast
+        self.avspenningsmast = avspenningsmast
+        self.strekkutligger = strekkutligger
+        self.master_bytter_side = master_bytter_side
+        self.avspenningsbardun = avspenningsbardun
+
+class OclFastAvsp:
+    """Fastavspente ledninger"""
+    def __init__(
+            self, matefjern_ledn=False, matefjern_antall=0,
+            at_ledn=False, at_type="", forbigang_ledn=False,
+            jord_ledn=False, jord_type="", fiberoptisk_ledn=False,
+            retur_ledn=False, auto_differansestrekk=False,
+            differansestrekk=0.0):
+        self.matefjern_ledn = matefjern_ledn # Mate- eller fjernledning?
+        self.matefjern_antall = matefjern_antall # Antall mate- og fjernledninger
+        self.at_ledn = at_ledn # Autotransformatorledning?
+        self.at_type = at_type # Type autotransformatorsystem
+        self.forbigang_ledn = forbigang_ledn # Forbigangledning?
+        self.jord_ledn = jord_ledn # Jordledning?
+        self.jord_type = jord_type # Type jordledning
+        self.fiberoptisk_ledn = fiberoptisk_ledn # Fiberoptisk ledning?
+        self.retur_ledn = retur_ledn # Returledning
+        self.auto_differansestrekk = auto_differansestrekk # 
+        self.differansestrekk = differansestrekk
+
 class Inndata(object):
     """Container-klasse for enkel tilgang til inngangsparametre fra .ini-fil."""
     def __init__(self):
         # Info
-        self.banestrekning = ""
-        self.km = 0.0
-        self.prosjektnr = 0
-        self.mastenr = 0
-        self.signatur = ""
-        self.dato = ""
+        self.info = OclInfo()
         # Mastealternativer
-        self.siste_for_avspenning = False
-        self.linjemast_utliggere = 0
-        self.avstand_fixpunkt = 0
-        self.fixpunktmast = False
-        self.fixavspenningsmast = False
-        self.avspenningsmast = False
-        self.strekkutligger = False
-        self.master_bytter_side = False
-        self.avspenningsbardun = False
+        self.mast_alt = OclMastAlt()
         # Fastavspente ledninger
-        self.matefjern_ledn = False # Mate- eller fjernledning?
-        self.matefjern_antall = 0 # Antall mate- og fjernledninger
-        self.at_ledn = False # Autotransformatorledning?
-        self.at_type = "" # Type autotransformatorsystem
-        self.forbigang_ledn = False # Forbigangledning?
-        self.jord_ledn = False # Jordledning?
-        self.jord_type = "" # Type jordledning
-        self.fiberoptisk_ledn = False # Fiberoptisk ledning?
-        self.retur_ledn = False # Returledning
-        self.auto_differansestrekk = False # 
-        self.differansestrekk = 0.0
+        self.fast_avsp = OclFastAvsp()
         # System
-        self.systemnavn = ""
-        self.radius = 0
-        self.a1 = 0.0
-        self.a2 = 0.0
-        self.delta_h1 = 0.0
-        self.delta_h2 = 0.0
-        self.vindkasthastighetstrykk = 0.0
+        self.system = OclSystem()
         # Geometri
-        self.h = 0.0 # Mastehøyde
-        self.hfj = 0.0 # Høyde toppmonterte ledninger
-        self.hf = 0.0 # Høyde forbigangsledning
-        self.hj = 0.0 # Høyde jordledning
-        self.hr = 0.0 # Høyde returledning
-        self.fh = 0.0 # Kontakttrådhøyde
-        self.sh = 0.0 # Utliggerens systemhøyde
-        self.e = 0.0 # Avstand fra skinneoverkant til toppen av mastefundament
-        self.sms = 0.0 # Avstand senter mast – senter spor
+        self.geometry = OclGeometry()
         # Diverse
         self.s235 = False
         self.materialkoeff = False
@@ -59,14 +121,7 @@ class Inndata(object):
         self.isklasse = ""
         # Brukerdefinert last
         self.brukerdefinert_last = False
-        self.f_x = 0.0
-        self.f_y = 0.0
-        self.f_z = 0.0
-        self.e_x = 0.0
-        self.e_y = 0.0
-        self.e_z = 0.0
-        self.a_vind = 0.0
-        self.a_vind_par = 0.0
+        self.custom_load = OclLoad()
         # Hjelpevariabler
         self.referansevindhastighet = 0
         self.kastvindhastighet = 0.0
@@ -79,52 +134,65 @@ class Inndata(object):
         cfg.read(ini)
         # Oppretter variabler for data fra .ini-fil
         # Info
-        self.banestrekning = cfg.get("Info", "banestrekning")
-        self.km = cfg.getfloat("Info", "km")
-        self.prosjektnr = cfg.getint("Info", "prosjektnr")
-        self.mastenr = cfg.getint("Info", "mastenr")
-        self.signatur = cfg.get("Info", "signatur")
-        self.dato = cfg.get("Info", "dato")
+        banestrekning = cfg.get("Info", "banestrekning")
+        km = cfg.getfloat("Info", "km")
+        prosjektnr = cfg.getint("Info", "prosjektnr")
+        mastenr = cfg.getint("Info", "mastenr")
+        signatur = cfg.get("Info", "signatur")
+        dato = cfg.get("Info", "dato")
+        self.info = OclInfo(banestrekning, km, prosjektnr, mastenr, signatur, dato)
         # Mastealternativer
-        self.siste_for_avspenning = cfg.getboolean("Mastealternativer", "siste_for_avspenning")
-        self.linjemast_utliggere = cfg.getint("Mastealternativer", "linjemast_utliggere")
-        self.avstand_fixpunkt = cfg.getint("Mastealternativer", "avstand_fixpunkt")
-        self.fixpunktmast = cfg.getboolean("Mastealternativer", "fixpunktmast")
-        self.fixavspenningsmast = cfg.getboolean("Mastealternativer", "fixavspenningsmast")
-        self.avspenningsmast = cfg.getboolean("Mastealternativer", "avspenningsmast")
-        self.strekkutligger = cfg.getboolean("Mastealternativer", "strekkutligger")
-        self.master_bytter_side = cfg.getboolean("Mastealternativer", "master_bytter_side")
-        self.avspenningsbardun = cfg.getboolean("Mastealternativer", "avspenningsbardun")
+        siste_for_avspenning = cfg.getboolean("Mastealternativer", "siste_for_avspenning")
+        linjemast_utliggere = cfg.getint("Mastealternativer", "linjemast_utliggere")
+        avstand_fixpunkt = cfg.getint("Mastealternativer", "avstand_fixpunkt")
+        fixpunktmast = cfg.getboolean("Mastealternativer", "fixpunktmast")
+        fixavspenningsmast = cfg.getboolean("Mastealternativer", "fixavspenningsmast")
+        avspenningsmast = cfg.getboolean("Mastealternativer", "avspenningsmast")
+        strekkutligger = cfg.getboolean("Mastealternativer", "strekkutligger")
+        master_bytter_side = cfg.getboolean("Mastealternativer", "master_bytter_side")
+        avspenningsbardun = cfg.getboolean("Mastealternativer", "avspenningsbardun")
+        mast_alt = OclMastAlt(siste_for_avspenning, linjemast_utliggere,
+                              avstand_fixpunkt, fixpunktmast,
+                              fixavspenningsmast, avspenningsmast,
+                              strekkutligger, master_bytter_side,
+                              avspenningsbardun)
         # Fastavspente ledninger
-        self.matefjern_ledn = cfg.getboolean("Fastavspent", "matefjern_ledn")
-        self.matefjern_antall = cfg.getint("Fastavspent", "matefjern_antall")
-        self.at_ledn = cfg.getboolean("Fastavspent", "at_ledn")
-        self.at_type = cfg.get("Fastavspent", "at_type")
-        self.forbigang_ledn = cfg.getboolean("Fastavspent", "forbigang_ledn")
-        self.jord_ledn = cfg.getboolean("Fastavspent", "jord_ledn")
-        self.jord_type = cfg.get("Fastavspent", "jord_type")
-        self.fiberoptisk_ledn = cfg.getboolean("Fastavspent", "fiberoptisk_ledn")
-        self.retur_ledn = cfg.getboolean("Fastavspent", "retur_ledn")
-        self.auto_differansestrekk = cfg.getboolean("Fastavspent", "auto_differansestrekk")
-        self.differansestrekk = cfg.getfloat("Fastavspent", "differansestrekk")
+        matefjern_ledn = cfg.getboolean("Fastavspent", "matefjern_ledn")
+        matefjern_antall = cfg.getint("Fastavspent", "matefjern_antall")
+        at_ledn = cfg.getboolean("Fastavspent", "at_ledn")
+        at_type = cfg.get("Fastavspent", "at_type")
+        forbigang_ledn = cfg.getboolean("Fastavspent", "forbigang_ledn")
+        jord_ledn = cfg.getboolean("Fastavspent", "jord_ledn")
+        jord_type = cfg.get("Fastavspent", "jord_type")
+        fiberoptisk_ledn = cfg.getboolean("Fastavspent", "fiberoptisk_ledn")
+        retur_ledn = cfg.getboolean("Fastavspent", "retur_ledn")
+        auto_differansestrekk = cfg.getboolean("Fastavspent", "auto_differansestrekk")
+        differansestrekk = cfg.getfloat("Fastavspent", "differansestrekk")
+        fast_avsp = OclFastAvsp(matefjern_ledn, matefjern_antall,
+                                at_ledn, at_type, forbigang_ledn,
+                                jord_ledn, jord_type, fiberoptisk_ledn,
+                                retur_ledn, auto_differansestrekk,
+                                differansestrekk)
         # System
-        self.systemnavn = cfg.get("System", "systemnavn")
-        self.radius = cfg.getint("System", "radius")
-        self.a1 = cfg.getfloat("System", "a1")
-        self.a2 = cfg.getfloat("System", "a2")
-        self.delta_h1 = cfg.getfloat("System", "delta_h1")
-        self.delta_h2 = cfg.getfloat("System", "delta_h2")
-        self.vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
+        systemnavn = cfg.get("System", "systemnavn")
+        radius = cfg.getint("System", "radius")
+        a1 = cfg.getfloat("System", "a1")
+        a2 = cfg.getfloat("System", "a2")
+        delta_h1 = cfg.getfloat("System", "delta_h1")
+        delta_h2 = cfg.getfloat("System", "delta_h2")
+        vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
+        self.system = OclSystem(systemnavn, radius, a1, a2, delta_h1, delta_h2, vindkasthastighetstrykk)
         # Geometri
-        self.h = cfg.getfloat("Geometri", "h")
-        self.hfj = cfg.getfloat("Geometri", "hfj")
-        self.hf = cfg.getfloat("Geometri", "hf")
-        self.hj = cfg.getfloat("Geometri", "hj")
-        self.hr = cfg.getfloat("Geometri", "hr")
-        self.fh = cfg.getfloat("Geometri", "fh")
-        self.sh = cfg.getfloat("Geometri", "sh")
-        self.e = cfg.getfloat("Geometri", "e")
-        self.sms = cfg.getfloat("Geometri", "sms")
+        h = cfg.getfloat("Geometri", "h")
+        hfj = cfg.getfloat("Geometri", "hfj")
+        hf = cfg.getfloat("Geometri", "hf")
+        hj = cfg.getfloat("Geometri", "hj")
+        hr = cfg.getfloat("Geometri", "hr")
+        fh = cfg.getfloat("Geometri", "fh")
+        sh = cfg.getfloat("Geometri", "sh")
+        e = cfg.getfloat("Geometri", "e")
+        sms = cfg.getfloat("Geometri", "sms")
+        self.geometry = OclGeometry(h, hfj, hf, hj, hr, fh, sh, e, sms)
         # Diverse
         self.s235 = cfg.getboolean("Div", "s235")
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
@@ -133,14 +201,16 @@ class Inndata(object):
         self.isklasse = cfg.get("Div", "isklasse")
         # Brukerdefinert last
         self.brukerdefinert_last = cfg.getboolean("Brukerdefinert last", "brukerdefinert_last")
-        self.f_x = cfg.getfloat("Brukerdefinert last", "f_x")
-        self.f_y = cfg.getfloat("Brukerdefinert last", "f_y")
-        self.f_z = cfg.getfloat("Brukerdefinert last", "f_z")
-        self.e_x = cfg.getfloat("Brukerdefinert last", "e_x")
-        self.e_y = cfg.getfloat("Brukerdefinert last", "e_y")
-        self.e_z = cfg.getfloat("Brukerdefinert last", "e_z")
-        self.a_vind = cfg.getfloat("Brukerdefinert last", "a_vind")
-        self.a_vind_par = cfg.getfloat("Brukerdefinert last", "a_vind_par")
+        f_x = cfg.getfloat("Brukerdefinert last", "f_x")
+        f_y = cfg.getfloat("Brukerdefinert last", "f_y")
+        f_z = cfg.getfloat("Brukerdefinert last", "f_z")
+        e_x = cfg.getfloat("Brukerdefinert last", "e_x")
+        e_y = cfg.getfloat("Brukerdefinert last", "e_y")
+        e_z = cfg.getfloat("Brukerdefinert last", "e_z")
+        a_vind = cfg.getfloat("Brukerdefinert last", "a_vind")
+        a_vind_par = cfg.getfloat("Brukerdefinert last", "a_vind_par")
+        self.custom_load = OclLoad(f_x, f_y, f_z, e_x, e_y, e_z, a_vind,
+                                   a_vind_par)
         # Hjelpevariabler
         self.referansevindhastighet = cfg.getint("Hjelpevariabler", "referansevindhastighet")
         self.kastvindhastighet = cfg.getfloat("Hjelpevariabler", "kastvindhastighet")

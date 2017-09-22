@@ -17,7 +17,8 @@ def beregn_master(ini):
     """
     masteliste = []
     # Oppretter inndataobjekt med data fra .ini-fil
-    i = inndata.Inndata(ini)
+    i = inndata.Inndata()
+    i.from_ini_file(ini)
     masteliste.extend(beregning.beregn(i))
     for mast in masteliste:
         mast.sorter_grenseverdier()
