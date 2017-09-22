@@ -89,15 +89,15 @@ def beregn(i):
     import mast
 
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(i.h, i.s235, i.materialkoeff, i.avspenningsmast,
-                              i.fixavspenningsmast, i.avspenningsbardun)
+    master = mast.hent_master(i.geometry.h, i.s235, i.materialkoeff, i.mast_alt.avspenningsmast,
+                              i.mast_alt.fixavspenningsmast, i.mast_alt.avspenningsbardun)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
 
 
     # F_statisk_ledn = laster uavhengige av temperatur, snø og vind
     # F_dynamisk_ledn = laster som varierer med én eller flere klimaforhold
-    F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.h)
+    F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.geometry.h)
 
     iterasjon = 0
     for mast in master:
@@ -181,7 +181,7 @@ def beregn(i):
                 iterasjon += 1
 
         # Ulykkeslast
-        if i.siste_for_avspenning or i.linjemast_utliggere > 1:
+        if i.mast_alt.siste_for_avspenning or i.mast_alt.linjemast_utliggere > 1:
             lastsituasjon = "Ulykkeslast"
             F_ulykke = []
             F_ulykke.extend([f for f in F_statisk if not f.navn.startswith("Sidekraft: KL")])
@@ -247,7 +247,7 @@ def _beregn_deformasjoner(i, mast, F):
     """
 
     # Konverterer systemhøyde ``fh`` til mastens aksesystem
-    fh_korrigert = i.fh + i.e
+    fh_korrigert = i.geometry.fh + i.geometry.e
 
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))

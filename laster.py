@@ -25,13 +25,13 @@ def laster_mast(i, sys, mast):
                    e=(0, 0, 0)))
 
     # Vandringskraft (kun dersom masten har én utligger)
-    if not (i.linjemast_utliggere > 1 or i.siste_for_avspenning or i.fixpunktmast):
-        e_x_kl = -(i.fh + i.sh / 2)
-        e_z_kl_vandre = mast.bredde(i.fh) / 2000  # [m]
+    if not (i.mast_alt.linjemast_utliggere > 1 or i.mast_alt.siste_for_avspenning or i.mast_alt.fixpunktmast):
+        e_x_kl = -(i.geometry.fh + i.geometry.sh / 2)
+        e_z_kl_vandre = mast.bredde(i.geometry.fh) / 2000  # [m]
         for temperatur in ["5C", "0C", "-25C", "-40C"]:
             T = int(temperatur[0:-1])
             delta_T = T - 5
-            delta_l = abs(delta_T * sys.alpha_kl * i.avstand_fixpunkt)
+            delta_l = abs(delta_T * sys.alpha_kl * i.mast_alt.avstand_fixpunkt)
             f_y_kl_vandre = sys.f_z_kl * (delta_l / sys.arm)
             F.append(Kraft(navn="Vandringskraft: KL", type=(1, 2),
                            f=(0, f_y_kl_vandre, 0),
@@ -39,7 +39,7 @@ def laster_mast(i, sys, mast):
                            T=T))
 
     # Vindlast
-    q_p = i.vindkasthastighetstrykk
+    q_p = i.system.vindkasthastighetstrykk
     # 0: Vind fra mast mot spor
     # 1: Vind fra spor mot mast
     # 2: Vind parallelt sporet
@@ -112,10 +112,10 @@ def laster_ledninger(i, sys, mastehoyde):
     :rtype: :class:`list`
     """
 
-    r = i.radius
-    sms = i.sms
-    fh, sh = i.fh, i.sh
-    a1, a2 = i.a1, i.a2
+    r = i.system.radius
+    sms = i.geometry.sms
+    fh, sh = i.geometry.fh, i.geometry.sh
+    a1, a2 = i.system.a1, i.system.a2
     a_mid = Ledning.a_mid
 
     B1, B2 = sys.B1, sys.B2
@@ -130,7 +130,7 @@ def laster_ledninger(i, sys, mastehoyde):
     f_z_kl = sys.f_z_kl
 
     # Bidrag dersom siste før avspenning
-    if i.siste_for_avspenning:
+    if i.mast_alt.siste_for_avspenning:
         e_y_kl = i.traverslengde
         f_z_kl_avsp = s_kl * (arm/a2)
         if not i.master_bytter_side:
@@ -143,7 +143,7 @@ def laster_ledninger(i, sys, mastehoyde):
                        e=(e_x_kl, e_y_kl, arm)))
 
     # Bidrag fra n stk. KL/utligger
-    if i.linjemast_utliggere == 1:
+    if i.mast_alt.linjemast_utliggere == 1:
         F.append(Kraft(navn="Egenvekt: Utligger", type=(0, 0),
                        f=(sys.utligger["Egenvekt"] * sms, 0, 0),
                        e=(e_x_kl, -e_y_kl, sys.utligger["Momentarm"] * sms)))
@@ -151,7 +151,7 @@ def laster_ledninger(i, sys, mastehoyde):
                        f=(0, 0, f_z_kl),
                        e=(e_x_kl, -e_y_kl, arm)))
     else:
-        n = i.linjemast_utliggere
+        n = i.mast_alt.linjemast_utliggere
         F.append(Kraft(navn="Egenvekt: Utliggere", type=(0, 0),
                        f=(n * sys.utligger["Egenvekt"] * sms, 0, 0),
                        e=(e_x_kl, 0, sys.utligger["Momentarm"] * sms)))
@@ -160,7 +160,7 @@ def laster_ledninger(i, sys, mastehoyde):
                        e=(e_x_kl, 0, arm)))
 
     # Bidrag dersom fixpunktmast
-    if i.fixpunktmast:
+    if i.mast_alt.fixpunktmast:
         s_fix = sys.strekk_fix
         f_z_fix = s_fix * ((a_mid/r) + 2*(arm/a_mid))
         if i.strekkutligger and r < 1200:
@@ -169,7 +169,7 @@ def laster_ledninger(i, sys, mastehoyde):
                        f=(0, 0, f_z_fix), e=(-(fh + sh), 0, sms)))
 
     # Bidrag dersom fixavspenningsmast
-    if i.fixavspenningsmast:
+    if i.mast_alt.fixavspenningsmast:
         s_fix = sys.strekk_fix
         z = arm + B1 + B2
         f_z_fix = s_fix * (0.5 * (a_mid/r) + (z/a_mid))
@@ -183,7 +183,7 @@ def laster_ledninger(i, sys, mastehoyde):
                            f=(s_fix/math.tan(math.radians(40)), -s_fix, -f_z_fix), e=(-(fh + sh), -0.15, 0)))
 
     # Bidrag dersom avspenningsmast
-    if i.avspenningsmast:
+    if i.mast_alt.avspenningsmast:
         z = arm + B1 + B2
         f_z_kl_avsp = s_kl * (0.5 * (a_mid/r) + (z/a_mid))
         if not i.strekkutligger and r < 1200:
@@ -206,26 +206,26 @@ def laster_ledninger(i, sys, mastehoyde):
     # Bidrag fra brukerdefinert last og vindfang
     if i.brukerdefinert_last:
         F.append(Kraft(navn="Egenvekt: Brukerdefinert lastvektor", type=(7, 0),
-                       f=(i.f_x, i.f_y, i.f_z),
-                       e=(-i.e_x, i.e_y, i.e_z)))
+                       f=(i.custom_load.f_x, i.custom_load.f_y, i.custom_load.f_z),
+                       e=(-i.custom_load.e_x, i.custom_load.e_y, i.custom_load.e_z)))
         # 0: Vind fra mast mot spor
         # 1: Vind fra spor mot mast
         # 2: Vind parallelt sporet
         for vindretning in range(3):
-            q_p = i.vindkasthastighetstrykk
+            q_p = i.system.vindkasthastighetstrykk
             if vindretning < 2:
                 if vindretning == 1:
                     q_p = -q_p
-                f_z_vind = q_p * i.a_vind
+                f_z_vind = q_p * i.custom_load.a_vind
                 F.append(Kraft(navn="Vindlast: Brukerdefinert vindfang", type=(7, 4),
                                f=(0, 0, f_z_vind),
-                               e=(-i.e_x, i.e_y, i.e_z),
+                               e=(-i.custom_load.e_x, i.custom_load.e_y, i.custom_load.e_z),
                                vindretning=vindretning))
             else:  # vindretning = 3
-                f_y_vind = q_p * i.a_vind_par
+                f_y_vind = q_p * i.custom_load.a_vind_par
                 F.append(Kraft(navn="Vindlast: Brukerdefinert vindfang", type=(7, 4),
                                f=(0, f_y_vind, 0),
-                               e=(-i.e_x, i.e_y, i.e_z),
+                               e=(-i.custom_load.e_x, i.custom_load.e_y, i.custom_load.e_z),
                                vindretning=vindretning))
 
 
@@ -245,7 +245,7 @@ def laster_ledninger(i, sys, mastehoyde):
         # Egenvekt snøfri line inkl. bidrag til
         # normalkraft dersom ulik høyde mellom nabomaster
         f_x_ledn = n * (ledning.G_0 * L + ledning.isolatorvekt)
-        f_x_ledn += n * ledning.s * (i.delta_h1/a1 + i.delta_h2/a2)
+        f_x_ledn += n * ledning.s * (i.system.delta_h1/a1 + i.system.delta_h2/a2)
         egenvekt = Kraft(navn="Egenvekt: {}".format(ledning.type),
                          type=(rad, 0), f=(f_x_ledn, 0, 0),
                          e=ledning.e)
@@ -296,7 +296,7 @@ def laster_ledninger(i, sys, mastehoyde):
 
 
             # Vindlast
-            q_p = i.vindkasthastighetstrykk
+            q_p = i.system.vindkasthastighetstrykk
             D = ledning.temperaturdata[temperatur]["D"]
             if i.ec3:
                 c_f = 1.1

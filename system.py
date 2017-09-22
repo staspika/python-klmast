@@ -333,31 +333,31 @@ def hent_system(i):
     :rtype: :class:`System`
     """
 
-    Ledning.a1 = i.a1
-    Ledning.a2 = i.a2
-    a_mid = (i.a1+i.a2)/2
+    Ledning.a1 = i.system.a1
+    Ledning.a2 = i.system.a2
+    a_mid = (i.system.a1+i.system.a2)/2
     Ledning.a_mid = a_mid
-    Ledning.delta_h1 = i.delta_h1
-    Ledning.delta_h2 = i.delta_h2
-    Ledning.sporhoyde_e = i.e
+    Ledning.delta_h1 = i.system.delta_h1
+    Ledning.delta_h2 = i.system.delta_h2
+    Ledning.sporhoyde_e = i.geometry.e
     Ledning.G_sno_lett = float(i.isklasse[i.isklasse.find("(")+1:i.isklasse.find("N")-1])
     Ledning.G_sno_tung = Ledning.G_sno_lett * 2
     Ledning.rho_sno_tung = 700
     Ledning.rho_sno_lett = 600
     Ledning.ec3 = i.ec3
-    Fastavspent.auto_differansestrekk = i.auto_differansestrekk
-    Fastavspent.differansestrekk_manuelt = i.differansestrekk
+    Fastavspent.auto_differansestrekk = i.fast_avsp.auto_differansestrekk
+    Fastavspent.differansestrekk_manuelt = i.fast_avsp.differansestrekk
 
-    systemnavn = i.systemnavn.split()[1] if i.systemnavn.startswith("System") else i.systemnavn
+    systemnavn = i.system.systemnavn.split()[1] if i.system.systemnavn.startswith("System") else i.system.systemnavn
 
     # Beregner geometrikonstanter for aktuell systemkonfigurasjon
-    B1, B2 = hjelpefunksjoner.beregn_sikksakk(systemnavn, i.radius)
-    arm, arm_sum = _beregn_arm(systemnavn, i.radius, i.sms, i.fh, i.strekkutligger, B1)
+    B1, B2 = hjelpefunksjoner.beregn_sikksakk(systemnavn, i.system.radius)
+    arm, arm_sum = _beregn_arm(systemnavn, i.system.radius, i.geometry.sms, i.geometry.fh, i.mast_alt.strekkutligger, B1)
 
     # HUSK TRAVERSLENGDE e_t VED DOBBEL UTLIGGER
 
     # Bæreliner
-    e_x_bl = -(i.sh + i.fh)
+    e_x_bl = -(i.geometry.sh + i.geometry.fh)
     Cu_50_7 = Loddavspent(navn="Cu 50/7", type="Bæreline",
                           G_0=4.46, d=9.0, A=49.48, s=7.1,
                           e=(e_x_bl, 0, arm))
@@ -370,17 +370,17 @@ def hent_system(i):
     # Kontakttråder
     Ri_100_Cu_s35 = Loddavspent(navn="Ri 100 Cu", type="Kontakttråd",
                                 G_0=8.9, d=12.0, A=100.0, s=7.1,
-                                e=(-i.fh, 0, arm))
+                                e=(-i.geometry.fh, 0, arm))
     Ri_100_Cu = Loddavspent(navn="Ri 100 Cu", type="Kontakttråd",
                             G_0=8.9, d=12.0, A=100.0, s=10.0,
-                            e=(-i.fh, 0, arm))
+                            e=(-i.geometry.fh, 0, arm))
     Ri_120_CuAg = Loddavspent(navn="Ri 120 CuAg", type="Kontakttråd",
                               G_0=10.7, d=13.2, A=120.0, s=15.0,
-                              e=(-i.fh, 0, arm))
+                              e=(-i.geometry.fh, 0, arm))
 
     # Hengetråd (inkl. klemmer)
     L_h = 8 * a_mid / 60
-    e_x_ht = -(i.fh + i.sh/2)
+    e_x_ht = -(i.geometry.fh + i.geometry.sh/2)
     Bz_II_10_49 = Loddavspent(navn="Bz II 10/49", type="Hengetråd",
                               G_0=4.69, d=4.5, A=9.6, L=L_h,
                               e=(e_x_ht, 0, arm))
@@ -389,8 +389,8 @@ def hent_system(i):
                                  e=(e_x_ht, 0, arm))
     # Y-line
     L_y = 0
-    e_x_yl = -(i.sh + i.fh)
-    if (systemnavn == "20A" or systemnavn == "35") and i.radius >= 800:
+    e_x_yl = -(i.geometry.sh + i.geometry.fh)
+    if (systemnavn == "20A" or systemnavn == "35") and i.system.radius >= 800:
         L_y = 14
     elif systemnavn == "25" and i.radius >= 1200:
         L_y = 18
@@ -402,12 +402,12 @@ def hent_system(i):
                                 e=(e_x_yl, 0, arm))
     # Fixliner
     L_fix = 0
-    e_x_fix = -(i.sh + i.fh)
+    e_x_fix = -(i.geometry.sh + i.geometry.fh)
     e_z_fix = 0
-    if i.fixpunktmast:
+    if i.mast_alt.fixpunktmast:
         L_fix = a_mid
         e_z_fix = i.sms
-    elif i.fixavspenningsmast:
+    elif i.mast_alt.fixavspenningsmast:
         L_fix = i.a1 / 2
     Bz_II_50_19_fix = Fix(navn="Bz II 50/19", type="Fixline",
                           G_0=4.37, d=9.0, A=48.35,
@@ -419,39 +419,39 @@ def hent_system(i):
 
     # Forbigangsledning
     e_z_forbigang = -0.3
-    if not i.matefjern_ledn and not i.at_ledn and not i.jord_ledn:
+    if not i.fast_avsp.matefjern_ledn and not i.fast_avsp.at_ledn and not i.fast_avsp.jord_ledn:
         e_z_forbigang = 0
     Al_240_61 = Fastavspent(navn="Al 240-61", type="Forbigangsledning",
                             G_0=6.43, d=20.3, A=242.54, E=56000,
                             alpha=2.3 * 10 ** (-5), s=(2.48, 2.78),
-                            isolatorvekt=150, e=[-i.hf, 0, e_z_forbigang])
+                            isolatorvekt=150, e=[-i.geometry.hf, 0, e_z_forbigang])
 
     # Returledninger
     Al_240_61_iso = Fastavspent(navn="Al 240-61 isolert", type="Returledninger",
                                 G_0=7.63, d=23.9, A=242.54, E=56000,
                                 alpha=2.3 * 10 ** (-5), s=(2.95, 3.28),
-                                n=2, isolatorvekt=100, e=[-i.hr, 0, -0.5])
+                                n=2, isolatorvekt=100, e=[-i.geometry.hr, 0, -0.5])
 
     # Mate-/fjernledninger
-    ending = "er" if i.matefjern_antall > 1 else ""
+    ending = "er" if i.fast_avsp.matefjern_antall > 1 else ""
     SAHF_120_26_7 = Fastavspent(navn="SAHF 120 Feral", type="Mate-/fjernledning{}".format(ending),
                                 G_0=7.56, d=19.38, A=222.35, E=76000,
                                 alpha=1.9 * 10 ** (-5), s=(2.77, 3.06),
-                                n=i.matefjern_antall, isolatorvekt=110,
-                                e=[-i.hfj, 0, 0])
+                                n=i.fast_avsp.matefjern_antall, isolatorvekt=110,
+                                e=[-i.geometry.hfj, 0, 0])
 
     # Fiberoptiske kabler
     # Det antas en (konservativ) oppspenningskraft på 1.5kN for fiberoptisk kabel.
     ADSS_GRHSLLDV_9_125 = Fastavspent(navn="ADSS GRHSLLDV 9/125", type="Fiberoptisk ledning",
                                       G_0=2.65, d=18.5, A=268.9, E=12000,
                                       alpha=3.94 * 10 ** (-5), s=(1.5, 1.5),
-                                      e=[-i.hf, 0, -0.3])
+                                      e=[-i.geometry.hf, 0, -0.3])
 
     # AT-ledninger
     # Ved manglende strekktabeller for Al 400-37 og 240-19 er verdier for
     # Al 400-61 og 240-61 benyttet. Strekkverdier for Al 150-19 ekstrapoleres
     # ut fra arealforholdet mellom denne og Al 400-37 (ca. 40%).
-    e_at = [-i.hfj, 0, 0]
+    e_at = [-i.geometry.hfj, 0, 0]
     Al_400_37 = Fastavspent(navn="Al 400-37", type="AT-ledninger",
                             G_0=10.31, d=25.34, A=381.0, E=56000,
                             alpha=2.3 * 10 ** (-5), s=(4.09, 4.59),
@@ -468,9 +468,9 @@ def hent_system(i):
 
     # Jordledninger
     e_z_jord = -0.3
-    if not i.matefjern_ledn and not i.at_ledn and not i.forbigang_ledn:
+    if not i.fast_avsp.matefjern_ledn and not i.fast_avsp.at_ledn and not i.fast_avsp.forbigang_ledn:
         e_z_jord = 0
-    e_jord = [-i.hj, 0, e_z_jord]
+    e_jord = [-i.geometry.hj, 0, e_z_jord]
     KHF_70 = Fastavspent(navn="KHF-70", type="Jordledning",
                          G_0=5.81, d=10.5, A=66.75, E=116000,
                          alpha=1.7 * 10 ** (-5), s=(2.09, 2.25),
@@ -488,7 +488,7 @@ def hent_system(i):
     # Legger til ledninger og utligger avhengig av valgt system
     if systemnavn == "20A":
         ledninger = [Bz_II_50_19, Ri_100_Cu, Bz_II_10_49]
-        if i.radius >= 800:
+        if i.system.radius >= 800:
             ledninger.append(Bz_II_35_7)
         utligger = utligger_s2x
 
@@ -509,35 +509,35 @@ def hent_system(i):
         utligger = utligger_s3x
 
     # Legger til eventuell fixline
-    if i.fixpunktmast or i.fixavspenningsmast:
+    if i.mast_alt.fixpunktmast or i.mast_alt.fixavspenningsmast:
         if systemnavn == "25":
             ledninger.append(Bz_II_70_19_fix)
         else:
             ledninger.append(Bz_II_50_19_fix)
 
     # Legger til valgte fastavspente ledninger
-    if i.matefjern_ledn:
+    if i.fast_avsp.matefjern_ledn:
         ledninger.append(SAHF_120_26_7)
-    if i.at_ledn:
+    if i.fast_avsp.at_ledn:
         for l in [Al_400_37, Al_240_19, Al_150_19]:
             if l.navn == i.at_type:
                 ledninger.append(l)
                 break
-    if i.forbigang_ledn:
+    if i.fast_avsp.forbigang_ledn:
         ledninger.append(Al_240_61)
-    if i.jord_ledn:
+    if i.fast_avsp.jord_ledn:
         for l in [KHF_70, KHF_95]:
             if l.navn == i.jord_type:
                 ledninger.append(l)
                 break
-    if i.fiberoptisk_ledn:
+    if i.fast_avsp.fiberoptisk_ledn:
         ledninger.append(ADSS_GRHSLLDV_9_125)
-    if i.retur_ledn:
+    if i.fast_avsp.retur_ledn:
         ledninger.append(Al_240_61_iso)
 
     return System(systemnavn, ledninger, utligger, B1, B2, arm, arm_sum,
                   Ledning.G_sno_tung, Ledning.G_sno_lett,
-                  i.radius, i.a1, i.a2, a_mid, i.strekkutligger)
+                  i.system.radius, i.system.a1, i.system.a2, a_mid, i.mast_alt.strekkutligger)
 
 
 def _beregn_arm(systemnavn, radius, sms, fh, strekkutligger, B1):
