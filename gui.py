@@ -937,9 +937,17 @@ class Hovedvindu(tk.Frame):
             Hf = fh + sh + 0.5
             hf_min = Hf - 1.0
             hf_max = hfj - 2.0
+            if fiberoptisk_ledn:
+                hf_min = 5.0 if hf_min > 5.0 else hf_min
+                hf_max = h + 0.5 if hf_max < h + 0.5 else hf_max
+
         else:
             hf_min = h - e
             hf_max = h_max + 2.0
+            if fiberoptisk_ledn:
+                hf_min = 5.0 if hf_min > 5.0 else hf_min
+                hf_max = h + 0.5 if hf_max < h + 0.5 else hf_max
+
 
         # hr
         Hr = fh + sh
