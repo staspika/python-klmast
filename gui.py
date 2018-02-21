@@ -833,7 +833,9 @@ class Hovedvindu(tk.Frame):
         B1, B2 = hjelpefunksjoner.beregn_sikksakk(systemnavn, radius)
         e = hjelpefunksjoner.vindutblasning(systemnavn, radius, fh, stromavtakerbredde)
 
-        if systemnavn == "20A" or "20B":
+        masteavstand_grense = 75.0
+
+        if systemnavn == "20A" or systemnavn == "20B":
             s_kl = 2 * 10000
             A_ref = (12 + 9)/1000  # [m^2/m]
         elif systemnavn == "25":
@@ -842,6 +844,7 @@ class Hovedvindu(tk.Frame):
         else:  # System 35
             s_kl = 2 * 7100
             A_ref = (12 + 9)/1000  # [m^2/m]
+            masteavstand_grense = 60.0
 
         if self._hoyfjellsgrense.get():
             v = 37
@@ -863,8 +866,15 @@ class Hovedvindu(tk.Frame):
         else:
             B = A
 
-        masteavstand_max = min(A, B, 75.0)
+        masteavstand_max = min(A, B, masteavstand_grense)
         masteavstand_max_avrundet = math.floor(masteavstand_max * 10) / 10
+
+        """
+        print("\nSystemnavn = {}  B1, B2 = {:.2f}, {:.2f}  e = {:.3f}\n  A_ref = {:.3f}  "
+              " q = {:.3f}".format(systemnavn, B1, B2, e, A_ref, q))
+        print("c1 = {:.2f}  c2 = {:.3f}  c3 = {:.3f}".format(c1, c2 ,c3))
+        print("A = {:.3f}  B = {:.3f}\n  masteavstand_max = {:.1f}".format(A, B, masteavstand_max_avrundet))
+        """
 
         self.a1_spinbox.config(state="normal")
         self.a2_spinbox.config(state="normal")
