@@ -2101,8 +2101,9 @@ class Resultater(tk.Frame):
         s += "{:.1f}\n{:.1f}\n{:.1f}\n".format(abs(mast.tilstand_Dz_tot_max.K[4] / 1000),
                                                abs(mast.tilstand_Dz_tot_max.K[3] / 1000),
                                                abs(mast.tilstand_Dz_tot_max.K[0] / 1000))
-
-        with open("FUNDAMAST.DAT", "w+") as fil:
+        filename = filedialog.asksaveasfilename(
+            parent=self, title="Lagre som...", initialfile="FUNDAMAST.DAT")
+        with open(filename, "w+") as fil:
             fil.write(s)
 
         self.eksporter_btn.config(text="Eksport av {}-mast fullført".format(mast.navn), font=plain)
