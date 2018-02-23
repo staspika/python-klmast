@@ -10,6 +10,7 @@ from datetime import date
 import main
 import numpy
 import hjelpefunksjoner
+from tkinter import filedialog
 
 
 # Fonter
@@ -2477,8 +2478,9 @@ class Tabell(tk.Frame):
         """Eksporterer tabelldata til .txt-dokument."""
 
         tabelldata = self.tabellboks.get(1.0, "end")
-
-        with open("TABELL.TXT", "w+") as fil:
+        filename = filedialog.asksaveasfilename(
+            parent=self, title="Lagre som...", initialfile="TABELL.TXT")
+        with open(filename, "w+") as fil:
             fil.write(tabelldata)
 
         self.skriv_btn.config(text="Eksport av tabell fullført", font=plain)
