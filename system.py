@@ -293,7 +293,6 @@ class Fastavspent(Ledning):
         :return: Endelig kabelstrekk ``H_x`` :math:`[N]`
         :rtype: :class:`float`
         """
-
         # Inngangsparametre
         if H_0 is not None:
             H_0 = H_0
@@ -305,11 +304,9 @@ class Fastavspent(Ledning):
         alpha = self.alpha
         G_x = G_0 + G_sno
         delta_T = T - 5
-
         # Konstanter
-        a = E * A * (G_x * L) ** 2 / 24
-        b = - H_0 + E * A * (G_0 * L) ** 2 / (24 * H_0 ** 2) + E * A * alpha * delta_T
-
+        a = E*A*(G_x*L)**2/24
+        b = -H_0 + E*A*(G_0*L)**2/(24*H_0**2) + E*A*alpha*delta_T
         roots = numpy.roots([-1, -b, 0, a])
         H_x = 0
         for r in roots:
