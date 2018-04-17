@@ -2102,7 +2102,9 @@ class Resultater(tk.Frame):
                                                abs(mast.tilstand_Dz_tot_max.K[3] / 1000),
                                                abs(mast.tilstand_Dz_tot_max.K[0] / 1000))
         filename = filedialog.asksaveasfilename(
-            parent=self, title="Lagre som...", initialfile="FUNDAMAST.DAT")
+            parent=self, title="Lagre som...",
+            initialfile="FUNDAMAST.DAT",
+            filetypes=[("Fundamast", "*.dat"), ("All files", "*")])
         with open(filename, "w+") as fil:
             fil.write(s)
 
