@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 from __future__ import unicode_literals
+
 """Overordnet beregningsprosedyre for master.
 
 Styrer beregning av reaksjonskrefter og forskyvninger for samtlige
@@ -77,6 +78,8 @@ import lister
 import laster
 import tilstand
 from kraft import Kraft
+import mast
+
 
 def beregn(i):
     """Gjennomfører beregning og returnerer masteobjekter med resultater.
@@ -85,53 +88,39 @@ def beregn(i):
     :return: Liste med master
     :rtype: :class:`list`
     """
-
-    import mast
-
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(i.h, i.s235, i.materialkoeff, i.avspenningsmast,
-                              i.fixavspenningsmast, i.avspenningsbardun)
+    master = mast.hent_master(
+        i.h, i.s235, i.materialkoeff, i.avspenningsmast,
+        i.fixavspenningsmast, i.avspenningsbardun)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
     sys = system.hent_system(i)
-
-
     # F_statisk_ledn = laster uavhengige av temperatur, snø og vind
     # F_dynamisk_ledn = laster som varierer med én eller flere klimaforhold
     F_statisk_ledn, F_dynamisk_ledn = laster.laster_ledninger(i, sys, mastehoyde=i.h)
-
     iterasjon = 0
     for mast in master:
-
         F_statisk_mast, F_dynamisk_mast = laster.laster_mast(i, sys, mast)
-
         F_statisk = F_statisk_ledn + F_statisk_mast
         F_dynamisk = F_dynamisk_ledn + F_dynamisk_mast
-
         lastsituasjoner, lastfaktorer = lister.hent_lastkombinasjoner(i.ec3)
-
         for lastsituasjon in lastsituasjoner:
             psi_T = lastsituasjoner.get(lastsituasjon)["psi_T"]
             psi_S = lastsituasjoner.get(lastsituasjon)["psi_S"]
             psi_V = lastsituasjoner.get(lastsituasjon)["psi_V"]
             temp = lastsituasjoner.get(lastsituasjon)["T"]
-
             # F_T = klimaavhengige laster ved gitt temperatur
             F_T = []
             F_T.extend([f for f in F_dynamisk if f.T==temp or f.T==None])
-
             # 0: Vind fra mast mot spor
             # 1: Vind fra spor mot mast
             # 2: Vind parallelt sporet
             for vindretning in range(3):
-
                 # F = alle dimensjonerende krefter ved gitte klimaforhold
                 F = []
                 F.extend(F_statisk)
                 F.extend([f for f in F_T if f.vindretning==vindretning or f.vindretning==None])
-
                 R_0 = _beregn_reaksjonskrefter(F)
                 D_0 = _beregn_deformasjoner(i, mast, F)
-
                 R = numpy.zeros((5, 8, 6))
                 for G in lastfaktorer["G"]:
                     # Egenvekt
@@ -154,9 +143,7 @@ def beregn(i):
                                                           T=T, S=S, V=V, psi_T=psi_T, psi_S=psi_S,
                                                           psi_V=psi_V, temp=temp, iterasjon=iterasjon)
                                     mast.lagre_tilstand(t)
-
                                     iterasjon += 1
-
                 # Bruksgrense, forskyvning totalt
                 R = numpy.zeros((5, 8, 6))
                 R[0:2, :, :] = R_0[0:2, :, :]
@@ -177,27 +164,20 @@ def beregn(i):
                 t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning,
                                       grensetilstand=2, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
-
                 iterasjon += 1
-
         # Ulykkeslast
         if i.siste_for_avspenning or i.linjemast_utliggere > 1:
             lastsituasjon = "Ulykkeslast"
             F_ulykke = []
             F_ulykke.extend([f for f in F_statisk if not f.navn.startswith("Sidekraft: KL")])
             R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
-
             # Tilleggskraft ved ulykke
             ulykkeslast = laster.ulykkeslast(i, sys, numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
             R_ulykke += _beregn_reaksjonskrefter(ulykkeslast)
-
-
             t = tilstand.Tilstand(mast, i, lastsituasjon, 0,
                                   grensetilstand=3, F=F_ulykke, R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
-
             iterasjon += 1
-
     return master
 
 
