@@ -34,8 +34,7 @@ def beregn_master(ini):
     return gittermaster_sortert, bjelkemaster_sortert, i
 
 
-if __name__ == "__main__":
-    start_time = time.clock()
+def cycle_through_masts():
     print()
     print("Velkommen til Bane NORs fantastiske nye beregningsverktøy!")
     print()
@@ -51,5 +50,14 @@ if __name__ == "__main__":
     for mast in master_sortert:
         print("Type {:6} UR = {:>6.2%}".format(
             mast.navn, mast.bruddgrense[0].utnyttelsesgrad))
+
+
+def time_profiler(command):
+    start_time = time.clock()
+    exec(command)
     exec_time = time.clock() - start_time
     print("Executed in {:.3f} s.".format(exec_time))
+
+
+if __name__ == "__main__":
+    time_profiler('cycle_through_masts()')
