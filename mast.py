@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import math
 
+
 class Mast(object):
     """Klasse for å representere alle typer master."""
 
@@ -15,10 +16,10 @@ class Mast(object):
     L_cr_y = 0  # [mm]
     L_cr_z = 0  # [mm]
 
-    def __init__(self, navn, type, egenvekt=0, A_profil=0, b=0, d=0, Iy_profil=0,
-                 Iz_profil=0, Ieta_profil=0, Wyp=0, Wzp=0, It_profil=0,
-                 Cw_profil=0, noytralakse=0, toppmaal=0, stigning=0,
-                 d_h=0, d_b=0, k_g=0, k_d=0, b_f=0,
+    def __init__(self, navn, type, egenvekt=0, A_profil=0, b=0, d=0,
+                 Iy_profil=0, Iz_profil=0, Ieta_profil=0, Wyp=0, Wzp=0,
+                 It_profil=0, Cw_profil=0, noytralakse=0, toppmaal=0,
+                 stigning=0, d_h=0, d_b=0, k_g=0, k_d=0, b_f=0,
                  A_ref=0, A_ref_par=0, h_max=0):
         """Initialiserer :class:`Mast`-objekt.
 
@@ -89,7 +90,7 @@ class Mast(object):
             self.d = d
         else:  # bjelkemast
             self.b = b
-            if self.navn =="HE260M":
+            if self.navn == "HE260M":
                 self.d = d
             else:
                 self.d = self.b
@@ -162,7 +163,7 @@ class Mast(object):
             self.N_cr_g = (math.pi**2 * self.E * self.Iz_profil) / (L_g**2)
             self.lam_g = math.sqrt(self.A_profil * self.fy / self.N_cr_g)
 
-        elif self.type=="H":
+        elif self.type == "H":
             # Knekkparametre diagonalstav
             L_d = self.k_d * 1000
             if self.navn == "H6":
@@ -427,7 +428,7 @@ class Mast(object):
         mens :math:`d` refererer til diagonalene.
 
         :math:`\\beta` tilnærmes deretter ut fra lineærinterpolering av
-        verdier fra Tabell 4.4 basert på :math:`\gamma`-verdier
+        verdier fra Tabell 4.4 basert på :math:`\\gamma`-verdier
         for mastehøyder mellom :math:`7` og :math:`13m`.
 
         Det regnes med avstivning fra 1 stk. gurt
@@ -441,19 +442,20 @@ class Mast(object):
 
         beta = 1.0
 
-        if self.type=="B":
+        if self.type == "B":
             if not x:
                 x = self.h
 
-            gamma = 8 * (0.5 + (1000 / self.diagonallengde(x - 1) * (self.d_I / self.Iz_profil)))
+            gamma = 8*(0.5+(1000/self.diagonallengde(x-1)
+                *(self.d_I/self.Iz_profil)))
 
-            if self.navn=="B2":
+            if self.navn == "B2":
                 gamma_0, gamma_1 = 7.30, 6.80
                 beta_0, beta_1 = 0.62, 0.63
-            elif self.navn=="B3":
+            elif self.navn == "B3":
                 gamma_0, gamma_1 = 5.86, 5.42
                 beta_0, beta_1 = 0.65, 0.66
-            elif self.navn=="B4":
+            elif self.navn == "B4":
                 gamma_0, gamma_1 = 6.35, 5.80
                 beta_0, beta_1 = 0.64, 0.65
             else:  # B6
@@ -508,7 +510,6 @@ class Mast(object):
 
         return (self.bredde(x) - 2*s) * math.sqrt(2)
 
-
     def dragkoeffisienter(self, x, EN1991):
         """Beregner mastens dragkoeffisienter uten islast.
 
@@ -524,7 +525,7 @@ class Mast(object):
           :math:`c_{f0}` beregnes basert på en 2.-grads
           kurvetilpasning av verdier for firkantet romlig fagverk
           med vind parallelt flatenormal, ref. NS-EN 1991-1-4
-          seksjon 7.11, figur 7.34. Videre tilnærmes :math:`\psi_{\\lambda}`
+          seksjon 7.11, figur 7.34. Videre tilnærmes :math:`\\psi_{\\lambda}`
           ut fra figur 7.36 med slankhet :math:`\\lambda = 70`.
 
           Dersom ``EN1991`` har verdien False beregnes c_f istedenfor
@@ -580,7 +581,6 @@ class Mast(object):
 
         return phi/len(H)
 
-
     def _massivitetsforhold(self, x):
         """Beregner tverrsnittets massivitetsforhold ved gitt høyde.
 
@@ -609,10 +609,9 @@ class Mast(object):
         if self.type is not "bjelke":
             A = self.vindareal(x) * 10**6
             A_c = 500*self._b_mid(x)
-            phi = A/A_c if A/A_c<1.0 else 1.0
+            phi = A/A_c if (A/A_c < 1.0) else 1.0
 
         return phi
-
 
     def vindareal_midlere(self, x):
         """Beregner midlere vindareal ved gitt mastelengde for gitterstruktur.
@@ -634,7 +633,6 @@ class Mast(object):
 
         return A_ref/len(H)
 
-
     def vindareal(self, x):
         """Beregner effektivt vindareal ved gitt høyde for gitterstruktur.
 
@@ -650,13 +648,13 @@ class Mast(object):
         """
 
         b_mid = self._b_mid(x)
-        l = (b_mid - 2 * self.b_f) * math.sqrt(2)
-        A_ref = 2 * self.b_f * 500 + self.d_h * l
+        l = (b_mid-2*self.b_f)*math.sqrt(2)
+        A_ref = 2*self.b_f*500 + self.d_h*l
 
-        if self.type=="H":
-            if self.navn=="H6" and x == 5.0 or 9.0:
+        if self.type == "H":
+            if self.navn == "H6" and x == 5.0 or 9.0:
                 A_ref += (b_mid - 2 * self.b_f) * 75
-            elif x==10:
+            elif x == 10:
                 A_ref += (b_mid - 2 * self.b_f) * 75
 
         return A_ref/10**6
