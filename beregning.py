@@ -78,7 +78,7 @@ import lister
 import laster
 import tilstand
 from kraft import Kraft
-import mast
+import mast as module_mast
 
 
 def beregn(i):
@@ -89,7 +89,7 @@ def beregn(i):
     :rtype: :class:`list`
     """
     # Oppretter masteobjekt med brukerdefinert høyde
-    master = mast.hent_master(
+    master = module_mast.hent_master(
         i.h, i.s235, i.materialkoeff, i.avspenningsmast,
         i.fixavspenningsmast, i.avspenningsbardun)
     # Oppretter systemobjekt med data for ledninger, utliggere og geometri
