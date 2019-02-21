@@ -16,7 +16,7 @@ class Inndata(object):
         self.banestrekning = cfg.get("Info", "banestrekning")
         self.km = cfg.getfloat("Info", "km")
         self.prosjektnr = cfg.getint("Info", "prosjektnr")
-        self.mastenr = cfg.getint("Info", "mastenr")
+        self.mastenr = cfg.get("Info", "mastenr")
         self.signatur = cfg.get("Info", "signatur")
         self.dato = cfg.get("Info", "dato")
         # Mastealternativer

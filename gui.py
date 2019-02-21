@@ -39,7 +39,7 @@ class KL_mast(tk.Tk):
         self.banestrekning = tk.StringVar()
         self.km = tk.DoubleVar()
         self.prosjektnr = tk.IntVar()
-        self.mastenr = tk.IntVar()
+        self.mastenr = tk.StringVar()
         self.signatur = tk.StringVar()
         self.dato = tk.StringVar()
 
