@@ -384,6 +384,3 @@ class Tilstand(object):
             self.dimensjonerende_faktorer["X_diag"] = X_d
 
         return UR_d, UR_g
-
-
-

@@ -1,6 +1,5 @@
 # -*- coding: utf8 -*-
 """Grafisk brukergrensesnitt, avlesing/skriving av input til .ini-fil."""
-
 import tkinter as tk
 import configparser
 import lister
@@ -21,6 +20,7 @@ plain = (skrifttype, skriftstr)
 bold = (skrifttype, skriftstr, "bold")
 italic = (skrifttype, skriftstr, "italic")
 italic_small = (skrifttype, int(math.floor(skriftstr*0.8)), "italic")
+
 
 class KL_mast(tk.Tk):
     """Hovedprogram."""
@@ -164,7 +164,6 @@ class KL_mast(tk.Tk):
 
         with open("input.ini", "w+") as ini:
             cfg.write(ini)
-
 
 
 class Hovedvindu(tk.Frame):
@@ -1407,6 +1406,7 @@ class Klima(tk.Frame):
 
         self.master.destroy()
 
+
 class Avansert(tk.Frame):
     """Vindu for avanserte funksjoner."""
 
@@ -2111,7 +2111,6 @@ class Resultater(tk.Frame):
         self.eksporter_btn.config(text="Eksport av {}-mast fullført".format(mast.navn), font=plain)
 
 
-
 class Bidrag(tk.Frame):
     """Vindu for kraftbidrag."""
 
@@ -2263,6 +2262,7 @@ class Bidrag(tk.Frame):
             R[j.type[1], j.type[0], 5] = sign*(abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1]))
 
         return R
+
 
 class Tabell(tk.Frame):
     """Vindu for tabellutskrift."""
@@ -2545,6 +2545,7 @@ class ToolTip(object):
         if tw:
             tw.destroy()
 
+
 def createToolTip(master, widget, text):
     """Oppretter tooltip og binder det til visning ved mouse-over."""
     toolTip = ToolTip(widget)
@@ -2556,14 +2557,8 @@ def createToolTip(master, widget, text):
     widget.bind('<Leave>', leave)
 
 
-
-
-
-
 if __name__ == "__main__":
-
     # Kjører program
     root = KL_mast()
     hovedvindu = Hovedvindu(root)
     root.mainloop()
-

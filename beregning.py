@@ -1,5 +1,14 @@
 # -*- coding: utf8 -*-
 from __future__ import unicode_literals
+import numpy
+import math
+import scipy.integrate as integrate
+import system
+import lister
+import laster
+import tilstand
+from kraft import Kraft
+import mast as module_mast
 
 """Overordnet beregningsprosedyre for master.
 
@@ -65,20 +74,8 @@ Forskyvning :math:`[mm]` og rotasjon :math:`[^{\\circ}]` av mast i kontakttrådh
     |             | 7  Brukerdefinert last
      -------------
 
-    Etasjer: 0 = egenvekt, 1 = strekk,
-             2 = temperatur, 3 = snø, 4 = vind
-
+    Etasjer: 0 = egenvekt, 1 = strekk, 2 = temperatur, 3 = snø, 4 = vind
 """
-
-import numpy
-import math
-import scipy.integrate as integrate
-import system
-import lister
-import laster
-import tilstand
-from kraft import Kraft
-import mast as module_mast
 
 
 def beregn(i):
@@ -137,11 +134,11 @@ def beregn(i):
                                 for V in lastfaktorer["V"]:
                                     # Vind
                                     R[4, :, :] = R_0[4, :, :] * psi_V * V
-
-                                    t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning,
-                                                          grensetilstand=0, F=F, R=R, G=G, L=L,
-                                                          T=T, S=S, V=V, psi_T=psi_T, psi_S=psi_S,
-                                                          psi_V=psi_V, temp=temp, iterasjon=iterasjon)
+                                    t = tilstand.Tilstand(
+                                        mast, i, lastsituasjon, vindretning,
+                                        grensetilstand=0, F=F, R=R, G=G, L=L,
+                                        T=T, S=S, V=V, psi_T=psi_T, psi_S=psi_S,
+                                        psi_V=psi_V, temp=temp, iterasjon=iterasjon)
                                     mast.lagre_tilstand(t)
                                     iterasjon += 1
                 # Bruksgrense, forskyvning totalt
@@ -156,13 +153,15 @@ def beregn(i):
                 D[3, :, :] = D_0[3, :, :] * psi_S
                 D[4, :, :] = D_0[4, :, :] * psi_V
                 D += _utliggerbidrag(sys, R)
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning,
-                                      grensetilstand=1, R=R, D=D, iterasjon=iterasjon)
+                t = tilstand.Tilstand(
+                    mast, i, lastsituasjon, vindretning,
+                    grensetilstand=1, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
                 # Bruksgrense, forskyvning KL
                 R[0:2, :, :], D[0:2, :, :] = 0, 0  # Nullstiller bidrag fra egenvekt og strekk
-                t = tilstand.Tilstand(mast, i, lastsituasjon, vindretning,
-                                      grensetilstand=2, R=R, D=D, iterasjon=iterasjon)
+                t = tilstand.Tilstand(
+                    mast, i, lastsituasjon, vindretning,
+                    grensetilstand=2, R=R, D=D, iterasjon=iterasjon)
                 mast.lagre_tilstand(t)
                 iterasjon += 1
         # Ulykkeslast
@@ -172,10 +171,12 @@ def beregn(i):
             F_ulykke.extend([f for f in F_statisk if not f.navn.startswith("Sidekraft: KL")])
             R_ulykke = _beregn_reaksjonskrefter(F_ulykke)
             # Tilleggskraft ved ulykke
-            ulykkeslast = laster.ulykkeslast(i, sys, numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
+            ulykkeslast = laster.ulykkeslast(
+                i, sys, numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
             R_ulykke += _beregn_reaksjonskrefter(ulykkeslast)
-            t = tilstand.Tilstand(mast, i, lastsituasjon, 0,
-                                  grensetilstand=3, F=F_ulykke, R=R_ulykke, iterasjon=iterasjon)
+            t = tilstand.Tilstand(
+                mast, i, lastsituasjon, 0, grensetilstand=3, F=F_ulykke,
+                R=R_ulykke, iterasjon=iterasjon)
             mast.lagre_tilstand(t)
             iterasjon += 1
     return master
@@ -188,16 +189,13 @@ def _beregn_reaksjonskrefter(F):
     :return: Matrise med reaksjonskrefter
     :rtype: :class:`numpy.array`
     """
-
     # Initierer R-matrisen for reaksjonskrefter
     R = numpy.zeros((5, 8, 6))
-
     for j in F:
         R_0 = numpy.zeros((5, 8, 6))
         f = j.f
         if not numpy.count_nonzero(j.q) == 0:
             f = numpy.array([j.q[0] * j.b, j.q[1] * j.b, j.q[2] * j.b])
-
         # Sorterer bidrag til reaksjonskrefter
         R_0[j.type[1], j.type[0], 0] = f[0] * j.e[2] + f[2] * (-j.e[0])
         R_0[j.type[1], j.type[0], 1] = f[1]
@@ -209,10 +207,8 @@ def _beregn_reaksjonskrefter(F):
         else:
             sign = numpy.sign(numpy.sum(numpy.sum(R, axis=0), axis=0)[5])
             sign = 1 if sign == 0 else sign
-            R_0[j.type[1], j.type[0], 5] = sign*(abs(f[1] * (-j.e[2])) + abs(f[2] * j.e[1]))
-
+            R_0[j.type[1], j.type[0], 5] = sign*(abs(f[1]*(-j.e[2])) + abs(f[2]*j.e[1]))
         R += R_0
-
     return R
 
 
@@ -225,27 +221,20 @@ def _beregn_deformasjoner(i, mast, F):
     :return: Matrise med forskyvninger
     :rtype: :class:`numpy.array`
     """
-
     # Konverterer systemhøyde ``fh`` til mastens aksesystem
     fh_korrigert = i.fh + i.e
-
     # Initierer deformasjonsmatrisen, D
     D = numpy.zeros((5, 8, 3))
-
     for j in F:
         D_0 = numpy.zeros((5, 8, 3))
-
-        D_0 += ( _bjelkeformel_P(mast, j, fh_korrigert)
+        D_0 += (_bjelkeformel_P(mast, j, fh_korrigert)
                 +_bjelkeformel_q(mast, j, fh_korrigert)
-                +_bjelkeformel_M(mast, j, fh_korrigert) )
-
+                +_bjelkeformel_M(mast, j, fh_korrigert))
         if mast.type == "bjelke":
             sign = numpy.sign(numpy.sum(numpy.sum(D, axis=0), axis=0)[2])
             sign = 1 if sign == 0 else sign
             D_0 += _torsjonsvinkel(mast, j, fh_korrigert, sign)
-
         D += D_0
-
     return D
 
 
@@ -265,11 +254,8 @@ def _bjelkeformel_M(mast, j, fh):
     :return: Matrise med forskyvningsbidrag i :math:`[mm]`
     :rtype: :class:`numpy.array`
     """
-
     D = numpy.zeros((5, 8, 3))
-
     if j.e[0] < 0:
-
         E = mast.E
         delta_topp = mast.h + j.e[0]
         delta_topp = 0 if delta_topp < 0 else delta_topp
@@ -282,17 +268,14 @@ def _bjelkeformel_M(mast, j, fh):
         M_z = - j.f[0] * j.e[1] * 1000
         x = -j.e[0] * 1000
         fh *= 1000
-
         if fh > x:
             theta_y = (M_y * x) / (E * I_y)
             theta_z = (M_z * x) / (E * I_z)
-            D[j.type[1], j.type[0], 1] = (M_y * x ** 2) / (2 * E * I_y) + numpy.tan(theta_y) * (fh - x)
-            D[j.type[1], j.type[0], 0] = (M_z * x ** 2) / (2 * E * I_z) + numpy.tan(theta_z) * (fh - x)
+            D[j.type[1], j.type[0], 1] = (M_y*x**2)/(2*E*I_y) + numpy.tan(theta_y)*(fh-x)
+            D[j.type[1], j.type[0], 0] = (M_z*x**2)/(2*E*I_z) + numpy.tan(theta_z)*(fh-x)
         else:
-            D[j.type[1], j.type[0], 1] = (M_y * fh ** 2) / (2 * E * I_y)
-            D[j.type[1], j.type[0], 0] = (M_z * fh ** 2) / (2 * E * I_z)
-
-
+            D[j.type[1], j.type[0], 1] = (M_y*fh**2)/(2*E*I_y)
+            D[j.type[1], j.type[0], 0] = (M_z*fh**2)/(2*E*I_z)
     return D
 
 
@@ -311,11 +294,8 @@ def _bjelkeformel_P(mast, j, fh):
     :return: Matrise med forskyvningsbidrag :math:`[mm]`
     :rtype: :class:`numpy.array`
     """
-
     D = numpy.zeros((5, 8, 3))
-
     if j.e[0] < 0:
-
         E = mast.E
         delta_topp = mast.h + j.e[0]
         delta_topp = 0 if delta_topp < 0 else delta_topp
@@ -328,14 +308,12 @@ def _bjelkeformel_P(mast, j, fh):
         f_z = j.f[2]
         x = -j.e[0] * 1000
         fh *= 1000
-
         if fh > x:
-            D[j.type[1], j.type[0], 1] = (f_z * x**2) / (6 * E * I_y) * (3 * fh - x)
-            D[j.type[1], j.type[0], 0] = (f_y * x**2) / (6 * E * I_z) * (3 * fh - x)
+            D[j.type[1], j.type[0], 1] = (f_z*x**2)/(6*E*I_y)*(3*fh-x)
+            D[j.type[1], j.type[0], 0] = (f_y*x**2)/(6*E*I_z)*(3*fh-x)
         else:
-            D[j.type[1], j.type[0], 1] = (f_z * fh ** 2) / (6 * E * I_y) * (3 * x - fh)
-            D[j.type[1], j.type[0], 0] = (f_y * fh ** 2) / (6 * E * I_z) * (3 * x - fh)
-
+            D[j.type[1], j.type[0], 1] = (f_z*fh**2)/(6*E*I_y)*(3*x-fh)
+            D[j.type[1], j.type[0], 0] = (f_y*fh**2)/(6*E*I_z)*(3*x-fh)
     return D
 
 
@@ -354,11 +332,8 @@ def _bjelkeformel_q(mast, j, fh):
     :return: Matrise med forskyvningsbidrag :math:`[mm]`
     :rtype: :class:`numpy.array`
     """
-
     D = numpy.zeros((5, 8, 3))
-
     if j.b > 0 and j.e[0] < 0:
-
         E = mast.E
         delta_topp = mast.h - j.b
         L = (mast.h - delta_topp) * 1000
@@ -370,10 +345,8 @@ def _bjelkeformel_q(mast, j, fh):
         q_z = j.q[2] / 1000
         b = j.b * 1000
         fh *= 1000
-
-        D[j.type[1], j.type[0], 1] = ((q_z * fh ** 2) / (24 * E * I_y)) * (fh ** 2 + 6 * b ** 2 - 4 * b * fh)
-        D[j.type[1], j.type[0], 0] = ((q_y * fh ** 2) / (24 * E * I_z)) * (fh ** 2 + 6 * b ** 2 - 4 * b * fh)
-
+        D[j.type[1], j.type[0], 1] = ((q_z*fh**2)/(24*E*I_y))*(fh**2+6*b**2-4*b*fh)
+        D[j.type[1], j.type[0], 0] = ((q_y*fh**2)/(24*E*I_z))*(fh**2+6*b**2-4*b*fh)
     return D
 
 
@@ -392,16 +365,12 @@ def _torsjonsvinkel(mast, j, fh, sign):
     :return: Matrise med rotasjonsbidrag :math:`[^{\\circ}]`
     :rtype: :class:`numpy.array`
     """
-
     D = numpy.zeros((5, 8, 3))
-
     if j.e[0] < 0:
-
         if j.navn.startswith("Sidekraft: KL"):
             T = (j.f[1] * -j.e[2] + j.f[2] * j.e[1]) * 1000
         else:
             T = sign*(abs(j.f[1] * -j.e[2]) + abs(j.f[2] * j.e[1])) * 1000
-
         E = mast.E
         G = mast.G
         I_T = mast.It
@@ -409,7 +378,6 @@ def _torsjonsvinkel(mast, j, fh, sign):
         lam = math.sqrt(G * I_T / (E * C_w))
         fh = fh * 1000
         x = -j.e[0] * 1000
-
         D[j.type[1], j.type[0], 2] = (180/math.pi) * T/(E*C_w*lam**3) * ((math.sinh(lam*(x-fh))
                                                  - math.sinh(lam*x))/math.cosh(lam*x) + lam*fh)
     return D
@@ -429,19 +397,10 @@ def _utliggerbidrag(sys, R):
     :return: Matrise med forskyvningsbidrag :math:`[mm]`
     :rtype: :class:`numpy.array`
     """
-
     D = numpy.zeros((5, 8, 3))
-
     sidekraft = R[1, 1, 3]
-
     if sys.navn == "25":
         D[1, 0, 1] += 4/2500 * sidekraft * 0.5
     else:
         D[1, 0, 1] += 20/2500 * sidekraft * 0.5
-
-
     return D
-
-
-
-

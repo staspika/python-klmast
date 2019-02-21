@@ -9,12 +9,9 @@ class Inndata(object):
 
         :param ini: .ini-fil for avlesing av inputparametre
         """
-
         cfg = configparser.ConfigParser()
         cfg.read("input.ini")
-
         # Oppretter variabler for data fra .ini-fil
-
         # Info
         self.banestrekning = cfg.get("Info", "banestrekning")
         self.km = cfg.getfloat("Info", "km")
@@ -22,7 +19,6 @@ class Inndata(object):
         self.mastenr = cfg.getint("Info", "mastenr")
         self.signatur = cfg.get("Info", "signatur")
         self.dato = cfg.get("Info", "dato")
-
         # Mastealternativer
         self.siste_for_avspenning = cfg.getboolean("Mastealternativer", "siste_for_avspenning")
         self.linjemast_utliggere = cfg.getint("Mastealternativer", "linjemast_utliggere")
@@ -33,7 +29,6 @@ class Inndata(object):
         self.strekkutligger = cfg.getboolean("Mastealternativer", "strekkutligger")
         self.master_bytter_side = cfg.getboolean("Mastealternativer", "master_bytter_side")
         self.avspenningsbardun = cfg.getboolean("Mastealternativer", "avspenningsbardun")
-
         # Fastavspente ledninger
         self.matefjern_ledn = cfg.getboolean("Fastavspent", "matefjern_ledn")
         self.matefjern_antall = cfg.getint("Fastavspent", "matefjern_antall")
@@ -46,7 +41,6 @@ class Inndata(object):
         self.retur_ledn = cfg.getboolean("Fastavspent", "retur_ledn")
         self.auto_differansestrekk = cfg.getboolean("Fastavspent", "auto_differansestrekk")
         self.differansestrekk = cfg.getfloat("Fastavspent", "differansestrekk")
-
         # System
         self.systemnavn = cfg.get("System", "systemnavn")
         self.radius = cfg.getint("System", "radius")
@@ -55,7 +49,6 @@ class Inndata(object):
         self.delta_h1 = cfg.getfloat("System", "delta_h1")
         self.delta_h2 = cfg.getfloat("System", "delta_h2")
         self.vindkasthastighetstrykk = cfg.getfloat("System", "vindkasthastighetstrykk")
-
         # Geometri
         self.h = cfg.getfloat("Geometri", "h")
         self.hfj = cfg.getfloat("Geometri", "hfj")
@@ -66,14 +59,12 @@ class Inndata(object):
         self.sh = cfg.getfloat("Geometri", "sh")
         self.e = cfg.getfloat("Geometri", "e")
         self.sms = cfg.getfloat("Geometri", "sms")
-
         # Diverse
         self.s235 = cfg.getboolean("Div", "s235")
         self.materialkoeff = cfg.getfloat("Div", "materialkoeff")
         self.traverslengde = cfg.getfloat("Div", "traverslengde")
         self.ec3 = cfg.getboolean("Div", "ec3")
         self.isklasse = cfg.get("Div", "isklasse")
-
         # Brukerdefinert last
         self.brukerdefinert_last = cfg.getboolean("Brukerdefinert last", "brukerdefinert_last")
         self.f_x = cfg.getfloat("Brukerdefinert last", "f_x")
@@ -84,9 +75,6 @@ class Inndata(object):
         self.e_z = cfg.getfloat("Brukerdefinert last", "e_z")
         self.a_vind = cfg.getfloat("Brukerdefinert last", "a_vind")
         self.a_vind_par = cfg.getfloat("Brukerdefinert last", "a_vind_par")
-
         # Hjelpevariabler
         self.referansevindhastighet = cfg.getint("Hjelpevariabler", "referansevindhastighet")
         self.kastvindhastighet = cfg.getfloat("Hjelpevariabler", "kastvindhastighet")
-
-
