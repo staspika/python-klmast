@@ -185,27 +185,19 @@ class Mast(object):
         Iz = self.Iz(self.h)/10**6
         Wy = self.Wy_el/10**3
         Wz = self.Wz_el/10**3
-        rep = "{}\nMastetype: {}    Høyde: {}m\n".format(self.navn, self.type, self.h)
-        rep += "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4\n" \
-              "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3\n".format(Iy, Iz, Wz, Wy)
-        rep += "Tverrsnittsbredde ved innspenning: {}mm\n".format(self.bredde(self.h))
-        rep += "\n\nStørste utnyttelsesgrad:\n"
-        rep += repr(self.tilstand_UR_max)
-        rep += "\n\nStørste moment My:\n"
-        rep += repr(self.tilstand_My_max)
-        rep += "\n\nStørste torsjon T:\n"
-        rep += repr(self.tilstand_T_max)
-        rep += "\n\nStørste torsjon T (ulykkeslast):\n"
-        rep += repr(self.tilstand_T_max_ulykke)
-        rep += "\n\nStørste forskyvning Dz (totalt):\n"
-        rep += repr(self.tilstand_Dz_tot_max)
-        rep += "\n\nStørste torsjonsvinkel phi (totalt):\n"
-        rep += repr(self.tilstand_phi_tot_max)
-        rep += "\n\nStørste forskyvning Dz (KL):\n"
-        rep += repr(self.tilstand_Dz_kl_max)
-        rep += "\n\nStørste torsjonsvinkel phi (KL):\n"
-        rep += repr(self.tilstand_phi_kl_max)
-        rep += "\n"
+        rep = "\n".join(
+            "{}\nMastetype: {}    Høyde: {}m".format(self.navn, self.type, self.h),
+            "Iy: {:.3g}*10^8mm^4    Iz: {:.3g}*10^6mm^4",
+            "Wy_el = {:.3g}*10^3mm^3  Wz_el = {:.3g}*10^3mm^3".format(Iy, Iz, Wz, Wy),
+            "Tverrsnittsbredde ved innspenning: {}mm".format(self.bredde(self.h)),
+            "Største utnyttelsesgrad: " + repr(self.tilstand_UR_max),
+            "Største moment My:" + repr(self.tilstand_My_max),
+            "Største torsjon T:" + repr(self.tilstand_T_max),
+            "Største torsjon T (ulykkeslast):" + repr(self.tilstand_T_max_ulykke),
+            "Største forskyvning Dz (totalt):" + repr(self.tilstand_Dz_tot_max),
+            "Største torsjonsvinkel phi (totalt):" + repr(self.tilstand_phi_tot_max),
+            "Største forskyvning Dz (KL):" + repr(self.tilstand_Dz_kl_max),
+            "Største torsjonsvinkel phi (KL):" + repr(self.tilstand_phi_kl_max))
         return rep
 
     def bredde(self, x=None):
