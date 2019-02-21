@@ -1,6 +1,6 @@
 # -*- coding: utf8 -*-
-from __future__ import unicode_literals
 
+from __future__ import unicode_literals
 import numpy
 from functools import total_ordering
 
@@ -34,7 +34,6 @@ class Kraft(object):
         :param int vindretning: Vindretning ved forårsakende last
         :param float s: Strekkraft i lastforårsakende ledning :math:`[N]`
         """
-
         self.navn = navn
         self.type = type
         self.f = numpy.array(f)
@@ -62,10 +61,10 @@ class Kraft(object):
         rep += "e = {}\n".format(self.e)
         return rep
 
+
     def __lt__(self, other):
         return numpy.linalg.norm(self.f) - numpy.linalg.norm(other.f) < 0
 
+
     def __eq__(self, other):
         return numpy.linalg.norm(self.f) - numpy.linalg.norm(other.f) == 0
-
-
