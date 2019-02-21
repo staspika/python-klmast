@@ -1,5 +1,14 @@
 # -*- coding: utf8 -*-
 from __future__ import unicode_literals
+import numpy
+import math
+import scipy.integrate as integrate
+import system
+import lister
+import laster
+import tilstand
+from kraft import Kraft
+import mast as module_mast
 
 """Overordnet beregningsprosedyre for master.
 
@@ -65,20 +74,8 @@ Forskyvning :math:`[mm]` og rotasjon :math:`[^{\\circ}]` av mast i kontakttrådh
     |             | 7  Brukerdefinert last
      -------------
 
-    Etasjer: 0 = egenvekt, 1 = strekk,
-             2 = temperatur, 3 = snø, 4 = vind
-
+    Etasjer: 0 = egenvekt, 1 = strekk, 2 = temperatur, 3 = snø, 4 = vind
 """
-
-import numpy
-import math
-import scipy.integrate as integrate
-import system
-import lister
-import laster
-import tilstand
-from kraft import Kraft
-import mast as module_mast
 
 
 def beregn(i):
