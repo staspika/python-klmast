@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 from __future__ import unicode_literals
 import math
+import csv
 
 
 class Mast(object):
@@ -756,78 +757,13 @@ def hent_master(hoyde, s235, materialkoeff, avspenningsmast,
         Mast.L_cr_z = Mast.L_e
     else:
         Mast.L_cr_z = Mast.L_e*2
-    # B-master
-    B2 = Mast(
-        navn="B2", type="B", egenvekt=360, A_profil=1.70e3, d=120,
-        A_ref=0.12, Iy_profil=3.64e6, Iz_profil=4.32e5, Wyp=7.26e4,
-        It_profil=41.5e3, Cw_profil=0.9e9, noytralakse=16.0,
-        toppmaal=150, stigning=14/1000, d_h=10, d_b=50, b_f=55,
-        h_max=8.0)
-    B3 = Mast(
-        navn="B3", type="B", egenvekt=510, A_profil=2.04e3, d=140,
-        A_ref=0.14, Iy_profil=6.05e6, Iz_profil=6.27e5, Wyp=1.03e5,
-        It_profil=56.8e3, Cw_profil=1.8e9, noytralakse=17.5,
-        toppmaal=255, stigning=23/1000, d_h=10, d_b=50, b_f=60,
-        h_max=9.5)
-    B4 = Mast(
-        navn="B4", type="B", egenvekt=560, A_profil=2.40e3, d=160,
-        A_ref=0.16, Iy_profil=9.25e6, Iz_profil=8.53e5, Wyp=1.38e5,
-        It_profil=73.9e3, Cw_profil=3.26e9, noytralakse=18.4,
-        toppmaal=255, stigning=23/1000, d_h=10, d_b=60, b_f=65,
-        h_max=11.0)
-    B6 = Mast(
-        navn="B6", type="B", egenvekt=700, A_profil=3.22e3, d=200,
-        A_ref=0.20, Iy_profil=1.91e7, Iz_profil=1.48e6, Wyp=2.28e5,
-        It_profil=119e3, Cw_profil=9.07e9, noytralakse=20.1,
-        toppmaal=255, stigning=23/1000, d_h=12, d_b=100, b_f=75,
-        h_max=13.0)
-    # H-master
-    H3 = Mast(
-        navn="H3", type="H", egenvekt=520, A_profil=1.15e3, A_ref=0.20,
-        Iy_profil=5.89e5, Ieta_profil=2.44e5, noytralakse=21.69,
-        toppmaal=200, stigning=20/1000, d_h=50, d_b=10, k_g=0.85,
-        k_d=0.55, b_f=75, h_max=13.0)
-    H5 = Mast(
-        navn="H5", type="H", egenvekt=620, A_profil=1.41e3, A_ref=0.20,
-        Iy_profil=7.14e5, Ieta_profil=2.97e5, noytralakse=22.41,
-        toppmaal=200, stigning=20/1000, d_h=50, d_b=10, k_g=0.85,
-        k_d=0.55, b_f=75, h_max=13.0)
-    H6 = Mast(
-        navn="H6", type="H", egenvekt=620, A_profil=1.41e3, A_ref=0.20,
-        Iy_profil=7.14e5, Ieta_profil=2.97e5, noytralakse=22.41,
-        toppmaal=200, stigning=20/1000, d_h=60, d_b=60, k_g=0.85,
-        k_d=0.55, b_f=75, h_max=13.0)
-    # Bjelkemaster
-    HE200B = Mast(
-        navn="HE200B", type="bjelke", egenvekt=613, A_profil=7.81e3,
-        b=200, A_ref=0.20, Iy_profil=5.70e7, Iz_profil=2.00e7,
-        Wyp=6.42e5, Wzp=3.00e5, It_profil=595e3, Cw_profil=171e9,
-        h_max=9.5)
-    HE220B = Mast(
-        navn="HE220B", type="bjelke", egenvekt=715, A_profil=9.10e3,
-        b=220, A_ref=0.22, Iy_profil=8.09e7, Iz_profil=2.84e7,
-        Wyp=8.28e5, Wzp=3.87e5, It_profil=768e3, Cw_profil=295e9,
-        h_max=11.0)
-    HE240B = Mast(
-        navn="HE240B", type="bjelke", egenvekt=832, A_profil=1.06e4,
-        b=240, A_ref=0.24, Iy_profil=1.13e8, Iz_profil=3.92e7,
-        Wyp=1.05e6, Wzp=4.90e5, It_profil=1030e3, Cw_profil=487e9,
-        h_max=12.0)
-    HE260B = Mast(
-        navn="HE260B", type="bjelke", egenvekt=930, A_profil=1.18e4,
-        b=260, A_ref=0.26, Iy_profil=1.49e8, Iz_profil=5.13e7,
-        Wyp=1.28e6, Wzp=5.92e5, It_profil=1240e3, Cw_profil=754e9,
-        h_max=13.0)
-    HE280B = Mast(
-        navn="HE280B", type="bjelke", egenvekt=1030, A_profil=1.31e4,
-        b=280, A_ref=0.28, Iy_profil=1.93e8, Iz_profil=6.59e7,
-        Wyp=1.53e6, Wzp=7.06e5, It_profil=1440e3, Cw_profil=1130e9,
-        h_max=13.0)
-    HE260M = Mast(
-        navn="HE260M", type="bjelke", egenvekt=1720, A_profil=2.20e4,
-        b=290, d=268, A_ref=0.268, Iy_profil=3.13e8, Iz_profil=2.00e8,
-        Wyp=2.52e6, Wzp=1.17e6, It_profil=7220e3, Cw_profil=1730e9,
-        A_ref_par=0.29, h_max=13.0)
-    master = [B2, B3, B4, B6, H3, H5, H6,
-              HE200B, HE220B, HE240B, HE260B, HE280B, HE260M]
+    master = []
+    csv.register_dialect('masts', delimiter=',', quoting=csv.QUOTE_NONNUMERIC, skipinitialspace=True)
+    with open("data/masts.csv", 'r') as csvfile:
+        reader = csv.DictReader(csvfile, dialect='masts')
+        for row in reader:
+            mast = {k:v for k, v in row.items() if v!=''}
+            # ~ print(mast)
+            master.append(Mast(**mast))
+    # ~ print(master)
     return master
