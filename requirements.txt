@@ -1,0 +1,6 @@
+future
+tkinter
+configparser
+numpy
+scipy
+csv
